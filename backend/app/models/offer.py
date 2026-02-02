@@ -17,16 +17,19 @@ class ProductOffer(Base, TimestampMixin):
     __tablename__ = "product_offers"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     merchant = Column(SQLEnum(Merchant), nullable=False)
     merchant_product_id = Column(String(255), nullable=False)
     url = Column(String(500), nullable=False)
     affiliate_url = Column(String(500), nullable=True)
+    seller_name = Column(String(120), nullable=True)  # 네이버/오픈마켓 대비
     is_primary = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     __table_args__ = (
         UniqueConstraint('merchant', 'merchant_product_id', name='uq_offer_merchant_product'),
         Index('ix_offers_product_merchant', 'product_id', 'merchant'),
+        Index('idx_offers_active', 'is_active'),
     )
 
     # Relationships

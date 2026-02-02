@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../ui/widgets/app_scaffold.dart';
-import '../../../../ui/widgets/app_header.dart';
-import '../../../../ui/widgets/card_container.dart';
-import '../../../../ui/theme/app_typography.dart';
-import '../../../../ui/theme/app_spacing.dart';
+import '../../../../../ui/widgets/app_scaffold.dart';
+import '../../../../../ui/widgets/app_header.dart';
+import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_spacing.dart';
 
-/// 마이 화면
+/// 마이 화면 (DESIGN_GUIDE.md 스타일)
 class MeScreen extends StatelessWidget {
   const MeScreen({super.key});
 
@@ -17,31 +17,34 @@ class MeScreen extends StatelessWidget {
         showNotification: false,
       ),
       body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.pagePaddingHorizontal),
         children: [
           // 반려견 프로필 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('반려동물 프로필', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
+                // H3: 18px
+                Text('반려동물 프로필', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
                 _ProfileItem(label: '견종', value: '골든 리트리버'),
-                const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.gridGap),
                 _ProfileItem(label: '체중', value: '10-15kg'),
-                const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.gridGap),
                 _ProfileItem(label: '나이', value: '성견'),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 알림 설정 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('알림 설정', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
+                // H3: 18px
+                Text('알림 설정', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
                 _SettingItem(
                   title: '가격 알림',
                   subtitle: '최저가 알림 받기',
@@ -62,20 +65,23 @@ class MeScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 포인트 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('포인트', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
-                Text('0 P', style: AppTypography.titleLarge),
+                // H3: 18px
+                Text('포인트', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
+                // H2: 26px
+                Text('0 P', style: AppTypography.h2),
                 const SizedBox(height: 4),
+                // Body2: muted
                 Text(
                   '사료 구매 시 포인트를 적립할 수 있습니다',
-                  style: AppTypography.caption,
+                  style: AppTypography.body2,
                 ),
               ],
             ),
@@ -130,8 +136,10 @@ class _SettingItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Body: 16px
               Text(title, style: AppTypography.body),
               const SizedBox(height: 4),
+              // Caption: 13px
               Text(subtitle, style: AppTypography.caption),
             ],
           ),

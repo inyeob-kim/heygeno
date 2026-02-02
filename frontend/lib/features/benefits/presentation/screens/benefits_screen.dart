@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../ui/widgets/app_scaffold.dart';
-import '../../../../ui/widgets/app_header.dart';
-import '../../../../ui/widgets/card_container.dart';
-import '../../../../ui/theme/app_typography.dart';
-import '../../../../ui/theme/app_spacing.dart';
+import '../../../../../ui/widgets/app_scaffold.dart';
+import '../../../../../ui/widgets/app_header.dart';
+import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_spacing.dart';
 
-/// 혜택 화면
+/// 혜택 화면 (DESIGN_GUIDE.md 스타일)
 class BenefitsScreen extends StatelessWidget {
   const BenefitsScreen({super.key});
 
@@ -14,32 +15,37 @@ class BenefitsScreen extends StatelessWidget {
     return AppScaffold(
       appBar: const AppHeader(title: '혜택'),
       body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.pagePaddingHorizontal),
         children: [
           // 포인트 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('내 포인트', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
-                Text('0 P', style: AppTypography.titleLarge),
+                // H3: 18px
+                Text('내 포인트', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
+                // H2: 26px
+                Text('0 P', style: AppTypography.h2),
                 const SizedBox(height: 4),
+                // Body2: muted
                 Text(
                   '사료 구매 시 포인트를 적립할 수 있습니다',
-                  style: AppTypography.caption,
+                  style: AppTypography.body2,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 적립 내역 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('적립 내역', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
+                // H3: 18px
+                Text('적립 내역', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
                 _HistoryItem(
                   title: '로얄캐닌 미니 어덜트 구매',
                   date: '2024.01.15',
@@ -63,25 +69,26 @@ class BenefitsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 혜택 안내 섹션
           CardContainer(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('혜택 안내', style: AppTypography.titleMedium),
-                const SizedBox(height: AppSpacing.sectionGap),
+                // H3: 18px
+                Text('혜택 안내', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
                 _BenefitInfo(
                   title: '구매 적립',
                   description: '사료 구매 시 결제 금액의 1% 적립',
                 ),
-                const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.gridGap),
                 _BenefitInfo(
                   title: '리뷰 적립',
                   description: '사료 리뷰 작성 시 100P 적립',
                 ),
-                const SizedBox(height: AppSpacing.sectionGap),
+                const SizedBox(height: AppSpacing.gridGap),
                 _BenefitInfo(
                   title: '포인트 사용',
                   description: '1P = 1원으로 사용 가능',
@@ -111,24 +118,27 @@ class _HistoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sectionGap),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.gridGap),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Body: 16px
                 Text(title, style: AppTypography.body),
                 const SizedBox(height: 4),
+                // Caption: 13px
                 Text(date, style: AppTypography.caption),
               ],
             ),
           ),
+          // Body: bold, color: green/red
           Text(
             points,
             style: AppTypography.body.copyWith(
               fontWeight: FontWeight.w700,
-              color: isPositive ? Colors.green : Colors.red,
+              color: isPositive ? AppColors.positiveGreen : AppColors.dangerRed,
             ),
           ),
         ],
@@ -151,11 +161,15 @@ class _BenefitInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+        // Body: bold
+        Text(
+          title,
+          style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 4),
+        // Caption: 13px
         Text(description, style: AppTypography.caption),
       ],
     );
   }
 }
-

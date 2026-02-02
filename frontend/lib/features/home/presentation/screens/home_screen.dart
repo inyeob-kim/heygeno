@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../ui/widgets/app_scaffold.dart';
-import '../../../../ui/widgets/app_header.dart';
-import '../../../../ui/widgets/card_container.dart';
-import '../../../../ui/theme/app_typography.dart';
-import '../../../../ui/theme/app_spacing.dart';
-import '../../../../core/widgets/loading.dart';
-import '../../../../core/widgets/empty_state.dart';
+import '../../../../../ui/widgets/app_scaffold.dart';
+import '../../../../../ui/widgets/app_header.dart';
+import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_spacing.dart';
+import '../../../../../core/widgets/loading.dart';
+import '../../../../../core/widgets/empty_state.dart';
 import '../../../feed/ui/components/food_recommendation_card.dart';
 import '../../../feed/ui/components/price_history_mini.dart';
 import '../../../feed/ui/components/alert_rule_tile.dart';
@@ -78,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         await ref.read(homeControllerProvider.notifier).loadRecommendations();
       },
       child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.pagePaddingHorizontal),
         children: [
           // 샘플: 사료 추천 카드
           FoodRecommendationCard(
@@ -93,7 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               );
             },
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 샘플: 가격 히스토리 미니
           PriceHistoryMini(
@@ -101,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             avg: 48000,
             current: 45000,
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 샘플: 알림 규칙 타일
           CardContainer(
@@ -131,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 우리 아이 추천 섹션
           _SectionCard(
@@ -142,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   .map(
                     (item) => Padding(
                       padding: const EdgeInsets.only(
-                        bottom: AppSpacing.sectionGap,
+                        bottom: AppSpacing.gridGap,
                       ),
                       child: ProductCard(item: item),
                     ),
@@ -150,13 +151,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   .toList(),
             ),
           ),
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(height: AppSpacing.gridGap),
           
           // 오늘 사도 되는 사료 섹션
           _SectionCard(
             title: '오늘 사도 되는 사료',
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.pagePadding),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Text(
                 '준비중',
                 style: AppTypography.body,
@@ -184,8 +185,9 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.titleMedium),
-          const SizedBox(height: AppSpacing.sectionGap),
+          // H3: 18px, letter-spacing: -0.2px
+          Text(title, style: AppTypography.h3),
+          const SizedBox(height: AppSpacing.gridGap),
           child,
         ],
       ),

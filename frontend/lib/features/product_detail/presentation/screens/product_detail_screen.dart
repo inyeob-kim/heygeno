@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/widgets/loading.dart';
-import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/providers/pet_id_provider.dart';
+import '../../../../../ui/widgets/app_scaffold.dart';
+import '../../../../../ui/widgets/app_header.dart';
+import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../ui/widgets/app_buttons.dart';
+import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_radius.dart';
+import '../../../../../app/theme/app_spacing.dart';
+import '../../../../../core/widgets/loading.dart';
+import '../../../../../core/providers/pet_id_provider.dart';
 import '../controllers/product_detail_controller.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -31,9 +38,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(productDetailControllerProvider(widget.productId));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('상품 상세'),
+    return AppScaffold(
+      appBar: AppHeader(
+        title: '상품 상세',
+        showNotification: false,
       ),
       body: _buildBody(context, state),
     );
@@ -46,133 +54,147 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
     if (state.error != null && state.product == null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              state.error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(productDetailControllerProvider(widget.productId).notifier).loadProduct(widget.productId);
-              },
-              child: const Text('다시 시도'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.pagePaddingHorizontal),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                state.error!,
+                style: AppTypography.body.copyWith(
+                  color: AppColors.dangerRed,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.gridGap),
+              AppPrimaryButton(
+                text: '다시 시도',
+                onPressed: () {
+                  ref.read(productDetailControllerProvider(widget.productId).notifier).loadProduct(widget.productId);
+                },
+              ),
+            ],
+          ),
         ),
       );
     }
 
     final product = state.product;
     if (product == null) {
-      return const Center(child: Text('상품 정보를 불러올 수 없습니다.'));
+      return Center(
+        child: Text(
+          '상품 정보를 불러올 수 없습니다.',
+          style: AppTypography.body,
+        ),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(AppSpacing.pagePaddingHorizontal),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 상품 이미지
           Container(
             width: double.infinity,
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.divider,
+              borderRadius: BorderRadius.circular(AppRadius.media),
             ),
-            child: const Icon(Icons.pets, size: 80),
+            child: const Icon(Icons.pets, size: 80, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
+          
+          // 상품명 (H2: 26px)
           Text(
             product.productName,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: AppTypography.h2,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
+          // 브랜드명 (Body2: muted)
           Text(
             product.brandName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey,
-                ),
+            style: AppTypography.body2,
           ),
           if (product.sizeLabel != null) ...[
             const SizedBox(height: 4),
             Text(
               product.sizeLabel!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
+              style: AppTypography.body2,
             ),
           ],
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: AppSpacing.gridGap),
+          
+          // 가격 정보 카드
+          CardContainer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // H3: 18px
+                Text('가격 정보', style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.gridGap),
+                // Body: 16px
+                Text(
+                  '평균 가격 대비 최저가',
+                  style: AppTypography.body,
+                ),
+                const SizedBox(height: 4),
+                // Body: green
+                Text(
+                  '최근 14일 평균 대비 5% 할인',
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.positiveGreen,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.gridGap),
+          
+          // 알림 설정/성공 메시지
+          if (state.trackingCreated)
+            CardContainer(
+              backgroundColor: AppColors.positiveGreen.withOpacity(0.1),
+              child: Row(
                 children: [
-                  Text(
-                    '가격 정보',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '평균 가격 대비 최저가',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '최근 14일 평균 대비 5% 할인',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.green,
-                        ),
+                  const Icon(Icons.check_circle, color: AppColors.positiveGreen),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '가격 알림이 설정되었습니다',
+                      style: AppTypography.body,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (state.trackingCreated)
-            Card(
-              color: Colors.green[50],
-              child: const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('가격 알림이 설정되었습니다'),
-                  ],
-                ),
-              ),
             )
           else
-            PrimaryButton(
+            AppPrimaryButton(
               text: '가격 알림 받기',
-              isLoading: state.isTrackingLoading,
-              onPressed: () async {
-                final petId = ref.read(currentPetIdProvider);
-                if (petId == null) {
-                  // TODO: 에러 처리 (프로필 먼저 등록하라는 메시지)
-                  return;
-                }
-                await ref.read(productDetailControllerProvider(widget.productId).notifier).createTracking(
-                      widget.productId,
-                      petId,
-                    );
-              },
+              onPressed: state.isTrackingLoading
+                  ? null
+                  : () async {
+                      final petId = ref.read(currentPetIdProvider);
+                      if (petId == null) {
+                        // TODO: 에러 처리 (프로필 먼저 등록하라는 메시지)
+                        return;
+                      }
+                      await ref.read(productDetailControllerProvider(widget.productId).notifier).createTracking(
+                            widget.productId,
+                            petId,
+                          );
+                    },
             ),
           if (state.error != null)
             Padding(
-              padding: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.only(top: AppSpacing.gridGap),
               child: Text(
                 state.error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                style: AppTypography.body.copyWith(
+                  color: AppColors.dangerRed,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),

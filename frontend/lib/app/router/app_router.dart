@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'route_paths.dart';
 import '../../ui/widgets/bottom_nav_shell.dart';
-import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_wrapper.dart';
+import '../../features/onboarding/data/repositories/onboarding_repository.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/watch/presentation/screens/watch_screen.dart';
@@ -25,13 +26,13 @@ GoRouter _createRouter() {
   final meNavigatorKey = GlobalKey<NavigatorState>();
 
   return GoRouter(
-    initialLocation: RoutePaths.home,
+    initialLocation: RoutePaths.onboarding, // 초기에는 온보딩으로
     routes: [
-      // 온보딩/인증 라우트
+      // 온보딩 라우트
       GoRoute(
         path: RoutePaths.onboarding,
         name: RoutePaths.onboarding,
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const OnboardingWrapper(),
       ),
       GoRoute(
         path: RoutePaths.petProfile,

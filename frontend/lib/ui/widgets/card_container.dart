@@ -4,7 +4,7 @@ import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_spacing.dart';
 
-/// 카드 컨테이너 위젯 (토스 스타일)
+/// 카드 컨테이너 위젯 (DESIGN_GUIDE.md 스타일)
 class CardContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -18,7 +18,7 @@ class CardContainer extends StatelessWidget {
     this.padding,
     this.backgroundColor,
     this.onTap,
-    this.showBorder = false, // 토스는 border 없이 그림자만
+    this.showBorder = true, // DESIGN_GUIDE: border 기본 사용
   });
 
   @override
@@ -28,7 +28,10 @@ class CardContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: showBorder ? Border.all(color: AppColors.divider, width: 1) : null,
+        border: showBorder ? Border.all(
+          color: AppColors.divider,
+          width: 1,
+        ) : null,
         boxShadow: AppShadows.card,
       ),
       child: child,
@@ -45,4 +48,3 @@ class CardContainer extends StatelessWidget {
     return content;
   }
 }
-

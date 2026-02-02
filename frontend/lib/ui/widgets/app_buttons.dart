@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_radius.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_shadows.dart';
 
-/// Primary Button (쿠팡/토스 스타일)
+/// Primary Button (DESIGN_GUIDE.md 스타일)
 class AppPrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -15,7 +17,7 @@ class AppPrimaryButton extends StatefulWidget {
     required this.text,
     this.onPressed,
     this.width,
-    this.height = 56, // 토스 스타일: 더 큰 버튼
+    this.height = 48, // DESIGN_GUIDE: 48px
   });
 
   @override
@@ -35,15 +37,16 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
       } : null,
       onTapCancel: widget.onPressed != null ? () => setState(() => _isPressed = false) : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 120),
         width: widget.width ?? double.infinity,
         height: widget.height,
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        transform: Matrix4.identity()..translate(0.0, _isPressed ? -1.0 : 0.0),
         decoration: BoxDecoration(
           color: widget.onPressed != null
-              ? AppColors.primaryBlue
-              : AppColors.primaryBlue.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(AppRadius.buttonPill),
+              ? AppColors.primary
+              : AppColors.primary.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          boxShadow: widget.onPressed != null ? AppShadows.button : null,
         ),
         child: Center(
           child: Text(
@@ -56,7 +59,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
   }
 }
 
-/// Secondary Button (쿠팡/토스 스타일)
+/// Secondary Button (DESIGN_GUIDE.md 스타일)
 class AppSecondaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -68,7 +71,7 @@ class AppSecondaryButton extends StatefulWidget {
     required this.text,
     this.onPressed,
     this.width,
-    this.height = 56, // 토스 스타일: 더 큰 버튼
+    this.height = 48,
   });
 
   @override
@@ -88,13 +91,17 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
       } : null,
       onTapCancel: widget.onPressed != null ? () => setState(() => _isPressed = false) : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 120),
         width: widget.width ?? double.infinity,
         height: widget.height,
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        transform: Matrix4.identity()..translate(0.0, _isPressed ? -1.0 : 0.0),
         decoration: BoxDecoration(
-          color: const Color(0xFFF2F4F6),
-          borderRadius: BorderRadius.circular(AppRadius.buttonPill),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.button),
+          border: Border.all(
+            color: AppColors.divider,
+            width: 1,
+          ),
         ),
         child: Center(
           child: Text(
@@ -105,6 +112,27 @@ class _AppSecondaryButtonState extends State<AppSecondaryButton> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Button Row (DESIGN_GUIDE.md 스타일)
+class AppButtonRow extends StatelessWidget {
+  final List<Widget> children;
+  final double gap;
+
+  const AppButtonRow({
+    super.key,
+    required this.children,
+    this.gap = AppSpacing.buttonRowGap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: children,
     );
   }
 }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -17,13 +17,16 @@ class Tracking(Base, TimestampMixin):
     __tablename__ = "trackings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(SQLEnum(TrackingStatus), default=TrackingStatus.ACTIVE, nullable=False)
 
     __table_args__ = (
         UniqueConstraint('user_id', 'pet_id', 'product_id', name='uq_tracking_user_pet_product'),
+        Index('idx_trackings_user', 'user_id'),
+        Index('idx_trackings_pet', 'pet_id'),
+        Index('idx_trackings_product', 'product_id'),
     )
 
     # Relationships

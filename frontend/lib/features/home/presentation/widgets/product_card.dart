@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../data/models/recommendation_dto.dart';
-import '../../../../core/utils/price_formatter.dart';
+import '../../../../../data/models/recommendation_dto.dart';
+import '../../../../../core/utils/price_formatter.dart';
+import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_radius.dart';
+import '../../../../../app/theme/app_spacing.dart';
+import '../../../../../ui/widgets/card_container.dart';
 
+/// 상품 카드 (DESIGN_GUIDE.md 스타일)
 class ProductCard extends StatelessWidget {
   final RecommendationItemDto item;
 
@@ -19,90 +25,98 @@ class ProductCard extends StatelessWidget {
     final discountText = PriceFormatter.formatDiscountPercent(item.deltaPercent);
     final isNewLow = item.isNewLow;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: () {
-          context.go('/products/${product.id}');
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
+    return CardContainer(
+      padding: const EdgeInsets.all(AppSpacing.itemPadding),
+      onTap: () {
+        context.go('/products/${product.id}');
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 상품 이미지 (placeholder)
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.divider,
+              borderRadius: BorderRadius.circular(AppRadius.media),
+            ),
+            child: const Icon(Icons.pets, size: 40, color: AppColors.textSecondary),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 상품명 (H3: 18px)
+                Text(
+                  product.productName,
+                  style: AppTypography.h3,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                child: const Icon(Icons.pets, size: 40),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 4),
+                // 브랜드명 (Body2: muted)
+                Text(
+                  product.brandName,
+                  style: AppTypography.body2,
+                ),
+                if (product.sizeLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    product.sizeLabel!,
+                    style: AppTypography.body2,
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.sm),
+                Row(
                   children: [
+                    // 가격 (Body: bold)
                     Text(
-                      product.productName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      priceText,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: isNewLow ? AppColors.dangerRed : AppColors.textPrimary,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      product.brandName,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
+                    if (isNewLow || discountText.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      // 배지 (Badge: 13px, font-weight: 700)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.badgePaddingHorizontal,
+                          vertical: AppSpacing.badgePaddingVertical,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isNewLow 
+                              ? AppColors.dangerRed.withOpacity(0.1)
+                              : AppColors.chipBackground,
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          border: Border.all(
+                            color: isNewLow
+                                ? AppColors.dangerRed.withOpacity(0.3)
+                                : AppColors.primaryBorder,
+                            width: 1,
                           ),
-                    ),
-                    if (product.sizeLabel != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        product.sizeLabel!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
-                            ),
+                        ),
+                        child: Text(
+                          isNewLow ? '최저가!' : discountText,
+                          style: AppTypography.badge.copyWith(
+                            color: isNewLow ? AppColors.dangerRed : AppColors.chipText,
+                          ),
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          priceText,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isNewLow ? Colors.red : null,
-                              ),
-                        ),
-                        if (isNewLow || discountText.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isNewLow ? Colors.red.shade50 : Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isNewLow ? '최저가!' : discountText,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: isNewLow ? Colors.red : Colors.blue,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
                   ],
                 ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+              ],
+            ),
           ),
-        ),
+          const Icon(
+            Icons.chevron_right,
+            color: AppColors.textSecondary,
+          ),
+        ],
       ),
     );
   }

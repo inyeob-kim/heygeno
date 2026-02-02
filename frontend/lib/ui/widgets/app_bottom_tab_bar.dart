@@ -4,7 +4,7 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_shadows.dart';
 import '../icons/app_icons.dart';
 
-/// iOS 스타일 Bottom Tab Bar (토스/쿠팡식)
+/// iOS 스타일 Bottom Tab Bar (DESIGN_GUIDE.md 기반)
 class AppBottomTabBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -26,7 +26,7 @@ class AppBottomTabBar extends StatelessWidget {
         border: Border(
           top: BorderSide(
             color: AppColors.divider,
-            width: 0.5,
+            width: 1,
           ),
         ),
       ),
@@ -112,9 +112,9 @@ class _TabItem extends StatelessWidget {
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                fontSize: 12, // 토스 스타일: 조금 더 크게
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? AppColors.primaryBlue : AppColors.textSecondary,
+                fontSize: 11, // DESIGN_GUIDE: 11-12px
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
           ],
@@ -155,9 +155,9 @@ class _FloatingAddButtonState extends State<_FloatingAddButton> {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
+            color: AppColors.primary,
             shape: BoxShape.circle,
-            boxShadow: AppShadows.medium, // 토스 스타일: 부드러운 그림자
+            boxShadow: AppShadows.button,
           ),
           child: AppIcons.add(size: 28),
         ),

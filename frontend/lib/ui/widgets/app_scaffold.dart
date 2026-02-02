@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_spacing.dart';
 
-/// 공통 Scaffold 위젯
+/// 공통 Scaffold 위젯 (DESIGN_GUIDE.md 스타일)
 class AppScaffold extends StatelessWidget {
   final Widget body;
   final PreferredSizeWidget? appBar;
@@ -28,10 +27,12 @@ class AppScaffold extends StatelessWidget {
       appBar: appBar,
       body: SafeArea(
         top: false, // AppHeader가 SafeArea를 처리
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(AppSpacing.pagePadding),
-          child: body,
-        ),
+        child: padding != null
+            ? Padding(
+                padding: padding!,
+                child: body,
+              )
+            : body,
       ),
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,

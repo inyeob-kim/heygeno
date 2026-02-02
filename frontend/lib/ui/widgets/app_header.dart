@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 import '../icons/app_icons.dart';
 
-/// iOS 스타일 헤더 (카드 톤)
+/// iOS 스타일 헤더 (DESIGN_GUIDE.md 기반)
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onNotificationTap;
@@ -24,23 +25,23 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         border: Border(
           bottom: BorderSide(
             color: AppColors.divider,
-            width: 0.5,
+            width: 1,
           ),
         ),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pagePaddingHorizontal,
+            vertical: AppSpacing.navPaddingVertical,
+          ),
           child: Row(
             children: [
-              // 타이틀 (토스 스타일: 더 크고 굵게)
+              // 타이틀 (H2: 26px, letter-spacing: -0.5px)
               Text(
                 title,
-                style: AppTypography.title.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTypography.h2,
               ),
               const Spacer(),
               // 알림 아이콘만
