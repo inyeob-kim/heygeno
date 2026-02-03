@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'route_paths.dart';
 import '../../ui/widgets/bottom_nav_shell.dart';
 import '../../features/onboarding/presentation/screens/onboarding_wrapper.dart';
+import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/onboarding/data/repositories/onboarding_repository.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -13,12 +14,12 @@ import '../../features/benefits/presentation/screens/benefits_screen.dart';
 import '../../features/me/presentation/screens/me_screen.dart';
 import '../../features/product_detail/presentation/screens/product_detail_screen.dart';
 
-/// GoRouter Provider
+/// GoRouter Provider (Riverpod과 연동)
 final routerProvider = Provider<GoRouter>((ref) {
-  return _createRouter();
+  return _createRouter(ref);
 });
 
-GoRouter _createRouter() {
+GoRouter _createRouter(Ref ref) {
   // 각 탭별 NavigatorKey 생성
   final homeNavigatorKey = GlobalKey<NavigatorState>();
   final watchNavigatorKey = GlobalKey<NavigatorState>();
@@ -26,13 +27,39 @@ GoRouter _createRouter() {
   final meNavigatorKey = GlobalKey<NavigatorState>();
 
   return GoRouter(
-    initialLocation: RoutePaths.onboarding, // 초기에는 온보딩으로
+    initialLocation: RoutePaths.onboarding,
+    redirect: (context, state) async {
+      final onboardingRepo = OnboardingRepositoryImpl();
+      final isCompleted = await onboardingRepo.isOnboardingCompleted();
+      final location = state.uri.path;
+
+      // A) 온보딩 미완료 → 온보딩으로 리다이렉트
+      if (!isCompleted) {
+        if (location != RoutePaths.onboarding) {
+          return RoutePaths.onboarding;
+        }
+        return null; // 이미 온보딩 화면이면 그대로
+      }
+
+      // B) 온보딩 완료 → 온보딩 화면 접근 시 홈으로 리다이렉트
+      if (isCompleted && location == RoutePaths.onboarding) {
+        return RoutePaths.home;
+      }
+
+      return null; // 리다이렉트 불필요
+    },
     routes: [
       // 온보딩 라우트
       GoRoute(
         path: RoutePaths.onboarding,
         name: RoutePaths.onboarding,
         builder: (context, state) => const OnboardingWrapper(),
+      ),
+      // 스플래시 스크린 (온보딩 완료 후)
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: RoutePaths.petProfile,
@@ -107,6 +134,8 @@ GoRouter _createRouter() {
 }
 
 /// AppRouter 클래스 (기존 호환성 유지)
+/// 주의: Riverpod Provider를 사용해야 하므로 직접 사용하지 말고 routerProvider를 사용하세요
 class AppRouter {
-  static GoRouter get router => _createRouter();
+  // Deprecated: routerProvider를 사용하세요
+  static GoRouter get router => throw UnimplementedError('routerProvider를 사용하세요');
 }

@@ -5,6 +5,7 @@ class Endpoints {
   // Pets
   static const String pets = '/pets';
   static String pet(String id) => '$pets/$id';
+  static const String primaryPet = '$pets/primary';
   
   // Products
   static const String products = '/products';
@@ -22,4 +23,7 @@ class Endpoints {
   
   // Clicks
   static const String clicks = '/clicks';
+  
+  // Onboarding
+  static const String onboardingComplete = '/onboarding/complete';
 }

@@ -1,18 +1,18 @@
 /// 반려동물 프로필 초안 모델
 class PetProfileDraft {
   final String? name;
-  final String? species; // 'dog' | 'cat'
-  final String? birthMode; // 'exactBirthdate' | 'approxAge'
+  final String? species; // 'DOG' | 'CAT' (서버 형식)
+  final String? birthMode; // 'BIRTHDATE' | 'APPROX' (서버 형식)
   final DateTime? birthdate;
-  final int? ageYears;
-  final int? ageMonths;
-  final String? breed;
-  final String? sex; // 'male' | 'female'
-  final String? neutered; // 'yes' | 'no' | 'unknown'
+  final int? approxAgeMonths; // 개월 단위로 통일
+  final String? breedCode; // 품종 코드
+  final String? sex; // 'MALE' | 'FEMALE' (서버 형식)
+  final bool? isNeutered; // true | false | null (null = 모름)
   final double? weightKg;
   final int? bodyConditionScore; // 1~9
-  final Set<String> healthConcerns;
-  final Set<String> foodAllergies;
+  final List<String> healthConcerns; // 코드 배열 (빈 배열 = "없어요")
+  final List<String> foodAllergies; // 코드 배열 (빈 배열 = "없어요")
+  final String? otherAllergyText; // 기타 알레르기 텍스트
   final String? photoUrl;
 
   PetProfileDraft({
@@ -20,18 +20,18 @@ class PetProfileDraft {
     this.species,
     this.birthMode,
     this.birthdate,
-    this.ageYears,
-    this.ageMonths,
-    this.breed,
+    this.approxAgeMonths,
+    this.breedCode,
     this.sex,
-    this.neutered,
+    this.isNeutered,
     this.weightKg,
     this.bodyConditionScore,
-    Set<String>? healthConcerns,
-    Set<String>? foodAllergies,
+    List<String>? healthConcerns,
+    List<String>? foodAllergies,
+    this.otherAllergyText,
     this.photoUrl,
-  })  : healthConcerns = healthConcerns ?? {},
-        foodAllergies = foodAllergies ?? {};
+  })  : healthConcerns = healthConcerns ?? [],
+        foodAllergies = foodAllergies ?? [];
 
   /// JSON으로 변환
   Map<String, dynamic> toJson() {
@@ -40,15 +40,15 @@ class PetProfileDraft {
       'species': species,
       'birthMode': birthMode,
       'birthdate': birthdate?.toIso8601String(),
-      'ageYears': ageYears,
-      'ageMonths': ageMonths,
-      'breed': breed,
+      'approxAgeMonths': approxAgeMonths,
+      'breedCode': breedCode,
       'sex': sex,
-      'neutered': neutered,
+      'isNeutered': isNeutered,
       'weightKg': weightKg,
       'bodyConditionScore': bodyConditionScore,
-      'healthConcerns': healthConcerns.toList(),
-      'foodAllergies': foodAllergies.toList(),
+      'healthConcerns': healthConcerns,
+      'foodAllergies': foodAllergies,
+      'otherAllergyText': otherAllergyText,
       'photoUrl': photoUrl,
     };
   }
@@ -62,21 +62,21 @@ class PetProfileDraft {
       birthdate: json['birthdate'] != null
           ? DateTime.parse(json['birthdate'] as String)
           : null,
-      ageYears: json['ageYears'] as int?,
-      ageMonths: json['ageMonths'] as int?,
-      breed: json['breed'] as String?,
+      approxAgeMonths: json['approxAgeMonths'] as int?,
+      breedCode: json['breedCode'] as String?,
       sex: json['sex'] as String?,
-      neutered: json['neutered'] as String?,
+      isNeutered: json['isNeutered'] as bool?,
       weightKg: json['weightKg'] as double?,
       bodyConditionScore: json['bodyConditionScore'] as int?,
       healthConcerns: (json['healthConcerns'] as List<dynamic>?)
               ?.map((e) => e as String)
-              .toSet() ??
-          {},
+              .toList() ??
+          [],
       foodAllergies: (json['foodAllergies'] as List<dynamic>?)
               ?.map((e) => e as String)
-              .toSet() ??
-          {},
+              .toList() ??
+          [],
+      otherAllergyText: json['otherAllergyText'] as String?,
       photoUrl: json['photoUrl'] as String?,
     );
   }
@@ -87,15 +87,15 @@ class PetProfileDraft {
     String? species,
     String? birthMode,
     DateTime? birthdate,
-    int? ageYears,
-    int? ageMonths,
-    String? breed,
+    int? approxAgeMonths,
+    String? breedCode,
     String? sex,
-    String? neutered,
+    bool? isNeutered,
     double? weightKg,
     int? bodyConditionScore,
-    Set<String>? healthConcerns,
-    Set<String>? foodAllergies,
+    List<String>? healthConcerns,
+    List<String>? foodAllergies,
+    String? otherAllergyText,
     String? photoUrl,
   }) {
     return PetProfileDraft(
@@ -103,16 +103,38 @@ class PetProfileDraft {
       species: species ?? this.species,
       birthMode: birthMode ?? this.birthMode,
       birthdate: birthdate ?? this.birthdate,
-      ageYears: ageYears ?? this.ageYears,
-      ageMonths: ageMonths ?? this.ageMonths,
-      breed: breed ?? this.breed,
+      approxAgeMonths: approxAgeMonths ?? this.approxAgeMonths,
+      breedCode: breedCode ?? this.breedCode,
       sex: sex ?? this.sex,
-      neutered: neutered ?? this.neutered,
+      isNeutered: isNeutered ?? this.isNeutered,
       weightKg: weightKg ?? this.weightKg,
       bodyConditionScore: bodyConditionScore ?? this.bodyConditionScore,
       healthConcerns: healthConcerns ?? this.healthConcerns,
       foodAllergies: foodAllergies ?? this.foodAllergies,
+      otherAllergyText: otherAllergyText ?? this.otherAllergyText,
       photoUrl: photoUrl ?? this.photoUrl,
     );
+  }
+  
+  /// 서버 API 요청 형식으로 변환
+  Map<String, dynamic> toApiRequest(String deviceUid, String nickname) {
+    return {
+      'device_uid': deviceUid,
+      'nickname': nickname,
+      'pet_name': name!,
+      'species': species!,
+      'age_mode': birthMode!,
+      'birthdate': birthdate?.toIso8601String().split('T')[0], // YYYY-MM-DD 형식
+      'approx_age_months': approxAgeMonths,
+      'breed_code': breedCode,
+      'sex': sex!,
+      'is_neutered': isNeutered,
+      'weight_kg': weightKg!,
+      'body_condition_score': bodyConditionScore!,
+      'health_concerns': healthConcerns,
+      'food_allergies': foodAllergies,
+      'other_allergy_text': otherAllergyText,
+      'photo_url': photoUrl,
+    };
   }
 }

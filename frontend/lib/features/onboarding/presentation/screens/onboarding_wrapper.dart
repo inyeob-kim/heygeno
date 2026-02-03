@@ -3,9 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/onboarding_step.dart';
 import '../controllers/onboarding_controller.dart';
-import 'step_01_welcome_nickname.dart';
-import 'step_02_pet_name.dart';
-import 'step_03_species_selection.dart';
+import 'step_nickname.dart';
+import 'step_pet_name.dart';
+import 'step_species.dart';
+import 'step_age.dart';
+import 'step_b_age_breed.dart';
+import 'step_c_sex_neutered.dart';
+import 'step_d_weight_bcs.dart';
+import 'step_body_condition.dart';
+import 'step_e_health_allergies.dart';
+import 'step_f_photo.dart';
 
 /// 온보딩 플로우 래퍼
 class OnboardingWrapper extends ConsumerStatefulWidget {
@@ -33,8 +40,9 @@ class _OnboardingWrapperState extends ConsumerState<OnboardingWrapper> {
     
     print('[OnboardingWrapper] build() called, current step: $step, isLoading: ${state.isLoading}');
 
+
     // 로딩 중일 때
-    if (state.isLoading && step == OnboardingStep.welcome) {
+    if (state.isLoading && step == OnboardingStep.nickname) {
       print('[OnboardingWrapper] Showing loading screen');
       return Scaffold(
         backgroundColor: const Color(0xFFF7F8FB),
@@ -45,29 +53,45 @@ class _OnboardingWrapperState extends ConsumerState<OnboardingWrapper> {
     // 현재 단계에 맞는 화면 표시
     Widget screen;
     switch (step) {
-      case OnboardingStep.welcome:
-        print('[OnboardingWrapper] Showing Step01WelcomeNicknameScreen');
-        screen = const Step01WelcomeNicknameScreen();
+      case OnboardingStep.nickname:
+        print('[OnboardingWrapper] Showing StepNicknameScreen');
+        screen = const StepNicknameScreen();
         break;
       case OnboardingStep.petName:
-        print('[OnboardingWrapper] Showing Step02PetNameScreen');
-        screen = const Step02PetNameScreen();
+        print('[OnboardingWrapper] Showing StepPetNameScreen');
+        screen = const StepPetNameScreen();
         break;
       case OnboardingStep.species:
-        print('[OnboardingWrapper] Showing Step03SpeciesSelectionScreen');
-        screen = const Step03SpeciesSelectionScreen();
+        print('[OnboardingWrapper] Showing StepSpeciesScreen');
+        screen = const StepSpeciesScreen();
         break;
-      // TODO: 나머지 화면 추가
-      case OnboardingStep.birthMode:
+      case OnboardingStep.age:
+        print('[OnboardingWrapper] Showing StepAgeScreen');
+        screen = const StepAgeScreen();
+        break;
       case OnboardingStep.breed:
+        print('[OnboardingWrapper] Showing StepBreedScreen');
+        screen = const StepBreedScreen();
+        break;
       case OnboardingStep.sexNeutered:
+        print('[OnboardingWrapper] Showing StepCSexNeuteredScreen');
+        screen = const StepCSexNeuteredScreen();
+        break;
       case OnboardingStep.weight:
+        print('[OnboardingWrapper] Showing StepWeightScreen');
+        screen = const StepWeightScreen();
+        break;
       case OnboardingStep.bodyCondition:
-      case OnboardingStep.healthConcerns:
-      case OnboardingStep.foodAllergies:
+        print('[OnboardingWrapper] Showing StepBodyConditionScreen');
+        screen = const StepBodyConditionScreen();
+        break;
+      case OnboardingStep.healthAllergies:
+        print('[OnboardingWrapper] Showing StepEHealthAllergiesScreen');
+        screen = const StepEHealthAllergiesScreen();
+        break;
       case OnboardingStep.photo:
-        print('[OnboardingWrapper] Step $step not yet implemented, showing placeholder');
-        screen = _PlaceholderScreen(step: step);
+        print('[OnboardingWrapper] Showing StepFPhotoScreen');
+        screen = const StepFPhotoScreen();
         break;
     }
 
@@ -75,40 +99,3 @@ class _OnboardingWrapperState extends ConsumerState<OnboardingWrapper> {
   }
 }
 
-/// 아직 구현되지 않은 단계를 위한 플레이스홀더 화면
-class _PlaceholderScreen extends StatelessWidget {
-  final OnboardingStep step;
-
-  const _PlaceholderScreen({required this.step});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FB),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Step ${step.stepNumber}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '이 단계는 아직 구현 중입니다.',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Step: ${step.key}',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

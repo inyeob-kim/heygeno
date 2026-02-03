@@ -1,12 +1,16 @@
 """반려동물 API 라우터 - 라우팅만 담당"""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from typing import Optional
 
 from app.db.session import get_db
+from app.api.deps import get_device_uid
 from app.schemas.pet import PetCreate, PetRead
+from app.schemas.pet_summary import PetSummaryResponse
 from app.services.pet_service import PetService
 from app.services.user_service import UserService
+from app.models.pet import PetHealthConcern
 
 router = APIRouter()
 
@@ -39,6 +43,55 @@ async def create_pet(
     
     pet = await PetService.create_pet(mock_user.id, pet_data, db)
     return PetRead.model_validate(pet)
+
+
+@router.get("/primary", response_model=PetSummaryResponse)
+async def get_primary_pet(
+    device_uid: Optional[str] = Depends(get_device_uid),
+    db: AsyncSession = Depends(get_db)
+):
+    """Primary Pet 요약 정보 조회 (홈 화면용)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not device_uid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Device-UID header is required"
+        )
+    
+    logger.info(f"[Pets API] /primary 요청: device_uid={device_uid}")
+    pet = await PetService.get_primary_pet_by_device_uid(device_uid, db)
+    
+    if pet is None:
+        logger.info(f"[Pets API] Primary pet 없음: device_uid={device_uid}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Primary pet not found"
+        )
+    
+    logger.info(f"[Pets API] Primary pet 찾음: pet_id={pet.id}, name={pet.name}")
+    
+    # Health concerns 조회
+    from sqlalchemy import select
+    result = await db.execute(
+        select(PetHealthConcern.concern_code).where(
+            PetHealthConcern.pet_id == pet.id
+        )
+    )
+    health_concerns = [row[0] for row in result.all()]
+    logger.info(f"[Pets API] Health concerns: {health_concerns}")
+    
+    return PetSummaryResponse(
+        id=pet.id,
+        name=pet.name,
+        species=pet.species.value,
+        age_stage=pet.age_stage.value if pet.age_stage else None,
+        approx_age_months=pet.approx_age_months,
+        weight_kg=float(pet.weight_kg),
+        health_concerns=health_concerns,
+        photo_url=pet.photo_url,
+    )
 
 
 @router.get("/{pet_id}", response_model=PetRead)

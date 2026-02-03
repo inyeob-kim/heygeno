@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../data/models/onboarding_step.dart';
@@ -11,46 +10,51 @@ import '../controllers/onboarding_controller.dart';
 import '../widgets/emoji_icon.dart';
 import '../widgets/onboarding_footer.dart';
 import '../widgets/onboarding_header.dart';
+import '../widgets/species_card.dart';
 
-/// Step 2: 아이 이름
-class Step02PetNameScreen extends ConsumerStatefulWidget {
-  const Step02PetNameScreen({super.key});
+/// Step 3: 종 선택
+class StepSpeciesScreen extends ConsumerStatefulWidget {
+  const StepSpeciesScreen({super.key});
 
   @override
-  ConsumerState<Step02PetNameScreen> createState() =>
-      _Step02PetNameScreenState();
+  ConsumerState<StepSpeciesScreen> createState() =>
+      _StepSpeciesScreenState();
 }
 
-class _Step02PetNameScreenState extends ConsumerState<Step02PetNameScreen> {
-  final _nameController = TextEditingController();
+class _StepSpeciesScreenState extends ConsumerState<StepSpeciesScreen> {
+  String? _selectedSpecies;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = ref.read(onboardingControllerProvider);
-      if (state.profile.name != null && state.profile.name!.isNotEmpty) {
-        _nameController.text = state.profile.name!;
-        setState(() {});
+      if (state.profile.species != null) {
+        setState(() {
+          _selectedSpecies = state.profile.species == 'DOG' ? 'dog' : 'cat';
+        });
       }
     });
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  void _onSpeciesSelected(String species) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedSpecies = species;
+    });
+    
+    // 서버 형식으로 변환
+    final serverSpecies = species == 'dog' ? 'DOG' : 'CAT';
+    final profile = ref.read(onboardingControllerProvider).profile;
+    ref.read(onboardingControllerProvider.notifier).saveProfile(
+          profile.copyWith(species: serverSpecies),
+        );
   }
 
   Future<void> _onNext() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (_selectedSpecies == null) return;
 
     HapticFeedback.lightImpact();
-    final profile = ref.read(onboardingControllerProvider).profile;
-    await ref.read(onboardingControllerProvider.notifier).saveProfile(
-          profile.copyWith(name: name),
-        );
     await ref.read(onboardingControllerProvider.notifier).nextStep();
   }
 
@@ -61,8 +65,7 @@ class _Step02PetNameScreenState extends ConsumerState<Step02PetNameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final name = _nameController.text.trim();
-    final isValid = name.isNotEmpty;
+    final isValid = _selectedSpecies != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -70,7 +73,7 @@ class _Step02PetNameScreenState extends ConsumerState<Step02PetNameScreen> {
         child: Column(
           children: [
             OnboardingHeader(
-              currentStep: OnboardingStep.petName,
+              currentStep: OnboardingStep.species,
               onBack: _onBack,
             ),
             Expanded(
@@ -81,33 +84,34 @@ class _Step02PetNameScreenState extends ConsumerState<Step02PetNameScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
-                    const EmojiIcon(emoji: '🐾', size: 80),
+                    const EmojiIcon(emoji: '🐶🐱', size: 80),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      '우리 아이 이름은요? 🐾',
+                      '어떤 친구인가요? 🐶🐱',
                       style: AppTypography.h2,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xxl),
-                    TextField(
-                      controller: _nameController,
-                      maxLength: 20,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: InputDecoration(
-                        hintText: '이름을 입력해주세요',
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.medium),
-                          borderSide: BorderSide.none,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SpeciesCard(
+                            emoji: '🐶',
+                            label: '강아지',
+                            isSelected: _selectedSpecies == 'dog',
+                            onTap: () => _onSpeciesSelected('dog'),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.md,
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: SpeciesCard(
+                            emoji: '🐱',
+                            label: '고양이',
+                            isSelected: _selectedSpecies == 'cat',
+                            onTap: () => _onSpeciesSelected('cat'),
+                          ),
                         ),
-                      ),
-                      style: AppTypography.body,
-                      onChanged: (_) => setState(() {}),
+                      ],
                     ),
                   ],
                 ),

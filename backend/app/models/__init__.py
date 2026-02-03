@@ -3,7 +3,7 @@ from app.models.user import User
 from app.models.pet import (
     Pet, PetSpecies, PetSex, AgeInputMode, AgeStage,
     HealthConcernCode, PetHealthConcern,
-    AllergenCode, PetFoodAllergy
+    AllergenCode, PetFoodAllergy, PetOtherAllergy
 )
 from app.models.product import (
     Product,
@@ -24,7 +24,7 @@ __all__ = [
     "User",
     "Pet", "PetSpecies", "PetSex", "AgeInputMode", "AgeStage",
     "HealthConcernCode", "PetHealthConcern",
-    "AllergenCode", "PetFoodAllergy",
+    "AllergenCode", "PetFoodAllergy", "PetOtherAllergy",
     "Product",
     "ProductIngredientProfile",
     "ProductNutritionFacts",

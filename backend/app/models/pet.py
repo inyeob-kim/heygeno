@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Numeric, Date, Integer, CheckConstraint
+from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Numeric, Date, Integer, CheckConstraint, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -75,6 +75,7 @@ class Pet(Base, TimestampMixin):
     trackings = relationship("Tracking", back_populates="pet", cascade="all, delete-orphan")
     health_concerns = relationship("PetHealthConcern", back_populates="pet", cascade="all, delete-orphan")
     food_allergies = relationship("PetFoodAllergy", back_populates="pet", cascade="all, delete-orphan")
+    other_allergies = relationship("PetOtherAllergy", back_populates="pet", cascade="all, delete-orphan", uselist=False)
 
 
 # 건강 고민 코드 테이블
@@ -115,3 +116,14 @@ class PetFoodAllergy(Base):
     # Relationships
     pet = relationship("Pet", back_populates="food_allergies")
     allergen = relationship("AllergenCode")
+
+
+# 펫 기타 알레르기 (텍스트)
+class PetOtherAllergy(Base, TimestampMixin):
+    __tablename__ = "pet_other_allergies"
+    
+    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), primary_key=True)
+    other_text = Column(Text, nullable=False)
+    
+    # Relationships
+    pet = relationship("Pet", back_populates="other_allergies")

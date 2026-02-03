@@ -45,6 +45,7 @@ flutter:
   # Assets
   assets:
     - .env
+    - assets/images/logo/heygeno-logo.png
   
   # Fonts
   # TODO: Add Pretendard font files to assets/fonts/ when available

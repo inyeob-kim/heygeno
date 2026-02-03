@@ -39,26 +39,18 @@ class TodayEmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
             // 설명 텍스트 (Lead: 17px, color: muted)
             Text(
-              '프로필을 등록하면 우리 아이에게 맞는 사료를 추천하고\n가격 알림을 받을 수 있어요',
+              '프로필이 아직 없어요. 30초면 끝나요 🐶🐱',
               style: AppTypography.lead,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xxl),
-            // Primary CTA 버튼
+            // Primary CTA 버튼 (1개만)
             AppPrimaryButton(
-              text: '반려동물 프로필 추가',
+              text: '프로필 만들기',
               onPressed: onAddProfile ?? () {
                 context.push(RoutePaths.petProfile);
               },
             ),
-            // Secondary CTA 버튼 (선택적)
-            if (onBrowseProducts != null) ...[
-              const SizedBox(height: AppSpacing.buttonRowGap),
-              AppSecondaryButton(
-                text: '대표 사료 둘러보기',
-                onPressed: onBrowseProducts,
-              ),
-            ],
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../../ui/widgets/app_scaffold.dart';
 import '../../../../../ui/widgets/app_header.dart';
 import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../ui/widgets/app_buttons.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_spacing.dart';
@@ -22,15 +23,36 @@ class BenefitsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // H3: 18px
-                Text('내 포인트', style: AppTypography.h3),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('내 포인트', style: AppTypography.h3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '곧 시작해요 🎁',
+                        style: AppTypography.small.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.gridGap),
                 // H2: 26px
                 Text('0 P', style: AppTypography.h2),
                 const SizedBox(height: 4),
                 // Body2: muted
                 Text(
-                  '사료 구매 시 포인트를 적립할 수 있습니다',
+                  '미션을 완료하면 포인트가 쌓여요',
                   style: AppTypography.body2,
                 ),
               ],
@@ -38,63 +60,29 @@ class BenefitsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.gridGap),
           
-          // 적립 내역 섹션
-          CardContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // H3: 18px
-                Text('적립 내역', style: AppTypography.h3),
-                const SizedBox(height: AppSpacing.gridGap),
-                _HistoryItem(
-                  title: '로얄캐닌 미니 어덜트 구매',
-                  date: '2024.01.15',
-                  points: '+500P',
-                  isPositive: true,
-                ),
-                const Divider(height: 1),
-                _HistoryItem(
-                  title: '힐스 프리미엄 케어 구매',
-                  date: '2024.01.10',
-                  points: '+300P',
-                  isPositive: true,
-                ),
-                const Divider(height: 1),
-                _HistoryItem(
-                  title: '포인트 사용',
-                  date: '2024.01.05',
-                  points: '-200P',
-                  isPositive: false,
-                ),
-              ],
-            ),
+          // 미션 카드들
+          _MissionCard(
+            title: '알림 설정하기',
+            description: '완료하면 100P 적립',
+            onTap: () {
+              // TODO: 알림 설정 화면으로 이동
+            },
           ),
           const SizedBox(height: AppSpacing.gridGap),
-          
-          // 혜택 안내 섹션
-          CardContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // H3: 18px
-                Text('혜택 안내', style: AppTypography.h3),
-                const SizedBox(height: AppSpacing.gridGap),
-                _BenefitInfo(
-                  title: '구매 적립',
-                  description: '사료 구매 시 결제 금액의 1% 적립',
-                ),
-                const SizedBox(height: AppSpacing.gridGap),
-                _BenefitInfo(
-                  title: '리뷰 적립',
-                  description: '사료 리뷰 작성 시 100P 적립',
-                ),
-                const SizedBox(height: AppSpacing.gridGap),
-                _BenefitInfo(
-                  title: '포인트 사용',
-                  description: '1P = 1원으로 사용 가능',
-                ),
-              ],
-            ),
+          _MissionCard(
+            title: '첫 추천 확인하기',
+            description: '완료하면 50P 적립',
+            onTap: () {
+              // TODO: 홈 화면으로 이동
+            },
+          ),
+          const SizedBox(height: AppSpacing.gridGap),
+          _MissionCard(
+            title: '프로필 완성하기',
+            description: '완료하면 200P 적립',
+            onTap: () {
+              // TODO: 프로필 화면으로 이동
+            },
           ),
         ],
       ),
@@ -102,74 +90,53 @@ class BenefitsScreen extends StatelessWidget {
   }
 }
 
-class _HistoryItem extends StatelessWidget {
+class _MissionCard extends StatelessWidget {
   final String title;
-  final String date;
-  final String points;
-  final bool isPositive;
+  final String description;
+  final VoidCallback onTap;
 
-  const _HistoryItem({
+  const _MissionCard({
     required this.title,
-    required this.date,
-    required this.points,
-    required this.isPositive,
+    required this.description,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.gridGap),
+    return CardContainer(
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Body: 16px
-                Text(title, style: AppTypography.body),
+                Text(
+                  title,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                // Caption: 13px
-                Text(date, style: AppTypography.caption),
+                Text(
+                  description,
+                  style: AppTypography.body2.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          // Body: bold, color: green/red
-          Text(
-            points,
-            style: AppTypography.body.copyWith(
-              fontWeight: FontWeight.w700,
-              color: isPositive ? AppColors.positiveGreen : AppColors.dangerRed,
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: AppSecondaryButton(
+              text: '시작하기',
+              onPressed: onTap,
+              width: 100,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BenefitInfo extends StatelessWidget {
-  final String title;
-  final String description;
-
-  const _BenefitInfo({
-    required this.title,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Body: bold
-        Text(
-          title,
-          style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        // Caption: 13px
-        Text(description, style: AppTypography.caption),
-      ],
     );
   }
 }

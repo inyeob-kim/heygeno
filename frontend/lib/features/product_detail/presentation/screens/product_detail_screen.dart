@@ -136,13 +136,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 const SizedBox(height: AppSpacing.gridGap),
                 // Body: 16px
                 Text(
-                  '평균 가격 대비 최저가',
+                  '최근 14일 평균: 50,000원',
                   style: AppTypography.body,
                 ),
                 const SizedBox(height: 4),
                 // Body: green
                 Text(
-                  '최근 14일 평균 대비 5% 할인',
+                  '우리 아이에게 좋은 가격이에요',
                   style: AppTypography.body.copyWith(
                     color: AppColors.positiveGreen,
                     fontWeight: FontWeight.w700,
@@ -172,7 +172,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             )
           else
             AppPrimaryButton(
-              text: '가격 알림 받기',
+              text: '우리 아이 사료 가격 알림 받기',
               onPressed: state.isTrackingLoading
                   ? null
                   : () async {

@@ -5,4 +5,8 @@ class StorageKeys {
   static const String onboardingStep = 'onboarding_step';
   static const String draftNickname = 'draft_nickname';
   static const String draftPetProfile = 'draft_pet_profile';
+  
+  // Primary Pet 캐시
+  static const String primaryPetId = 'primary_pet_id';
+  static const String primaryPetSummary = 'primary_pet_summary';
 }

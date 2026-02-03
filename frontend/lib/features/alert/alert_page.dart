@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../ui/widgets/app_scaffold.dart';
 import '../../../ui/widgets/app_header.dart';
 import '../../../ui/widgets/card_container.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../app/theme/app_spacing.dart';
 
@@ -29,16 +30,22 @@ class AlertPage extends StatelessWidget {
                 const SizedBox(height: AppSpacing.gridGap),
                 _AlertItem(
                   title: '로얄캐닌 미니 어덜트',
-                  message: '평균가 대비 12% 하락',
+                  message: '우리 아이 사료 가격이 내려갔어요',
                   price: '45,000원',
                   time: '2시간 전',
+                  onTap: () {
+                    // TODO: 상품 상세로 이동
+                  },
                 ),
                 const Divider(height: 1),
                 _AlertItem(
                   title: '힐스 프리미엄 케어',
-                  message: '새로운 최저가 기록',
+                  message: '우리 아이 사료 새로운 최저가 기록',
                   price: '52,000원',
                   time: '5시간 전',
+                  onTap: () {
+                    // TODO: 상품 상세로 이동
+                  },
                 ),
               ],
             ),
@@ -73,53 +80,71 @@ class _AlertItem extends StatelessWidget {
   final String message;
   final String price;
   final String time;
+  final VoidCallback? onTap;
 
   const _AlertItem({
     required this.title,
     required this.message,
     required this.price,
     required this.time,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.gridGap),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Body: 16px, bold
-                Text(
-                  title,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.gridGap),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Body: 16px, bold
+                  Text(
+                    title,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  // Body2: muted
+                  Text(
+                    message,
+                    style: AppTypography.body2,
+                  ),
+                  const SizedBox(height: 4),
+                  // Body: 16px
+                  Text(
+                    price,
+                    style: AppTypography.body,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Caption: 13px, muted
+                Text(
+                  time,
+                  style: AppTypography.caption,
                 ),
                 const SizedBox(height: 4),
-                // Body2: muted
                 Text(
-                  message,
-                  style: AppTypography.body2,
-                ),
-                const SizedBox(height: 4),
-                // Body: 16px
-                Text(
-                  price,
-                  style: AppTypography.body,
+                  '지금 확인하기',
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ],
             ),
-          ),
-          // Caption: 13px, muted
-          Text(
-            time,
-            style: AppTypography.caption,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

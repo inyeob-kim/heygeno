@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/config/env.dart';
 import 'interceptors.dart';
+import 'device_uid_interceptor.dart';
 
 // Conditional import for Platform (not available on web)
 import 'dart:io' if (dart.library.html) 'platform_stub.dart' as io;
@@ -34,7 +35,8 @@ class ApiClient {
     print('[ApiClient] Env.baseUrl: ${Env.baseUrl}');
     print('[ApiClient] Env.deviceBaseUrl: ${Env.deviceBaseUrl}');
 
-    // Interceptors
+    // Interceptors (순서 중요: DeviceUidInterceptor가 먼저)
+    _dio.interceptors.add(DeviceUidInterceptor());
     _dio.interceptors.add(LoggingInterceptor());
   }
 

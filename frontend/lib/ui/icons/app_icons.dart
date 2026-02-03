@@ -6,18 +6,18 @@ class AppIcons {
   // 홈
   static Widget home({bool isActive = false, double size = 24}) {
     return Icon(
-      isActive ? Icons.home_rounded : Icons.home_outlined,
+      Icons.home,
       size: size,
-      color: isActive ? AppColors.primaryBlue : AppColors.textSecondary,
+      color: isActive ? AppColors.primary : AppColors.textSecondary,
     );
   }
 
   // 관심
   static Widget favorite({bool isActive = false, double size = 24}) {
     return Icon(
-      isActive ? Icons.favorite_rounded : Icons.favorite_outline,
+      Icons.favorite,
       size: size,
-      color: isActive ? AppColors.primaryBlue : AppColors.textSecondary,
+      color: isActive ? AppColors.primary : AppColors.textSecondary,
     );
   }
 
@@ -33,18 +33,18 @@ class AppIcons {
   // 혜택
   static Widget gift({bool isActive = false, double size = 24}) {
     return Icon(
-      isActive ? Icons.card_giftcard_rounded : Icons.card_giftcard_outlined,
+      Icons.card_giftcard,
       size: size,
-      color: isActive ? AppColors.primaryBlue : AppColors.textSecondary,
+      color: isActive ? AppColors.primary : AppColors.textSecondary,
     );
   }
 
   // 마이
   static Widget person({bool isActive = false, double size = 24}) {
     return Icon(
-      isActive ? Icons.person_rounded : Icons.person_outline,
+      Icons.person,
       size: size,
-      color: isActive ? AppColors.primaryBlue : AppColors.textSecondary,
+      color: isActive ? AppColors.primary : AppColors.textSecondary,
     );
   }
 

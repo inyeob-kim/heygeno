@@ -1,11 +1,18 @@
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_db
 from app.core.security import decode_access_token
 from app.models.user import User
+
+
+async def get_device_uid(
+    x_device_uid: Optional[str] = Header(None, alias="X-Device-UID"),
+) -> Optional[str]:
+    """X-Device-UID 헤더에서 device_uid 추출"""
+    return x_device_uid
 
 
 async def get_current_user(
@@ -41,4 +48,3 @@ async def get_current_user(
         )
     
     return user
-

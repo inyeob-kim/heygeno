@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../data/models/onboarding_step.dart';
 import '../../data/models/pet_profile_draft.dart';
 import '../../data/repositories/onboarding_repository.dart';
-import '../../domain/services/device_uid_service.dart';
+import '../../../../core/services/device_uid_service.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/network/endpoints.dart';
 import 'onboarding_state.dart';
 
 /// 온보딩 Controller Provider
@@ -10,15 +13,17 @@ final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, OnboardingState>((ref) {
   return OnboardingController(
     OnboardingRepositoryImpl(),
+    ref.watch(apiClientProvider),
   );
 });
 
 /// 온보딩 Controller
 class OnboardingController extends StateNotifier<OnboardingState> {
   final OnboardingRepository _repository;
+  final ApiClient _apiClient;
 
-  OnboardingController(this._repository)
-      : super(OnboardingState(currentStep: OnboardingStep.welcome)) {
+  OnboardingController(this._repository, this._apiClient)
+      : super(OnboardingState(currentStep: OnboardingStep.nickname)) {
     _loadSavedData();
   }
 
@@ -29,7 +34,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     try {
       // 마지막 단계 로드
       final lastStep = await _repository.getLastStep();
-      final step = lastStep ?? OnboardingStep.welcome;
+      final step = lastStep ?? OnboardingStep.nickname;
 
       // 닉네임 로드
       final nickname = await _repository.getDraftNickname();
@@ -102,7 +107,33 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 
     try {
       // Device UID 생성/확인
-      await DeviceUidService.getOrCreateDeviceUid();
+      final deviceUid = await DeviceUidService.getOrCreate();
+
+      // 프로필 검증
+      if (!validateProfile()) {
+        throw Exception('프로필 정보가 완전하지 않습니다.');
+      }
+
+      // 서버에 업서트
+      final requestData = state.profile.toApiRequest(deviceUid, state.nickname!);
+      
+      print('[OnboardingController] 요청 데이터: $requestData');
+      print('[OnboardingController] Profile 상태: ${state.profile.toJson()}');
+      
+      try {
+        final response = await _apiClient.post(
+          Endpoints.onboardingComplete,
+          data: requestData,
+        );
+        
+        print('[OnboardingController] 서버 응답: ${response.data}');
+      } on DioException catch (e) {
+        print('[OnboardingController] API 오류: ${e.message}');
+        // 에러가 있어도 로컬 완료 처리 (오프라인 지원)
+        if (e.response?.statusCode != null && e.response!.statusCode! >= 400) {
+          throw Exception('서버 오류: ${e.response?.data?['detail'] ?? e.message}');
+        }
+      }
 
       // 온보딩 완료 표시
       await _repository.setOnboardingCompleted(true);
@@ -113,6 +144,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
         isLoading: false,
         error: e.toString(),
       );
+      rethrow;
     }
   }
 
@@ -123,27 +155,53 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 
     // 닉네임 검증
     if (n == null || n.trim().length < 2 || n.trim().length > 12) {
+      print('[OnboardingController] Validation failed: nickname');
       return false;
     }
 
     // 필수 필드 검증
-    if (p.name == null || p.name!.trim().isEmpty) return false;
-    if (p.species == null) return false;
-    if (p.birthMode == null) return false;
-    if (p.sex == null) return false;
-    if (p.neutered == null) return false;
-    if (p.weightKg == null || p.weightKg! <= 0) return false;
-    if (p.bodyConditionScore == null) return false;
-    if (p.healthConcerns.isEmpty) return false;
-    if (p.foodAllergies.isEmpty) return false;
+    if (p.name == null || p.name!.trim().isEmpty) {
+      print('[OnboardingController] Validation failed: name');
+      return false;
+    }
+    if (p.species == null) {
+      print('[OnboardingController] Validation failed: species');
+      return false;
+    }
+    if (p.birthMode == null) {
+      print('[OnboardingController] Validation failed: birthMode');
+      return false;
+    }
+    if (p.sex == null) {
+      print('[OnboardingController] Validation failed: sex');
+      return false;
+    }
+    // isNeutered는 선택 (null 허용)
+    if (p.weightKg == null || p.weightKg! <= 0) {
+      print('[OnboardingController] Validation failed: weightKg');
+      return false;
+    }
+    if (p.bodyConditionScore == null) {
+      print('[OnboardingController] Validation failed: bodyConditionScore');
+      return false;
+    }
+    // healthConcerns와 foodAllergies는 빈 배열 허용 ("없어요")
 
     // 조건부 필드 검증
-    if (p.birthMode == 'exactBirthdate' && p.birthdate == null) return false;
-    if (p.birthMode == 'approxAge' && p.ageYears == null) return false;
-    if (p.species == 'dog' && (p.breed == null || p.breed!.isEmpty)) {
+    if (p.birthMode == 'BIRTHDATE' && p.birthdate == null) {
+      print('[OnboardingController] Validation failed: birthdate (BIRTHDATE mode)');
+      return false;
+    }
+    if (p.birthMode == 'APPROX' && p.approxAgeMonths == null) {
+      print('[OnboardingController] Validation failed: approxAgeMonths (APPROX mode)');
+      return false;
+    }
+    if (p.species == 'DOG' && (p.breedCode == null || p.breedCode!.isEmpty)) {
+      print('[OnboardingController] Validation failed: breedCode (DOG)');
       return false;
     }
 
+    print('[OnboardingController] Validation passed');
     return true;
   }
 }

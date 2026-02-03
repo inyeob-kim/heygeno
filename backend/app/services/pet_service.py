@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.models.pet import Pet, AgeStage, AgeInputMode
+from app.models.pet import Pet, AgeStage, AgeInputMode, PetHealthConcern
 from app.schemas.pet import PetCreate, PetRead
+from app.services.user_service import UserService
 
 
 class PetService:
@@ -147,3 +148,23 @@ class PetService:
         await db.refresh(pet)
         
         return pet
+    
+    @staticmethod
+    async def get_primary_pet_by_device_uid(
+        device_uid: str,
+        db: AsyncSession
+    ) -> Pet | None:
+        """Device UID로 Primary Pet 조회"""
+        # 1. User 조회
+        user = await UserService.get_user_by_device_uid(device_uid, db)
+        if user is None:
+            return None
+        
+        # 2. Primary Pet 조회
+        result = await db.execute(
+            select(Pet).where(
+                Pet.user_id == user.id,
+                Pet.is_primary == True
+            )
+        )
+        return result.scalar_one_or_none()

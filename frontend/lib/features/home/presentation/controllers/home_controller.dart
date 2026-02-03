@@ -2,88 +2,133 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../data/repositories/product_repository.dart';
 import '../../../../data/models/recommendation_dto.dart';
+import '../../../../data/models/pet_summary_dto.dart';
+import '../../../../domain/services/pet_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
 
-enum HomeEmptyStateType {
-  none, // 데이터 있음
-  noProfile, // 프로필 없음 (중립)
-  error, // 서버/네트워크 오류 (빨간 톤)
+/// 홈 화면 상태 타입 (A/B/C 분기)
+enum HomeStateType {
+  loading, // 로딩 중
+  hasPet, // B: primary pet 존재 → 정상 홈
+  noPet, // C: pet 없음 → Empty State
+  error, // 에러 상태
 }
 
 class HomeState {
+  final HomeStateType stateType;
+  final PetSummaryDto? petSummary;
   final RecommendationResponseDto? recommendations;
-  final bool isLoading;
+  final bool isLoadingRecommendations;
   final String? error;
-  final HomeEmptyStateType emptyStateType;
 
   HomeState({
+    HomeStateType? stateType,
+    this.petSummary,
     this.recommendations,
-    this.isLoading = false,
+    this.isLoadingRecommendations = false,
     this.error,
-    this.emptyStateType = HomeEmptyStateType.none,
-  });
+  }) : stateType = stateType ?? HomeStateType.loading;
 
-  bool get hasData => recommendations != null && (recommendations?.items.isNotEmpty ?? false);
-  bool get isNoProfile => emptyStateType == HomeEmptyStateType.noProfile;
-  bool get isError => emptyStateType == HomeEmptyStateType.error;
+  bool get hasPet => stateType == HomeStateType.hasPet && petSummary != null;
+  bool get isNoPet => stateType == HomeStateType.noPet;
+  bool get isError => stateType == HomeStateType.error;
+  bool get isLoading => stateType == HomeStateType.loading;
 
   HomeState copyWith({
+    HomeStateType? stateType,
+    PetSummaryDto? petSummary,
     RecommendationResponseDto? recommendations,
-    bool? isLoading,
+    bool? isLoadingRecommendations,
     String? error,
-    HomeEmptyStateType? emptyStateType,
   }) {
     return HomeState(
+      stateType: stateType ?? this.stateType,
+      petSummary: petSummary ?? this.petSummary,
       recommendations: recommendations ?? this.recommendations,
-      isLoading: isLoading ?? this.isLoading,
+      isLoadingRecommendations: isLoadingRecommendations ?? this.isLoadingRecommendations,
       error: error ?? this.error,
-      emptyStateType: emptyStateType ?? this.emptyStateType,
     );
   }
 }
 
 class HomeController extends StateNotifier<HomeState> {
   final ProductRepository _productRepository;
+  final PetService _petService;
   final Ref _ref;
 
-  HomeController(this._productRepository, this._ref) : super(HomeState());
+  HomeController(this._productRepository, this._petService, this._ref)
+      : super(HomeState(stateType: HomeStateType.loading));
 
-  Future<void> loadRecommendations() async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      emptyStateType: HomeEmptyStateType.none,
-    );
+  /// 홈 화면 초기화 (primary pet 조회 + 추천 로드)
+  Future<void> initialize() async {
+    state = state.copyWith(stateType: HomeStateType.loading);
+    print('[HomeController] initialize() 시작');
 
     try {
-      final petId = _ref.read(currentPetIdProvider);
-      if (petId == null) {
+      // 1. Primary Pet 조회
+      print('[HomeController] Primary Pet 조회 시작');
+      final petSummary = await _petService.getPrimaryPetSummary();
+      print('[HomeController] Primary Pet 조회 결과: ${petSummary != null ? "있음 (${petSummary.name})" : "없음"}');
+
+      if (petSummary == null) {
+        // C 상태: pet 없음
         state = state.copyWith(
-          isLoading: false,
-          emptyStateType: HomeEmptyStateType.noProfile,
+          stateType: HomeStateType.noPet,
+          petSummary: null,
         );
         return;
       }
 
-      final recommendations = await _productRepository.getRecommendations(petId);
+      // 2. Pet ID를 provider에 저장
+      _ref.read(currentPetIdProvider.notifier).state = petSummary.petId;
+
+      // 3. B 상태: pet 존재 → 추천 로드
       state = state.copyWith(
-        isLoading: false,
-        recommendations: recommendations,
-        emptyStateType: (recommendations.items.isEmpty)
-            ? HomeEmptyStateType.noProfile
-            : HomeEmptyStateType.none,
+        stateType: HomeStateType.hasPet,
+        petSummary: petSummary,
+        isLoadingRecommendations: true,
       );
+
+      // 4. 추천 로드
+      await _loadRecommendations(petSummary.petId);
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
           : ServerFailure('알 수 없는 오류가 발생했습니다: ${e.toString()}');
       state = state.copyWith(
-        isLoading: false,
+        stateType: HomeStateType.error,
         error: failure.message,
-        emptyStateType: HomeEmptyStateType.error,
       );
+    }
+  }
+
+  /// 추천 데이터 로드
+  Future<void> _loadRecommendations(String petId) async {
+    try {
+      final recommendations = await _productRepository.getRecommendations(petId);
+      state = state.copyWith(
+        recommendations: recommendations,
+        isLoadingRecommendations: false,
+      );
+    } catch (e) {
+      final failure = e is Exception
+          ? handleException(e)
+          : ServerFailure('추천 데이터를 불러오는데 실패했습니다.');
+      state = state.copyWith(
+        isLoadingRecommendations: false,
+        error: failure.message,
+        // 추천 실패해도 홈은 표시 (pet은 있으므로)
+      );
+    }
+  }
+
+  /// 추천 새로고침
+  Future<void> refreshRecommendations() async {
+    final petSummary = state.petSummary;
+    if (petSummary != null) {
+      await _loadRecommendations(petSummary.petId);
     }
   }
 }
@@ -91,5 +136,6 @@ class HomeController extends StateNotifier<HomeState> {
 final homeControllerProvider =
     StateNotifierProvider<HomeController, HomeState>((ref) {
   final productRepository = ref.watch(productRepositoryProvider);
-  return HomeController(productRepository, ref);
+  final petService = ref.watch(petServiceProvider);
+  return HomeController(productRepository, petService, ref);
 });
