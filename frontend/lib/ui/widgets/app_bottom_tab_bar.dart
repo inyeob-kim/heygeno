@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../icons/app_icons.dart';
 
 /// 토스 스타일 Bottom Tab Bar (가볍고 안정적)
 class AppBottomTabBar extends StatelessWidget {
@@ -35,31 +34,61 @@ class AppBottomTabBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _TabItem(
-                icon: AppIcons.home(isActive: currentIndex == 0, size: 23),
+                icon: Icon(
+                  Icons.home,
+                  size: 24,
+                  color: currentIndex == 0 
+                      ? AppColors.primary 
+                      : AppColors.textSub,
+                ),
                 label: '홈',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _TabItem(
-                icon: AppIcons.favorite(isActive: currentIndex == 1, size: 23),
+                icon: Icon(
+                  Icons.favorite,
+                  size: 24,
+                  color: currentIndex == 1 
+                      ? AppColors.primary 
+                      : AppColors.textSub,
+                ),
                 label: '관심',
                 isActive: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _TabItem(
-                icon: AppIcons.search(isActive: currentIndex == 2, size: 23),
-                label: '검색',
+                icon: Icon(
+                  Icons.shopping_bag,
+                  size: 24,
+                  color: currentIndex == 2 
+                      ? AppColors.primary 
+                      : AppColors.textSub,
+                ),
+                label: '마켓',
                 isActive: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
               _TabItem(
-                icon: AppIcons.gift(isActive: currentIndex == 3, size: 23),
+                icon: Icon(
+                  Icons.card_giftcard,
+                  size: 24,
+                  color: currentIndex == 3 
+                      ? AppColors.primary 
+                      : AppColors.textSub,
+                ),
                 label: '혜택',
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
               ),
               _TabItem(
-                icon: AppIcons.person(isActive: currentIndex == 4, size: 23),
+                icon: Icon(
+                  Icons.person,
+                  size: 24,
+                  color: currentIndex == 4 
+                      ? AppColors.primary 
+                      : AppColors.textSub,
+                ),
                 label: '마이',
                 isActive: currentIndex == 4,
                 onTap: () => onTap(4),

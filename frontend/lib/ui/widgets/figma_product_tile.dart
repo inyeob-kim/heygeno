@@ -81,27 +81,31 @@ class FigmaProductTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Brand
               Text(
                 product.brand,
                 style: AppTypography.small.copyWith(
                   color: const Color(0xFF6B7280),
+                  fontSize: 11,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               // Name
               Text(
                 product.name,
-                style: AppTypography.body.copyWith(
-                  color: const Color(0xFF111827),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF111827),
+                  height: 1.2,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               // Price
               Row(
                 children: [
@@ -111,15 +115,21 @@ class FigmaProductTile extends StatelessWidget {
                       style: AppTypography.small.copyWith(
                         color: const Color(0xFFEF4444),
                         fontWeight: FontWeight.w600,
+                        fontSize: 11,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                   ],
-                  Text(
-                    '${PriceFormatter.format(product.price)}원',
-                    style: AppTypography.body.copyWith(
-                      color: const Color(0xFF111827),
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      '${PriceFormatter.format(product.price)}원',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -184,29 +194,31 @@ class FigmaProductTile extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           // Brand
           Text(
             product.brand,
             style: AppTypography.small.copyWith(
               color: const Color(0xFF6B7280),
+              fontSize: 12,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           // Name
           Text(
             product.name,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Color(0xFF111827),
+              height: 1.2,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           // Price
           Row(
             children: [
@@ -216,16 +228,21 @@ class FigmaProductTile extends StatelessWidget {
                   style: AppTypography.small.copyWith(
                     color: const Color(0xFFEF4444),
                     fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
-              Text(
-                '${PriceFormatter.format(product.price)}원',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+              Flexible(
+                child: Text(
+                  '${PriceFormatter.format(product.price)}원',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
