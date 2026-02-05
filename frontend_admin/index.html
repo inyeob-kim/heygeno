@@ -475,7 +475,8 @@
                          onclick="selectProduct('${product.id}')">
                         <h3>${product.brand_name} ${product.product_name}</h3>
                         <div class="meta">
-                            ${product.size_label ? `용량: ${product.size_label} | ` : ''}
+                            <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #666;">${product.id}</code>
+                            ${product.size_label ? ` | 용량: ${product.size_label} | ` : ' | '}
                             ${product.species || '공용'} | 
                             ${product.category}
                         </div>
@@ -530,6 +531,7 @@
                     </div>
                     
                     <table class="table">
+                        <tr><th>상품 ID</th><td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${product.id}</code></td></tr>
                         <tr><th>브랜드명</th><td>${product.brand_name}</td></tr>
                         <tr><th>상품명</th><td>${product.product_name}</td></tr>
                         <tr><th>용량</th><td>${product.size_label || '-'}</td></tr>
