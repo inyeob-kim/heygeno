@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Text, SmallInteger, CheckConstraint, Integer
+from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Text, SmallInteger, CheckConstraint, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.types import Numeric
 from sqlalchemy.orm import relationship
@@ -28,6 +28,7 @@ class Product(Base, TimestampMixin):
     __table_args__ = (
         Index('idx_products_active', 'is_active'),
         Index('idx_products_brand', 'brand_name'),
+        UniqueConstraint('brand_name', 'product_name', 'size_label', name='unique_brand_name_size'),
     )
 
     # Relationships
@@ -48,6 +49,7 @@ class ProductIngredientProfile(Base):
     additives_text = Column(Text, nullable=True)  # "첨가물" 원문
     parsed = Column(JSONB, nullable=True)  # JSONB: 토큰화/정규화 결과
     source = Column(String(200), nullable=True)  # 공식홈/포장지/크롤링 등
+    version = Column(Integer, nullable=False, server_default='1')  # 포뮬러 변경 추적용
     updated_at = Column(String, nullable=False, server_default='now()')  # TimestampMixin의 updated_at과 별도
     
     # Relationships
@@ -68,6 +70,7 @@ class ProductNutritionFacts(Base):
     calcium_pct = Column(Numeric(5, 2), nullable=True)
     phosphorus_pct = Column(Numeric(5, 2), nullable=True)
     aafco_statement = Column(Text, nullable=True)
+    version = Column(Integer, nullable=False, server_default='1')  # 포뮬러 변경 추적용
     updated_at = Column(String, nullable=False, server_default='now()')
     
     # Relationships

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Index
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SQLEnum, Index, Numeric
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 import uuid
@@ -25,6 +25,8 @@ class OutboundClick(Base):
     source = Column(String(20), nullable=False)  # HOME/DETAIL/ALERT
     clicked_at = Column(DateTime(timezone=True), nullable=False)
     session_id = Column(String(255), nullable=True)
+    estimated_commission = Column(Numeric(10, 2), nullable=True)  # 어필리에이트 수익 분석용 예상 커미션
+    actual_commission = Column(Numeric(10, 2), nullable=True)  # 어필리에이트 수익 분석용 실제 커미션
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

@@ -277,6 +277,10 @@ class ProductTileData {
   final String brand;
   final int price;
   final int? comparePrice;
+  final int? avgPrice;
+  final int? matchScore;
+  final String? badge;
+  final List<String>? matchReasons;
   final String image;
   final bool isWatched;
   final String? protein;
@@ -289,6 +293,10 @@ class ProductTileData {
     required this.brand,
     required this.price,
     this.comparePrice,
+    this.avgPrice,
+    this.matchScore,
+    this.badge,
+    this.matchReasons,
     required this.image,
     this.isWatched = false,
     this.protein,

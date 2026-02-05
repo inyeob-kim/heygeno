@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'route_paths.dart';
 import '../../ui/widgets/bottom_nav_shell.dart';
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
-import '../../features/onboarding/data/repositories/onboarding_repository.dart';
+import '../../features/onboarding/presentation/screens/initial_splash_screen.dart';
+import '../../domain/services/onboarding_service.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/watch/presentation/screens/watch_screen.dart';
@@ -33,11 +34,18 @@ GoRouter _createRouter(Ref ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: RoutePaths.onboarding,
+    initialLocation: RoutePaths.initialSplash,
     redirect: (context, state) async {
-      final onboardingRepo = OnboardingRepositoryImpl();
-      final isCompleted = await onboardingRepo.isOnboardingCompleted();
       final location = state.uri.path;
+      
+      // 초기 스플래시 화면은 리다이렉트하지 않음 (자체적으로 처리)
+      if (location == RoutePaths.initialSplash) {
+        return null;
+      }
+
+      // 온보딩 서비스를 통해 완료 여부 확인
+      final onboardingService = ref.read(onboardingServiceProvider);
+      final isCompleted = await onboardingService.isOnboardingCompleted();
 
       // A) 온보딩 미완료 → 온보딩으로 리다이렉트
       if (!isCompleted) {
@@ -55,6 +63,12 @@ GoRouter _createRouter(Ref ref) {
       return null; // 리다이렉트 불필요
     },
     routes: [
+      // 초기 스플래시 스크린 (앱 시작 시 첫 화면)
+      GoRoute(
+        path: RoutePaths.initialSplash,
+        name: RoutePaths.initialSplash,
+        builder: (context, state) => const InitialSplashScreen(),
+      ),
       // 온보딩 라우트 (V2)
       GoRoute(
         path: RoutePaths.onboarding,

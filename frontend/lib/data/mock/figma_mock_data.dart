@@ -9,6 +9,15 @@ class FigmaMockData {
       brand: '로얄캐닌',
       price: 45000,
       comparePrice: 55000,
+      avgPrice: 51000,
+      matchScore: 92,
+      badge: '로켓배송',
+      matchReasons: [
+        'BCS 5 유지에 최적화',
+        '알레르기 성분 없음',
+        '체중 관리 적합',
+        '활동량 맞춤',
+      ],
       image: 'https://images.unsplash.com/photo-1747577672787-56218a6cbc87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjBmb29kJTIwa2liYmxlJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzAxODc4Mzl8MA&ixlib=rb-4.1.0&q=80&w=1080',
       isWatched: true,
       protein: '28%',
@@ -81,5 +90,7 @@ class FigmaMockData {
     'weight': 15.2,
     'breed': '골든 리트리버',
     'bcs': 5,
+    'dailyKcal': 285,
+    'dailyGrams': 180,
   };
 }

@@ -3,7 +3,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import { SearchBar } from '../components/SearchBar';
 import { ProductTile } from '../components/ProductTile';
 import { PillChip } from '../components/PillChip';
-import { mockProducts } from '../data/mockData';
+import { mockProducts, petData } from '../data/mockData';
 
 type MarketScreenProps = {
   onNavigateToProduct: (product: any) => void;
@@ -12,19 +12,23 @@ type MarketScreenProps = {
 export function MarketScreen({ onNavigateToProduct }: MarketScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   
-  const categories = ['All', 'Dog food', 'Cat food', 'Treats', 'Supplements'];
+  const categories = ['전체', '강아지 사료', '고양이 사료', '간식', '영양제'];
   const hotDeals = mockProducts.filter(p => p.comparePrice);
   const popular = mockProducts.slice(0, 4);
+  // New: Personalized for pet
+  const personalized = mockProducts
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 4);
 
   return (
     <div className="pb-6">
       {/* Sliver AppBar */}
       <div className="sticky top-0 bg-white z-10">
         <div className="h-14 flex items-center px-4">
-          <h1 className="text-body text-[#111827]">Market</h1>
+          <h1 className="text-body text-[#111827]">사료마켓</h1>
         </div>
         <div className="px-4 pb-4">
-          <SearchBar placeholder="Search for products" />
+          <SearchBar placeholder="사료 브랜드나 제품명을 검색하세요" />
         </div>
       </div>
 
@@ -32,7 +36,7 @@ export function MarketScreen({ onNavigateToProduct }: MarketScreenProps) {
         {/* Hot Deals Section */}
         <div>
           <div className="px-4 mb-4">
-            <SectionHeader title="Hot Deals" subtitle="Limited time offers" />
+            <SectionHeader title="오늘의 핫딜" />
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
             {hotDeals.map((product) => (
@@ -49,7 +53,7 @@ export function MarketScreen({ onNavigateToProduct }: MarketScreenProps) {
         {/* Popular Section */}
         <div>
           <div className="px-4 mb-4">
-            <SectionHeader title="Popular" subtitle="Most loved by pets" />
+            <SectionHeader title="실시간 인기 사료" />
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
             {popular.map((product) => (
@@ -63,16 +67,24 @@ export function MarketScreen({ onNavigateToProduct }: MarketScreenProps) {
           </div>
         </div>
 
-        {/* Recommendation Banner */}
-        <div className="px-4">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-[#F7F8FA]">
-            <h3 className="text-body text-[#111827] mb-2">Personalized for Max</h3>
-            <p className="text-sub text-[#6B7280] mb-3">
-              Get food recommendations based on Max's profile
-            </p>
-            <button className="h-9 px-4 rounded-xl bg-[#2563EB] text-white text-sub hover:bg-[#1d4ed8] active:scale-95 transition-all">
-              View recommendations
-            </button>
+        {/* NEW: Personalized Section */}
+        <div>
+          <div className="px-4 mb-4">
+            <SectionHeader 
+              title={`${petData.name}에게 추천`}
+              subtitle={`${petData.age}살 · ${petData.breed} 맞춤`}
+              showInfo={true}
+            />
+          </div>
+          <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
+            {personalized.map((product) => (
+              <ProductTile
+                key={product.id}
+                product={product}
+                onClick={() => onNavigateToProduct(product)}
+                layout="horizontal"
+              />
+            ))}
           </div>
         </div>
 

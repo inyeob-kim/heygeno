@@ -100,6 +100,47 @@ class OnboardingStateV2 {
     // sex 변환: 'male' -> 'MALE', 'female' -> 'FEMALE'
     final sexUpper = sex.toUpperCase();
     
+    // 한글 건강 고민을 코드로 변환
+    final healthConcernCodeMap = {
+      '알레르기': 'ALLERGY',
+      '장/소화': 'DIGESTIVE',
+      '치아/구강': 'DENTAL',
+      '비만': 'OBESITY',
+      '호흡기': 'RESPIRATORY',
+      '피부/털': 'SKIN',
+      '관절': 'JOINT',
+      '눈/눈물': 'EYE',
+      '신장/요로': 'KIDNEY',
+      '심장': 'HEART',
+      '노령': 'SENIOR',
+    };
+    
+    // "없어요"를 필터링하고 한글을 코드로 변환
+    final filteredHealthConcerns = healthConcerns
+        .where((c) => c != '없어요')
+        .map((c) => healthConcernCodeMap[c] ?? c) // 코드로 변환, 없으면 그대로
+        .toList();
+    
+    // 한글 알레르기를 코드로 변환
+    final allergenCodeMap = {
+      '소고기': 'BEEF',
+      '닭고기': 'CHICKEN',
+      '돼지고기': 'PORK',
+      '오리고기': 'DUCK',
+      '양고기': 'LAMB',
+      '생선': 'FISH',
+      '계란': 'EGG',
+      '유제품': 'DAIRY',
+      '밀/글루텐': 'WHEAT',
+      '옥수수': 'CORN',
+      '콩': 'SOY',
+    };
+    
+    final filteredFoodAllergies = foodAllergies
+        .where((a) => a != '없어요')
+        .map((a) => allergenCodeMap[a] ?? a) // 코드로 변환, 없으면 그대로
+        .toList();
+    
     return {
       'device_uid': deviceUid,
       'nickname': nickname,
@@ -115,8 +156,8 @@ class OnboardingStateV2 {
       'is_neutered': neutered,
       'weight_kg': weightKg,
       'body_condition_score': bcs,
-      'health_concerns': healthConcerns,
-      'food_allergies': foodAllergies,
+      'health_concerns': filteredHealthConcerns,
+      'food_allergies': filteredFoodAllergies,
       'other_allergy_text': otherAllergy.isNotEmpty ? otherAllergy : null,
       'photo_url': photo.isNotEmpty ? photo : null,
     };

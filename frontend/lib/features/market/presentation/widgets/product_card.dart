@@ -41,22 +41,29 @@ class ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // 상품 이미지 (이미지 중심 타일)
-          AspectRatio(
-            aspectRatio: 1,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: data.imageUrl != null
-                  ? Image.network(
-                      data.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholder();
-                      },
-                    )
-                  : _buildPlaceholder(),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              return SizedBox(
+                width: width,
+                height: width, // 1:1 비율
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: data.imageUrl != null
+                      ? Image.network(
+                          data.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholder();
+                          },
+                        )
+                      : _buildPlaceholder(),
+                ),
+              );
+            },
           ),
           // 텍스트 영역 (Padding top 10)
           Padding(

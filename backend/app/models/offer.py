@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
+from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index, BigInteger
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -20,6 +20,8 @@ class ProductOffer(Base, TimestampMixin):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     merchant = Column(SQLEnum(Merchant), nullable=False)
     merchant_product_id = Column(String(255), nullable=False)
+    vendor_item_id = Column(BigInteger, nullable=True, unique=True)  # 쿠팡 vendorItemId 매핑용
+    normalized_key = Column(String(255), nullable=True)  # 안정적 매핑 키
     url = Column(String(500), nullable=False)
     affiliate_url = Column(String(500), nullable=True)
     seller_name = Column(String(120), nullable=True)  # 네이버/오픈마켓 대비

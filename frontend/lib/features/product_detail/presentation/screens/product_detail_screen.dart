@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../../ui/widgets/figma_app_bar.dart';
-import '../../../../../ui/widgets/figma_primary_button.dart';
-import '../../../../../data/mock/figma_mock_data.dart';
+
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import '../../../../../core/widgets/empty_state.dart';
+import '../../../../../core/widgets/loading.dart';
+import '../../../../../ui/widgets/figma_app_bar.dart';
+import '../../../../../ui/widgets/figma_primary_button.dart';
+import '../../../../../ui/widgets/price_delta.dart';
+import '../controllers/product_detail_controller.dart';
 
-/// Figma 디자인 기반 Product Detail Screen
-class ProductDetailScreen extends StatelessWidget {
+/// 실제 API 데이터를 사용하는 Product Detail Screen
+class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
 
   const ProductDetailScreen({
@@ -17,16 +21,59 @@ class ProductDetailScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final product = FigmaMockData.mockProducts.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => FigmaMockData.mockProducts[0],
-    );
+  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
 
-    final discount = product.comparePrice != null
-        ? ((product.comparePrice! - product.price) / product.comparePrice! * 100).round()
-        : 0;
-    final petData = FigmaMockData.petData;
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(productDetailControllerProvider(widget.productId).notifier).loadProduct(widget.productId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(productDetailControllerProvider(widget.productId));
+
+    // 로딩 상태
+    if (state.isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(child: LoadingWidget()),
+      );
+    }
+
+    // 에러 상태
+    if (state.error != null && state.product == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text('제품 상세'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: EmptyStateWidget(
+          title: state.error ?? '오류가 발생했습니다',
+          buttonText: '다시 시도',
+          onButtonPressed: () => ref
+              .read(productDetailControllerProvider(widget.productId).notifier)
+              .loadProduct(widget.productId),
+        ),
+      );
+    }
+
+    final product = state.product;
+    if (product == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(child: LoadingWidget()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -51,25 +98,27 @@ class ProductDetailScreen extends StatelessWidget {
                           SizedBox(
                             width: double.infinity,
                             height: 320,
-                            child: CachedNetworkImage(
-                              imageUrl: product.image,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: const Color(0xFFF7F8FA),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: const Color(0xFFF7F8FA),
-                                child: const Icon(Icons.error),
+                            child: Container(
+                              color: const Color(0xFFF7F8FA),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 64,
+                                  color: Color(0xFF6B7280),
+                                ),
                               ),
                             ),
                           ),
+                          // Favorite Button
                           Positioned(
                             top: 16,
                             right: 16,
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: () {},
+                                onTap: () => ref
+                                    .read(productDetailControllerProvider(widget.productId).notifier)
+                                    .toggleFavorite(),
                                 borderRadius: BorderRadius.circular(24),
                                 child: Container(
                                   width: 48,
@@ -79,11 +128,11 @@ class ProductDetailScreen extends StatelessWidget {
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    product.isWatched
+                                    state.isFavorite
                                         ? Icons.favorite
                                         : Icons.favorite_border,
                                     size: 24,
-                                    color: product.isWatched
+                                    color: state.isFavorite
                                         ? const Color(0xFFEF4444)
                                         : const Color(0xFF6B7280),
                                   ),
@@ -101,52 +150,52 @@ class ProductDetailScreen extends StatelessWidget {
                             const SizedBox(height: 24),
                             // Product Info
                             Text(
-                              product.brand,
+                              product.brandName,
                               style: AppTypography.small.copyWith(
                                 color: const Color(0xFF6B7280),
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              product.name,
+                              product.productName,
                               style: AppTypography.h2.copyWith(
                                 color: const Color(0xFF111827),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            // Price - Strongest Visual Element
+                            const SizedBox(height: 24),
+                            // Price Hero - Strongest Visual
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.baseline,
                               textBaseline: TextBaseline.alphabetic,
                               children: [
-                                if (discount > 0) ...[
-                                  Text(
-                                    '$discount%',
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFEF4444),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                ],
                                 Text(
-                                  PriceFormatter.formatWithCurrency(product.price),
+                                  state.currentPrice != null
+                                      ? PriceFormatter.formatWithCurrency(state.currentPrice!)
+                                      : '가격 정보 없음',
                                   style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF111827),
+                                    letterSpacing: -0.5,
                                   ),
                                 ),
+                                const SizedBox(width: 12),
+                                if (state.averagePrice != null &&
+                                    state.currentPrice != null &&
+                                    state.averagePrice! > state.currentPrice!)
+                                  PriceDelta(
+                                    currentPrice: state.currentPrice!,
+                                    avgPrice: state.averagePrice!,
+                                    size: PriceDeltaSize.large,
+                                  ),
                               ],
                             ),
-                            if (product.comparePrice != null) ...[
+                            if (state.averagePrice != null) ...[
                               const SizedBox(height: 8),
                               Text(
-                                PriceFormatter.formatWithCurrency(product.comparePrice!),
+                                '평균 ${PriceFormatter.formatWithCurrency(state.averagePrice!)}',
                                 style: AppTypography.body.copyWith(
                                   color: const Color(0xFF6B7280),
-                                  decoration: TextDecoration.lineThrough,
                                 ),
                               ),
                             ],
@@ -155,46 +204,211 @@ class ProductDetailScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
+                                color: const Color(0xFFFEF2F2),
                                 borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: Text(
-                                '💰 평균 시장 가격보다 18% 저렴합니다',
-                                style: AppTypography.body.copyWith(
-                                  color: const Color(0xFF2563EB),
+                                border: Border.all(
+                                  color: const Color(0xFFEF4444).withOpacity(0.2),
+                                  width: 1,
                                 ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.trending_down,
+                                    size: 20,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '💰 평균 대비 ${state.averagePrice != null && state.currentPrice != null && state.averagePrice! > state.currentPrice! ? ((state.averagePrice! - state.currentPrice!) / state.averagePrice! * 100).round() : 0}% 저렴해요. 지금이 구매 타이밍입니다!',
+                                      style: AppTypography.body.copyWith(
+                                        color: const Color(0xFFEF4444),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 32),
                             // Price Graph Section
                             Text(
-                              '가격 히스토리',
+                              '가격 추이',
                               style: AppTypography.body.copyWith(
                                 color: const Color(0xFF111827),
                               ),
                             ),
                             const SizedBox(height: 16),
                             Container(
-                              height: 160,
+                              padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF7F8FA),
                                 borderRadius: BorderRadius.circular(18),
                               ),
-                              child: Center(
-                                child: Text(
-                                  '가격 그래프 플레이스홀더',
-                                  style: AppTypography.small.copyWith(
-                                    color: const Color(0xFF6B7280),
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 128,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [65, 58, 62, 55, 60, 52, 48].asMap().entries.map((entry) {
+                                        final index = entry.key;
+                                        final isLatest = index == 6;
+                                        return Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: isLatest
+                                                          ? const Color(0xFF2563EB)
+                                                          : const Color(0xFFE5E7EB),
+                                                      borderRadius: const BorderRadius.vertical(
+                                                        top: Radius.circular(2),
+                                                      ),
+                                                    ),
+                                                    height: double.infinity,
+                                                    width: double.infinity,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '최저 ${state.minPrice != null ? PriceFormatter.formatWithCurrency(state.minPrice!) : "정보 없음"}',
+                                        style: AppTypography.small.copyWith(
+                                          color: const Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                      if (state.averagePrice != null)
+                                        Text(
+                                          '평균 ${PriceFormatter.formatWithCurrency(state.averagePrice!)}',
+                                          style: AppTypography.small.copyWith(
+                                            color: const Color(0xFF6B7280),
+                                          ),
+                                        ),
+                                      Text(
+                                        '최고 ${state.maxPrice != null ? PriceFormatter.formatWithCurrency(state.maxPrice!) : "정보 없음"}',
+                                        style: AppTypography.small.copyWith(
+                                          color: const Color(0xFF6B7280),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 32),
+                            // Match Analysis Section - NEW & ENHANCED
+                            Text(
+                              '맞춤 분석',
+                              style: AppTypography.h2.copyWith(
+                                color: const Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Match Score with Bar
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: const Color(0xFF16A34A).withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '맞춤 점수',
+                                        style: AppTypography.body.copyWith(
+                                          color: const Color(0xFF111827),
+                                        ),
+                                      ),
+                                      Text(
+                                        '92%', // TODO: 실제 맞춤 점수 API 추가 시 수정
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF16A34A),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF16A34A).withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: 0.92, // TODO: 실제 맞춤 점수 API 추가 시 수정
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF16A34A),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Match Reasons List (임시로 제거 - 추후 API에서 제공되면 추가)
+                            // TODO: 추천 API에서 matchReasons 제공 시 추가
+                            // Nutritional Analysis
+                            if (state.ingredientAnalysis != null &&
+                                state.ingredientAnalysis!.nutritionFacts.isNotEmpty) ...[
+                              Text(
+                                '영양 성분',
+                                style: AppTypography.body.copyWith(
+                                  color: const Color(0xFF111827),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (state.ingredientAnalysis!.nutritionFacts.containsKey('조단백질'))
+                                _buildNutritionItem(
+                                  '단백질',
+                                  '${state.ingredientAnalysis!.nutritionFacts['조단백질']}%',
+                                ),
+                              const SizedBox(height: 12),
+                              if (state.ingredientAnalysis!.nutritionFacts.containsKey('조지방'))
+                                _buildNutritionItem(
+                                  '지방',
+                                  '${state.ingredientAnalysis!.nutritionFacts['조지방']}%',
+                                ),
+                              const SizedBox(height: 12),
+                              if (state.ingredientAnalysis!.nutritionFacts.containsKey('조섬유'))
+                                _buildNutritionItem(
+                                  '섬유질',
+                                  '${state.ingredientAnalysis!.nutritionFacts['조섬유']}%',
+                                ),
+                              const SizedBox(height: 24),
+                            ],
                             // Alert CTA Section
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF7F8FA),
+                                color: const Color(0xFFFEF3C7),
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Column(
@@ -212,7 +426,7 @@ class ProductDetailScreen extends StatelessWidget {
                                         child: const Icon(
                                           Icons.notifications,
                                           size: 20,
-                                          color: Color(0xFF2563EB),
+                                          color: Color(0xFFF59E0B),
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -221,14 +435,14 @@ class ProductDetailScreen extends StatelessWidget {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              '가격 알림',
+                                              '가격 알림 받기',
                                               style: AppTypography.body.copyWith(
                                                 color: const Color(0xFF111827),
                                               ),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              '목표 가격 이하로 떨어지면 알림 받기',
+                                              '목표 가격 이하로 떨어지면 알려드릴게요',
                                               style: AppTypography.small.copyWith(
                                                 color: const Color(0xFF6B7280),
                                               ),
@@ -242,47 +456,12 @@ class ProductDetailScreen extends StatelessWidget {
                                   Align(
                                     alignment: Alignment.centerLeft,
                                     child: FigmaPrimaryButton(
-                                      text: '알림 설정',
+                                      text: '알림 설정하기',
                                       variant: ButtonVariant.small,
                                       onPressed: () {},
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            // Ingredient Analysis
-                            Text(
-                              '영양 분석',
-                              style: AppTypography.body.copyWith(
-                                color: const Color(0xFF111827),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            if (product.protein != null)
-                              _buildNutritionItem('단백질', product.protein!),
-                            const SizedBox(height: 12),
-                            if (product.fat != null)
-                              _buildNutritionItem('지방', product.fat!),
-                            const SizedBox(height: 12),
-                            if (product.fiber != null)
-                              _buildNutritionItem('섬유질', product.fiber!),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0FDF4),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: const Color(0xFF16A34A).withOpacity(0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                '✓ ${petData['name']}의 영양 요구사항에 적합합니다',
-                                style: AppTypography.body.copyWith(
-                                  color: const Color(0xFF16A34A),
-                                ),
                               ),
                             ),
                           ],
@@ -324,11 +503,11 @@ class ProductDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Icon(
-                        product.isWatched
+                        state.isFavorite
                             ? Icons.favorite
                             : Icons.favorite_border,
                         size: 24,
-                        color: product.isWatched
+                        color: state.isFavorite
                             ? const Color(0xFFEF4444)
                             : const Color(0xFF111827),
                       ),
@@ -338,7 +517,7 @@ class ProductDetailScreen extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FigmaPrimaryButton(
-                  text: '구매하기',
+                  text: '최저가 구매하기',
                   onPressed: () {},
                 ),
               ),

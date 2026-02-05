@@ -26,6 +26,7 @@ class PriceSnapshot(Base):
     
     is_sold_out = Column(Boolean, nullable=False, server_default='false')
     captured_at = Column(DateTime(timezone=True), nullable=False)
+    captured_source = Column(String(50), nullable=False, server_default='COUPANG_API')  # 가격 스냅샷 출처
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

@@ -29,6 +29,7 @@ class Alert(Base, TimestampMixin):
     cooldown_hours = Column(Integer, default=24, nullable=False)
     is_enabled = Column(Boolean, default=True, nullable=False)
     last_triggered_at = Column(DateTime(timezone=True), nullable=True)
+    last_sent_price = Column(Integer, nullable=True)  # 알림 중복 발송 방지용 마지막 전송 가격
 
     __table_args__ = (
         Index('idx_alerts_tracking_enabled', 'tracking_id', 'is_enabled'),

@@ -1,5 +1,8 @@
 /// 라우트 경로 상수 관리
 class RoutePaths {
+  // 스플래시
+  static const String initialSplash = '/';
+  
   // 인증/온보딩
   static const String onboarding = '/onboarding';
   static const String onboardingV2 = '/onboarding_v2'; // Test route for new onboarding

@@ -8,6 +8,11 @@ class NetworkException implements Exception {
   const NetworkException(this.message);
 }
 
+class NotFoundException implements Exception {
+  final String message;
+  const NotFoundException(this.message);
+}
+
 class CacheException implements Exception {
   final String message;
   const CacheException(this.message);

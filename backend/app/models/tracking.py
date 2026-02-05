@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
+from sqlalchemy import Column, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -21,6 +21,8 @@ class Tracking(Base, TimestampMixin):
     pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False, index=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(SQLEnum(TrackingStatus), default=TrackingStatus.ACTIVE, nullable=False)
+    last_checked_at = Column(DateTime(timezone=True), nullable=True)  # 마지막 가격 확인 시간
+    next_check_at = Column(DateTime(timezone=True), nullable=True)  # 다음 가격 확인 예정 시간
 
     __table_args__ = (
         UniqueConstraint('user_id', 'pet_id', 'product_id', name='uq_tracking_user_pet_product'),

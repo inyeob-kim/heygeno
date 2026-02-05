@@ -43,6 +43,7 @@ class RecommendationItem(Base):
     rank = Column(Integer, nullable=False)
     score = Column(Numeric(8, 4), nullable=False)
     reasons = Column(JSONB, nullable=False)  # ["알레르겐 제외 통과", "체중관리 클레임", ...]
+    score_components = Column(JSONB, nullable=True)  # 추천 이유 디버깅 + 설명용 세부 점수 분해
 
     __table_args__ = (
         Index('idx_rec_items_run_rank', 'run_id', 'rank'),

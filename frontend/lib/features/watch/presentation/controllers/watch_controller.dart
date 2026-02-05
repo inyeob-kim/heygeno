@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/repositories/tracking_repository.dart';
+import '../../../../data/repositories/product_repository.dart';
+import '../../../../data/models/tracking_dto.dart';
+import '../../../../core/constants/enums.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 
@@ -68,7 +71,7 @@ class WatchState {
   /// 정렬된 상품 목록
   List<TrackingProductData> get sortedProducts {
     final products = List<TrackingProductData>.from(trackingProducts);
-    final currentSort = sortOption ?? SortOption.priceLow; // null safety fallback
+    final currentSort = sortOption;
     switch (currentSort) {
       case SortOption.priceLow:
         products.sort((a, b) {
@@ -102,25 +105,111 @@ class WatchState {
 }
 
 /// 관심 화면 컨트롤러
+/// 단일 책임: 추적 상품 목록 관리
 class WatchController extends StateNotifier<WatchState> {
-  // TODO: API 호출 시 사용
-  // final TrackingRepository _trackingRepository;
+  final TrackingRepository _trackingRepository;
+  final ProductRepository _productRepository;
 
-  WatchController(TrackingRepository trackingRepository) : super(WatchState()) {
+  WatchController(
+    TrackingRepository trackingRepository,
+    ProductRepository productRepository,
+  ) : _trackingRepository = trackingRepository,
+      _productRepository = productRepository,
+      super(WatchState()) {
     loadTrackingProducts();
   }
 
-  /// 추적 상품 목록 로드 (public으로 변경하여 재시도 가능하게)
+  /// 추적 상품 목록 로드
   Future<void> loadTrackingProducts() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     
-    // TODO: 실제 API 호출로 변경
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    state = state.copyWith(
-      isLoading: false,
-      trackingProducts: _generateMockTrackingProducts(),
-    );
+    try {
+      // 추적 목록 조회
+      final trackings = await _trackingRepository.getTrackings();
+      
+      // 빈 배열인 경우 즉시 반환
+      if (trackings.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          trackingProducts: [],
+        );
+        return;
+      }
+      
+      // 각 추적에 대한 상품 정보 조회 및 변환
+      final trackingProducts = await Future.wait(
+        trackings.map((tracking) => _convertToTrackingProductData(tracking)),
+      );
+      
+      // null 값 필터링
+      final validProducts = trackingProducts.where((p) => p != null).cast<TrackingProductData>().toList();
+      
+      state = state.copyWith(
+        isLoading: false,
+        trackingProducts: validProducts,
+      );
+    } catch (e) {
+      final failure = e is Exception
+          ? handleException(e)
+          : ServerFailure('추적 상품을 불러오는데 실패했습니다: ${e.toString()}');
+      state = state.copyWith(
+        isLoading: false,
+        error: failure.message,
+        trackingProducts: [],
+      );
+    }
+  }
+
+  /// TrackingDto를 TrackingProductData로 변환
+  Future<TrackingProductData> _convertToTrackingProductData(TrackingDto tracking) async {
+    try {
+      // tracking이 null이거나 productId가 없는 경우
+      if (tracking.productId.isEmpty) {
+        return TrackingProductData(
+          id: tracking.id,
+          title: '상품 정보 없음',
+          brandName: '알 수 없음',
+          price: '가격 정보 없음',
+          priceValue: null,
+          avgPrice: null,
+          deltaPercent: null,
+          isNewLow: false,
+          reasons: ['상품 ID가 없습니다'],
+          isAlertOn: false,
+        );
+      }
+      
+      // 상품 정보 조회
+      final product = await _productRepository.getProduct(tracking.productId);
+      
+      // 임시 데이터 (백엔드 API 확장 시 실제 데이터로 대체)
+      return TrackingProductData(
+        id: tracking.id,
+        title: '${product.brandName ?? '브랜드 없음'} ${product.productName ?? '상품명 없음'}',
+        brandName: product.brandName ?? '알 수 없음',
+        price: '가격 정보 없음', // TODO: ProductOffer에서 가격 정보 가져오기
+        priceValue: null,
+        avgPrice: null,
+        deltaPercent: null,
+        isNewLow: false,
+        reasons: ['추적 중인 상품'],
+        isAlertOn: tracking.status == TrackingStatus.active,
+      );
+    } catch (e) {
+      // 상품 조회 실패 시 기본 데이터 반환
+      return TrackingProductData(
+        id: tracking.id,
+        title: '상품 정보 없음',
+        brandName: '알 수 없음',
+        price: '가격 정보 없음',
+        priceValue: null,
+        avgPrice: null,
+        deltaPercent: null,
+        isNewLow: false,
+        reasons: ['상품 정보를 불러올 수 없습니다'],
+        isAlertOn: false,
+      );
+    }
   }
 
   /// 정렬 옵션 변경
@@ -129,19 +218,21 @@ class WatchController extends StateNotifier<WatchState> {
   }
 
   /// 알림 토글
-  Future<void> toggleAlert(String productId, bool isOn) async {
+  Future<void> toggleAlert(String trackingId, bool isOn) async {
     try {
-      // TODO: 실제 API 호출로 알림 설정 업데이트
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // 상태 업데이트
+      // TODO: 백엔드에 알림 설정 API 추가 시 구현
+      // 현재는 로컬 상태만 업데이트
       final updatedProducts = state.trackingProducts.map((product) {
-        if (product.id == productId) {
+        if (product.id == trackingId) {
           return TrackingProductData(
             id: product.id,
             title: product.title,
             brandName: product.brandName,
             price: product.price,
+            priceValue: product.priceValue,
+            avgPrice: product.avgPrice,
+            deltaPercent: product.deltaPercent,
+            isNewLow: product.isNewLow,
             reasons: product.reasons,
             isAlertOn: isOn,
           );
@@ -157,88 +248,11 @@ class WatchController extends StateNotifier<WatchState> {
       state = state.copyWith(error: failure.message);
     }
   }
-
-  // 임시 데이터 생성 (나중에 API 호출로 대체)
-  List<TrackingProductData> _generateMockTrackingProducts() {
-    return [
-      TrackingProductData(
-        id: 'tracking_1',
-        title: '로얄캐닌 미니 어덜트',
-        brandName: '로얄캐닌',
-        price: '45,000원',
-        priceValue: 45000,
-        avgPrice: 50000,
-        deltaPercent: -10.0,
-        isNewLow: false,
-        reasons: ['장 건강 케어', '평균가 대비 안정적'],
-        isAlertOn: true,
-      ),
-      TrackingProductData(
-        id: 'tracking_2',
-        title: '힐스 프리미엄 케어',
-        brandName: '힐스',
-        price: '52,000원',
-        priceValue: 52000,
-        avgPrice: 55000,
-        deltaPercent: -5.5,
-        isNewLow: false,
-        reasons: ['피부 건강 케어', '최근 14일 평균 대비 할인'],
-        isAlertOn: false,
-      ),
-      TrackingProductData(
-        id: 'tracking_3',
-        title: '퍼피 초이스',
-        brandName: '퍼피',
-        price: '38,000원',
-        priceValue: 38000,
-        avgPrice: 40000,
-        deltaPercent: -5.0,
-        isNewLow: true,
-        reasons: ['알레르기 제외', '가성비 우수'],
-        isAlertOn: true,
-      ),
-      TrackingProductData(
-        id: 'tracking_4',
-        title: '뉴트리나 건강백서',
-        brandName: '뉴트리나',
-        price: '29,000원',
-        priceValue: 29000,
-        avgPrice: 35000,
-        deltaPercent: -17.1,
-        isNewLow: false,
-        reasons: ['관절 건강', '가성비 최고'],
-        isAlertOn: true,
-      ),
-      TrackingProductData(
-        id: 'tracking_5',
-        title: 'ANF 6 Free',
-        brandName: 'ANF',
-        price: '60,000원',
-        priceValue: 60000,
-        avgPrice: 58000,
-        deltaPercent: 3.4,
-        isNewLow: false,
-        reasons: ['알러지 케어', '프리미엄'],
-        isAlertOn: false,
-      ),
-      TrackingProductData(
-        id: 'tracking_6',
-        title: '퓨리나 프로플랜',
-        brandName: '퓨리나',
-        price: '40,000원',
-        priceValue: 40000,
-        avgPrice: 42000,
-        deltaPercent: -4.8,
-        isNewLow: false,
-        reasons: ['소화기 건강', '활동량 많음'],
-        isAlertOn: true,
-      ),
-    ];
-  }
 }
 
 final watchControllerProvider =
     StateNotifierProvider<WatchController, WatchState>((ref) {
   final trackingRepository = ref.watch(trackingRepositoryProvider);
-  return WatchController(trackingRepository);
+  final productRepository = ref.watch(productRepositoryProvider);
+  return WatchController(trackingRepository, productRepository);
 });

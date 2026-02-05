@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/repositories/product_repository.dart';
+import '../../../../data/models/product_dto.dart';
 import '../widgets/product_card.dart';
 import '../widgets/category_chips.dart';
 
@@ -54,92 +55,84 @@ class MarketState {
 }
 
 /// 마켓 화면 컨트롤러
+/// 단일 책임: 상품 목록 관리
 class MarketController extends StateNotifier<MarketState> {
-  // TODO: API 호출 시 사용
-  // final ProductRepository _productRepository;
+  final ProductRepository _productRepository;
 
-  MarketController(ProductRepository productRepository) : super(MarketState()) {
+  MarketController(ProductRepository productRepository)
+      : _productRepository = productRepository,
+        super(MarketState()) {
     _initialize();
   }
 
-  /// 초기화 (임시 데이터 로드)
+  /// 초기화
   Future<void> _initialize() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     
-    // TODO: 실제 API 호출로 변경
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    state = state.copyWith(
-      isLoading: false,
-      hotDealProducts: _generateHotDealProducts(),
-      popularProducts: _generatePopularProducts(),
-      allProducts: _generateAllProducts(),
-      categories: _generateCategories(),
-    );
+    try {
+      final products = await _productRepository.getProducts();
+      final productCards = _convertToProductCards(products);
+      
+      state = state.copyWith(
+        isLoading: false,
+        allProducts: productCards,
+        hotDealProducts: productCards.take(5).toList(), // 임시: 상위 5개
+        popularProducts: productCards.take(5).toList(), // 임시: 상위 5개
+        categories: _generateCategories(),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: '상품 목록을 불러오는데 실패했습니다: ${e.toString()}',
+      );
+    }
   }
 
   /// 새로고침
   Future<void> refresh() async {
-    state = state.copyWith(isRefreshing: true);
+    state = state.copyWith(isRefreshing: true, error: null);
     
-    // TODO: 실제 API 호출로 변경
-    await Future.delayed(const Duration(milliseconds: 800));
-    
-    state = state.copyWith(
-      isRefreshing: false,
-      hotDealProducts: _generateHotDealProducts(),
-      popularProducts: _generatePopularProducts(),
-      allProducts: _generateAllProducts(),
-    );
+    try {
+      final products = await _productRepository.getProducts();
+      final productCards = _convertToProductCards(products);
+      
+      state = state.copyWith(
+        isRefreshing: false,
+        allProducts: productCards,
+        hotDealProducts: productCards.take(5).toList(),
+        popularProducts: productCards.take(5).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isRefreshing: false,
+        error: '상품 목록을 불러오는데 실패했습니다: ${e.toString()}',
+      );
+    }
+  }
+
+  /// ProductDto를 ProductCardData로 변환
+  List<ProductCardData> _convertToProductCards(List<ProductDto> products) {
+    return products.map((product) {
+      return ProductCardData(
+        id: product.id,
+        brandName: product.brandName,
+        productName: product.productName,
+        price: 0, // TODO: ProductOffer에서 가격 정보 가져오기 (API 확장 필요)
+        imageUrl: null, // TODO: 상품 이미지 URL 추가
+      );
+    }).toList();
   }
 
   /// 카테고리 선택
   void selectCategory(String? categoryId) {
     state = state.copyWith(selectedCategoryId: categoryId);
-    // TODO: 카테고리 필터 적용
+    // TODO: 백엔드에 카테고리 필터 API 추가 시 구현
   }
 
   /// 검색 쿼리 설정
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
-    // TODO: 검색 API 호출
-  }
-
-  // 임시 데이터 생성 메서드들 (나중에 API 호출로 대체)
-  List<ProductCardData> _generateHotDealProducts() {
-    return List.generate(5, (index) {
-      return ProductCardData(
-        id: 'hotdeal_$index',
-        brandName: '로얄캐닌',
-        productName: '로얄캐닌 미니 어덜트 ${index + 1}',
-        price: 35000 - (index * 2000),
-        originalPrice: 40000,
-        discountRate: (index + 1) * 5.0,
-      );
-    });
-  }
-
-  List<ProductCardData> _generatePopularProducts() {
-    return List.generate(5, (index) {
-      return ProductCardData(
-        id: 'popular_$index',
-        brandName: ['힐스', '오리젠', '아카나', '네츄럴밸런스', '퍼피'][index],
-        productName: '${['힐스', '오리젠', '아카나', '네츄럴밸런스', '퍼피'][index]} 사료 ${index + 1}',
-        price: 30000 + (index * 5000),
-      );
-    });
-  }
-
-  List<ProductCardData> _generateAllProducts() {
-    return List.generate(20, (index) {
-      return ProductCardData(
-        id: 'product_$index',
-        brandName: ['로얄캐닌', '힐스', '오리젠', '아카나'][index % 4],
-        productName: '${['로얄캐닌', '힐스', '오리젠', '아카나'][index % 4]} 사료 제품 ${index + 1}',
-        price: 25000 + (index * 1000),
-        discountRate: index % 3 == 0 ? 10.0 : null,
-      );
-    });
+    // TODO: 백엔드에 검색 API 추가 시 구현
   }
 
   List<CategoryChipData> _generateCategories() {

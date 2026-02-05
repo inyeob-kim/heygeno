@@ -1,62 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../ui/widgets/figma_app_bar.dart';
 import '../../../../../ui/widgets/figma_primary_button.dart';
 import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/widgets/loading.dart';
+import '../../../../../core/widgets/empty_state.dart';
+import '../controllers/benefits_controller.dart';
 
-/// Figma 디자인 기반 Benefits Screen
-class BenefitsScreen extends StatelessWidget {
+/// 실제 API 데이터를 사용하는 Benefits Screen
+class BenefitsScreen extends ConsumerStatefulWidget {
   const BenefitsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final missions = [
-      MissionData(
-        id: 1,
-        title: '제품 3개 관심 추가',
-        reward: 100,
-        completed: true,
-        current: 3,
-        total: 3,
-      ),
-      MissionData(
-        id: 2,
-        title: '프로필 완성',
-        reward: 200,
-        completed: true,
-        current: 1,
-        total: 1,
-      ),
-      MissionData(
-        id: 3,
-        title: '친구에게 공유',
-        reward: 500,
-        completed: false,
-        current: 0,
-        total: 1,
-      ),
-      MissionData(
-        id: 4,
-        title: '리뷰 작성',
-        reward: 300,
-        completed: false,
-        current: 0,
-        total: 1,
-      ),
-      MissionData(
-        id: 5,
-        title: '첫 구매하기',
-        reward: 1000,
-        completed: false,
-        current: 0,
-        total: 1,
-      ),
-    ];
+  ConsumerState<BenefitsScreen> createState() => _BenefitsScreenState();
+}
 
-    final totalPoints = 1850;
-    final earnedPoints = missions
-        .where((m) => m.completed)
-        .fold(0, (sum, m) => sum + m.reward);
-    final availablePoints = missions.fold(0, (sum, m) => sum + m.reward) - earnedPoints;
+class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(benefitsControllerProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(benefitsControllerProvider);
+
+    // 로딩 상태
+    if (state.isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const Center(child: LoadingWidget()),
+      );
+    }
+
+    // 에러 상태
+    if (state.error != null && state.missions.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: EmptyStateWidget(
+          title: state.error ?? '오류가 발생했습니다',
+          buttonText: '다시 시도',
+          onButtonPressed: () => ref.read(benefitsControllerProvider.notifier).refresh(),
+        ),
+      );
+    }
+
+    final totalPoints = state.totalPoints;
+    final earnedPoints = state.earnedPoints;
+    final availablePoints = state.availablePoints;
+    final missions = state.missions;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -92,10 +88,7 @@ class BenefitsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        totalPoints.toString().replaceAllMapped(
-                          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-                          (match) => '${match[1]},',
-                        ),
+                        '${totalPoints.toLocaleString()}P',
                         style: const TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
@@ -104,18 +97,29 @@ class BenefitsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '추가로 ${availablePoints.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')} 포인트 획득 가능',
+                        '${availablePoints.toLocaleString()}P 더 받을 수 있어요',
                         style: AppTypography.body.copyWith(
                           color: const Color(0xFF6B7280),
                         ),
                       ),
                       const SizedBox(height: 32),
                       // Mission List
-                      Text(
-                        '미션을 완료하여 포인트 획득',
-                        style: AppTypography.body.copyWith(
-                          color: const Color(0xFF111827),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '미션 완료하고 포인트 받기',
+                            style: AppTypography.body.copyWith(
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          Text(
+                            '${state.completedCount}/${missions.length}',
+                            style: AppTypography.small.copyWith(
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       ...missions.map((mission) => _buildMissionCard(mission)),
@@ -138,7 +142,7 @@ class BenefitsScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '100 포인트 = 다음 구매 시 100원 할인',
+                              '100P = 100원 할인 (다음 구매 시 자동 적용)',
                               style: AppTypography.small.copyWith(
                                 color: const Color(0xFF6B7280),
                               ),
@@ -178,62 +182,70 @@ class BenefitsScreen extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: mission.completed
+                      ? const Color(0xFF16A34A)
+                      : Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  mission.completed ? Icons.check_circle : Icons.flag,
+                  size: 20,
+                  color: mission.completed
+                      ? Colors.white
+                      : const Color(0xFF6B7280),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          mission.title,
-                          style: AppTypography.body.copyWith(
-                            color: mission.completed
-                                ? const Color(0xFF6B7280)
-                                : const Color(0xFF111827),
-                            decoration: mission.completed
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                        if (mission.completed) ...[
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.check_circle,
-                            size: 20,
-                            color: Color(0xFF16A34A),
-                          ),
-                        ],
-                      ],
+                    Text(
+                      mission.title,
+                      style: AppTypography.body.copyWith(
+                        color: mission.completed
+                            ? const Color(0xFF6B7280)
+                            : const Color(0xFF111827),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${mission.current}/${mission.total} 완료',
+                      mission.description,
                       style: AppTypography.small.copyWith(
                         color: const Color(0xFF6B7280),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          '+${mission.reward}P',
+                          style: AppTypography.body.copyWith(
+                            color: mission.completed
+                                ? const Color(0xFF16A34A)
+                                : const Color(0xFF2563EB),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (!mission.completed) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '· ${mission.current}/${mission.total} 완료',
+                            style: AppTypography.small.copyWith(
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '+${mission.reward}',
-                    style: AppTypography.body.copyWith(
-                      color: mission.completed
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFF2563EB),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '포인트',
-                    style: AppTypography.small.copyWith(
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -242,7 +254,7 @@ class BenefitsScreen extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: FigmaPrimaryButton(
-                text: '미션 시작',
+                text: '시작하기',
                 variant: ButtonVariant.small,
                 onPressed: () {},
               ),
@@ -254,20 +266,11 @@ class BenefitsScreen extends StatelessWidget {
   }
 }
 
-class MissionData {
-  final int id;
-  final String title;
-  final int reward;
-  final bool completed;
-  final int current;
-  final int total;
-
-  MissionData({
-    required this.id,
-    required this.title,
-    required this.reward,
-    required this.completed,
-    required this.current,
-    required this.total,
-  });
+extension IntExtension on int {
+  String toLocaleString() {
+    return toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]},',
+    );
+  }
 }

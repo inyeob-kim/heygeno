@@ -1,4 +1,4 @@
-import { Home, Heart, ShoppingBag, Gift, User } from 'lucide-react';
+import { Home, Heart, ShoppingBag, Gift, User, Plus } from 'lucide-react';
 import { Screen } from '../MainApp';
 
 type BottomNavProps = {
@@ -8,9 +8,9 @@ type BottomNavProps = {
 
 export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
   const tabs = [
-    { id: 'home' as Screen, label: 'Home', icon: Home },
     { id: 'watch' as Screen, label: 'Watch', icon: Heart },
     { id: 'market' as Screen, label: 'Market', icon: ShoppingBag },
+    { id: 'fab' as Screen, label: '', icon: Plus }, // FAB
     { id: 'benefits' as Screen, label: 'Benefits', icon: Gift },
     { id: 'my' as Screen, label: 'My', icon: User },
   ];
@@ -24,6 +24,19 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentScreen === tab.id;
+          const isFAB = tab.id === 'fab';
+          
+          if (isFAB) {
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onNavigate('home')}
+                className="w-14 h-14 -mt-6 rounded-full bg-[#2563EB] flex items-center justify-center shadow-lg active:scale-95 transition-all"
+              >
+                <Plus className="w-7 h-7 text-white" />
+              </button>
+            );
+          }
           
           return (
             <button

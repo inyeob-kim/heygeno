@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime
 
 from app.models.offer import Merchant
+from app.models.product import PetSpecies
 
 
 class ProductRead(BaseModel):
@@ -13,8 +14,30 @@ class ProductRead(BaseModel):
     product_name: str
     size_label: Optional[str] = None
     is_active: bool
+    category: Optional[str] = None
+    species: Optional[PetSpecies] = None
 
     model_config = {"from_attributes": True}
+
+
+class ProductCreate(BaseModel):
+    """상품 생성 요청"""
+    brand_name: str = Field(..., min_length=1, max_length=100)
+    product_name: str = Field(..., min_length=1, max_length=255)
+    size_label: Optional[str] = Field(None, max_length=50)
+    category: str = Field(default="FOOD", max_length=30)
+    species: Optional[PetSpecies] = None
+    is_active: bool = Field(default=True)
+
+
+class ProductUpdate(BaseModel):
+    """상품 수정 요청"""
+    brand_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    product_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    size_label: Optional[str] = Field(None, max_length=50)
+    category: Optional[str] = Field(None, max_length=30)
+    species: Optional[PetSpecies] = None
+    is_active: Optional[bool] = None
 
 
 class PriceSummaryRead(BaseModel):

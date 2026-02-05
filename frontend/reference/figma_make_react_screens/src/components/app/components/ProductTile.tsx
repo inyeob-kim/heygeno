@@ -1,4 +1,7 @@
 import { Heart } from 'lucide-react';
+import { Badge } from './Badge';
+import { MatchScoreBadge } from './MatchScoreBadge';
+import { PriceDelta } from './PriceDelta';
 
 type ProductTileProps = {
   product: {
@@ -7,8 +10,11 @@ type ProductTileProps = {
     brand: string;
     price: number;
     comparePrice?: number;
+    avgPrice: number;
+    matchScore: number;
     image: string;
     isWatched?: boolean;
+    badge?: string;
   };
   onClick: () => void;
   layout?: 'grid' | 'horizontal';
@@ -36,13 +42,21 @@ export function ProductTile({ product, onClick, layout = 'grid' }: ProductTilePr
               <Heart className="w-4 h-4 text-[#EF4444] fill-[#EF4444]" />
             </div>
           )}
+          <div className="absolute top-2 left-2">
+            <MatchScoreBadge score={product.matchScore} size="small" />
+          </div>
+          {product.badge && (
+            <div className="absolute bottom-2 left-2">
+              <Badge variant="info">{product.badge}</Badge>
+            </div>
+          )}
         </div>
         <div className="text-left">
           <p className="text-sub text-[#6B7280] mb-1">{product.brand}</p>
           <h3 className="text-body text-[#111827] mb-2 line-clamp-2 leading-tight">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             {discount > 0 && (
               <span className="text-sub text-[#EF4444] font-semibold">
                 {discount}%
@@ -52,6 +66,7 @@ export function ProductTile({ product, onClick, layout = 'grid' }: ProductTilePr
               {product.price.toLocaleString()}원
             </span>
           </div>
+          <PriceDelta currentPrice={product.price} avgPrice={product.avgPrice} size="small" />
         </div>
       </button>
     );
@@ -73,13 +88,21 @@ export function ProductTile({ product, onClick, layout = 'grid' }: ProductTilePr
             <Heart className="w-4 h-4 text-[#EF4444] fill-[#EF4444]" />
           </div>
         )}
+        <div className="absolute top-2 left-2">
+          <MatchScoreBadge score={product.matchScore} size="small" />
+        </div>
+        {product.badge && (
+          <div className="absolute bottom-2 left-2">
+            <Badge variant="info">{product.badge}</Badge>
+          </div>
+        )}
       </div>
       <div className="text-left">
         <p className="text-sub text-[#6B7280] mb-1">{product.brand}</p>
         <h3 className="text-[15px] font-medium text-[#111827] mb-2 line-clamp-2 leading-tight">
           {product.name}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-1">
           {discount > 0 && (
             <span className="text-sub text-[#EF4444] font-semibold">
               {discount}%
@@ -89,6 +112,7 @@ export function ProductTile({ product, onClick, layout = 'grid' }: ProductTilePr
             {product.price.toLocaleString()}원
           </span>
         </div>
+        <PriceDelta currentPrice={product.price} avgPrice={product.avgPrice} size="small" />
       </div>
     </button>
   );

@@ -6,12 +6,14 @@ class FigmaSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onViewAll;
+  final bool showInfo;
 
   const FigmaSectionHeader({
     super.key,
     required this.title,
     this.subtitle,
     this.onViewAll,
+    this.showInfo = false,
   });
 
   @override
@@ -24,11 +26,28 @@ class FigmaSectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: AppTypography.h2.copyWith(
-                  color: const Color(0xFF111827),
-                ),
+              Row(
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.h2.copyWith(
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  if (showInfo) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () {
+                        // TODO: Show info dialog
+                      },
+                      child: const Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
