@@ -1,21 +1,24 @@
-# Environment variables
+# ============================================
+# Environment Variables
+# ============================================
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
+*.env
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Python (Backend)
+# ============================================
+# Python / Backend
+# ============================================
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -23,94 +26,42 @@ dist/
 downloads/
 eggs/
 .eggs/
-backend/lib/
+lib/
 lib64/
 parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
 env.bak/
 venv.bak/
+.conda/
 
-# Alembic
-backend/alembic/versions/*.pyc
+# PyCharm
+.idea/
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Docker
-docker-compose.override.yml
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-
-# Flutter/Dart (Frontend)
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-frontend/build/
-frontend/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-frontend/android/app/debug
-frontend/android/app/profile
-frontend/android/app/release
-
-# Miscellaneous
-*.class
-*.pyc
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-
-# Testing (Python)
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+.nox/
+.hypothesis/
+.pytest_cache/
+coverage.xml
+*.cover
+*.py,cover
 .hypothesis/
 
 # Jupyter Notebook
@@ -118,3 +69,258 @@ htmlcov/
 
 # pyenv
 .python-version
+
+# Alembic (keep migration files, ignore compiled)
+backend/alembic/versions/*.pyc
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Python logs
+*.log
+logs/
+*.log.*
+
+# ============================================
+# Node.js / React / Vite (heygeno-landing)
+# ============================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.vite/
+*.local
+
+# Environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+coverage/
+.nyc_output/
+
+# Vite
+.vite/
+vite.config.*.timestamp-*
+
+# ============================================
+# Flutter / Dart (frontend)
+# ============================================
+# Flutter/Dart
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+linked_*.ds
+unlinked.ds
+unlinked_spec.ds
+
+# Coverage
+frontend/coverage/
+
+# Android
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/key.properties
+*.jks
+*.keystore
+
+# iOS
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.framework
+frontend/ios/Flutter/Flutter.podspec
+frontend/ios/Flutter/Generated.xcconfig
+frontend/ios/Flutter/ephemeral/
+frontend/ios/Flutter/app.flx
+frontend/ios/Flutter/app.zip
+frontend/ios/Flutter/flutter_assets/
+frontend/ios/Flutter/flutter_export_environment.sh
+frontend/ios/ServiceDefinitions.json
+frontend/ios/Runner/GeneratedPluginRegistrant.*
+
+# Web
+frontend/web/*.dart.js
+frontend/web/*.dart.js.map
+
+# Symbolication
+app.*.symbols
+
+# Obfuscation
+app.*.map.json
+
+# ============================================
+# IDE / Editors
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ============================================
+# OS Files
+# ============================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+.dockerignore
+
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+.cache/
+*.swp
+*.bak
+*.backup
+*~
+
+# ============================================
+# Build Artifacts
+# ============================================
+# Keep build artifacts for deployment but ignore old ones
+# heygeno-landing/assets/*.js (keep latest, but can be regenerated)
+# Note: For Cloudflare Pages deployment, we keep assets/ but ignore old builds
+
+# ============================================
+# Miscellaneous
+# ============================================
+*.class
+.atom/
+.build/
+.buildlog/
+.history/
+.svn/
+.swiftpm/
+migrate_working_dir/
+*.orig
+*.rej
+*.swo
+*.swn
+*.swp
+
+# ============================================
+# Project Specific
+# ============================================
+# Frontend Admin - temporary files
+frontend_admin/index_temp.html
+
+# Wrangler
+.wrangler/
+.wrangler.toml.local
+
+# Redis dump
+dump.rdb
+
+# Python virtual environment (if in root)
+venv/
+.venv/

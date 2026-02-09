@@ -1,4 +1,5 @@
 """상품 관련 비즈니스 로직"""
+from typing import Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -173,3 +174,127 @@ class ProductService:
             query = query.where(Product.is_active == True)
         result = await db.execute(query)
         return list(result.scalars().all())
+    
+    @staticmethod
+    async def get_products_with_filters(
+        db: AsyncSession,
+        query: Optional[str] = None,
+        species: Optional[str] = None,
+        active: Optional[str] = None,  # 'ACTIVE', 'ARCHIVED', 'ALL'
+        completion_status: Optional[str] = None,
+        has_image: Optional[str] = None,  # 'YES', 'NO', 'ALL'
+        has_offers: Optional[str] = None,  # 'YES', 'NO', 'ALL'
+        sort: str = 'UPDATED_DESC',  # 'UPDATED_DESC', 'BRAND_ASC', 'INCOMPLETE_FIRST'
+        page: int = 1,
+        size: int = 30
+    ) -> tuple[list[Product], int]:
+        """상품 목록 조회 (필터링/정렬/페이지네이션)"""
+        from sqlalchemy import func, or_, and_
+        from sqlalchemy.orm import selectinload
+        
+        # Base query with relationships for computed fields
+        # Eager load relationships to avoid lazy loading issues
+        base_query = select(Product).options(
+            selectinload(Product.offers),
+            selectinload(Product.ingredient_profile),
+            selectinload(Product.nutrition_facts)
+        )
+        
+        # Filters
+        conditions = []
+        
+        # Active filter
+        if active == 'ACTIVE':
+            conditions.append(Product.is_active == True)
+        elif active == 'ARCHIVED':
+            conditions.append(Product.is_active == False)
+        # 'ALL' or None: no filter
+        
+        # Species filter
+        if species and species != 'ALL':
+            conditions.append(Product.species == species)
+        
+        # Query text filter (brand_name, product_name, size_label)
+        if query:
+            search_term = f"%{query}%"
+            conditions.append(
+                or_(
+                    Product.brand_name.ilike(search_term),
+                    Product.product_name.ilike(search_term),
+                    Product.size_label.ilike(search_term)
+                )
+            )
+        
+        # Completion status filter (if column exists)
+        if completion_status and completion_status != 'ALL':
+            # Note: This assumes the column exists after migration
+            try:
+                conditions.append(Product.completion_status == completion_status)
+            except AttributeError:
+                pass  # Column not yet added
+        
+        if conditions:
+            base_query = base_query.where(and_(*conditions))
+        
+        # Count total (before pagination) - 별도 쿼리로 생성 (selectinload 제외)
+        count_base = select(Product)
+        if conditions:
+            count_base = count_base.where(and_(*conditions))
+        count_query = select(func.count()).select_from(count_base.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar() or 0
+        
+        # Sorting
+        if sort == 'BRAND_ASC':
+            base_query = base_query.order_by(Product.brand_name.asc(), Product.product_name.asc())
+        elif sort == 'INCOMPLETE_FIRST':
+            # Sort by completion_status (incomplete first), then by updated_at
+            # Note: This assumes the column exists after migration
+            try:
+                from sqlalchemy import case
+                base_query = base_query.order_by(
+                    case(
+                        (Product.completion_status == 'COMPLETE', 1),
+                        else_=0
+                    ).asc(),
+                    Product.last_admin_updated_at.desc().nulls_last()
+                )
+            except AttributeError:
+                base_query = base_query.order_by(Product.brand_name.asc())
+        else:  # UPDATED_DESC (default)
+            try:
+                base_query = base_query.order_by(Product.last_admin_updated_at.desc().nulls_last())
+            except AttributeError:
+                base_query = base_query.order_by(Product.created_at.desc())
+        
+        # Pagination
+        offset = (page - 1) * size
+        base_query = base_query.offset(offset).limit(size)
+        
+        # Execute
+        result = await db.execute(base_query)
+        products = list(result.scalars().all())
+        
+        # Post-filter for has_image and has_offers (after fetching)
+        if has_image == 'YES':
+            products = [p for p in products if p.primary_image_url or p.thumbnail_url]
+        elif has_image == 'NO':
+            products = [p for p in products if not (p.primary_image_url or p.thumbnail_url)]
+        
+        if has_offers == 'YES':
+            # Need to check offers count
+            products_with_offers = []
+            for p in products:
+                offers_count = len(p.offers) if p.offers else 0
+                if offers_count > 0:
+                    products_with_offers.append(p)
+            products = products_with_offers
+        elif has_offers == 'NO':
+            products_without_offers = []
+            for p in products:
+                offers_count = len(p.offers) if p.offers else 0
+                if offers_count == 0:
+                    products_without_offers.append(p)
+            products = products_without_offers
+        
+        return products, total

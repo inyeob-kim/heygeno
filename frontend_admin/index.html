@@ -1,10 +1,65 @@
 <!DOCTYPE html>
+<!--
+    ⚠️ 중요: 이 파일을 직접 열면 CORS 에러가 발생합니다!
+    
+    실행 방법:
+    1. 백엔드 서버 실행 (포트 8000):
+       - backend 폴더에서: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+       - 또는: docker-compose up
+       
+    2. 프론트엔드 로컬 서버 실행:
+       - Windows: start-server.bat 실행
+       - Mac/Linux: ./start-server.sh 실행
+       - 또는: python -m http.server 8001
+       
+    3. 브라우저에서 http://localhost:8001 접속
+    
+    API 설정:
+    - 백엔드: http://localhost:8000
+    - API 엔드포인트: http://localhost:8000/api/v1
+    
+    자세한 내용은 README_SERVER.md 참고
+-->
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>상품 관리 대시보드</title>
     <style>
+        :root {
+            /* 배경색 */
+            --bg: #f7f8fb;
+            --card: #ffffff;
+            
+            /* 텍스트 색상 */
+            --text: #0f172a;
+            --muted: #64748b;
+            
+            /* 경계선 */
+            --line: #e5e7eb;
+            
+            /* Primary 색상 */
+            --primary: #2563eb;
+            --primary2: #1d4ed8;
+            
+            /* Border Radius */
+            --radius: 18px;
+            
+            /* 그림자 */
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            
+            /* Chip/Badge 배경 */
+            --chip: #eef2ff;
+            
+            /* Success/Danger 색상 */
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,81 +67,122 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+            background: var(--bg);
+            color: var(--text);
             line-height: 1.6;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 28px 18px;
         }
 
         header {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
+            background: var(--card);
+            padding: 24px 28px;
+            border-radius: var(--radius);
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
         }
 
         h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
+            color: var(--text);
+            margin: 0 0 12px;
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            color: var(--text);
+            margin: 0 0 10px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        h3 {
+            color: var(--text);
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
         }
 
         .controls {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 16px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s;
+            font-weight: 700;
+            transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+            background: var(--card);
+            color: var(--text);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         .btn-primary {
-            background: #3498db;
+            background: var(--primary);
             color: white;
+            border-color: var(--primary);
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
         }
 
         .btn-primary:hover {
-            background: #2980b9;
+            background: var(--primary2);
+            border-color: var(--primary2);
         }
 
         .btn-success {
-            background: #27ae60;
+            background: var(--success);
             color: white;
+            border-color: var(--success);
         }
 
         .btn-success:hover {
-            background: #229954;
+            background: #059669;
+            border-color: #059669;
         }
 
         .btn-danger {
-            background: #e74c3c;
+            background: var(--danger);
             color: white;
+            border-color: var(--danger);
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: #dc2626;
+            border-color: #dc2626;
         }
 
         .btn-secondary {
-            background: #95a5a6;
-            color: white;
+            background: var(--card);
+            color: var(--muted);
+            border-color: var(--line);
         }
 
         .btn-secondary:hover {
-            background: #7f8c8d;
+            background: #f8f9fa;
+            color: var(--text);
         }
 
         .products-grid {
@@ -96,40 +192,50 @@
         }
 
         .products-list {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-height: 80vh;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+            max-height: 85vh;
             overflow-y: auto;
         }
 
+        .products-list h2 {
+            margin-bottom: 20px;
+        }
+
         .product-detail {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-height: 80vh;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+            max-height: 85vh;
             overflow-y: auto;
         }
 
         .product-item {
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            margin-bottom: 12px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
+            background: var(--card);
         }
 
         .product-item:hover {
             background: #f8f9fa;
-            border-color: #3498db;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
         }
 
         .product-item.active {
-            background: #e3f2fd;
-            border-color: #3498db;
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(255, 255, 255, 0.92));
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
 
         .product-item.inactive {
@@ -137,51 +243,68 @@
         }
 
         .product-item h3 {
-            margin-bottom: 5px;
-            color: #2c3e50;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 700;
         }
 
         .product-item .meta {
             font-size: 12px;
-            color: #7f8c8d;
+            color: var(--muted);
+            line-height: 1.5;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-top: 5px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-right: 6px;
+            margin-top: 6px;
         }
 
         .status-active {
-            background: #d4edda;
-            color: #155724;
+            background: var(--success-bg);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .status-inactive {
-            background: #f8d7da;
-            color: #721c24;
+            background: var(--danger-bg);
+            color: #991b1b;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #2c3e50;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
         }
 
         input, textarea, select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
             font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background: var(--card);
+            color: var(--text);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         textarea {
@@ -192,30 +315,39 @@
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 18px;
         }
 
         .tabs {
             display: flex;
-            border-bottom: 2px solid #ddd;
-            margin-bottom: 20px;
+            border-bottom: 2px solid var(--line);
+            margin-bottom: 24px;
+            gap: 4px;
         }
 
         .tab {
-            padding: 10px 20px;
+            padding: 12px 20px;
             cursor: pointer;
             border: none;
             background: none;
             font-size: 14px;
-            color: #7f8c8d;
+            font-weight: 600;
+            color: var(--muted);
             border-bottom: 2px solid transparent;
             margin-bottom: -2px;
+            transition: all 0.2s ease;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            background: #f8f9fa;
         }
 
         .tab.active {
-            color: #3498db;
-            border-bottom-color: #3498db;
-            font-weight: 600;
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(37, 99, 235, 0.04);
         }
 
         .tab-content {
@@ -229,20 +361,30 @@
         .table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--line);
         }
 
         .table th,
         .table td {
-            padding: 12px;
+            padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--line);
         }
 
         .table th {
             background: #f8f9fa;
-            font-weight: 600;
-            color: #2c3e50;
+            font-weight: 700;
+            color: var(--text);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
         }
 
         .table tr:hover {
@@ -251,8 +393,12 @@
 
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .empty-state p {
+            font-size: 16px;
         }
 
         .modal {
@@ -262,90 +408,356 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.55);
             z-index: 1000;
             overflow-y: auto;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
         }
 
         .modal.active {
             display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 28px;
             max-width: 600px;
-            width: 90%;
+            width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            margin: 20px;
+            box-shadow: 0 18px 60px rgba(15, 23, 42, 0.25);
+            border: 1px solid var(--line);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .modal-header h2 {
-            color: #2c3e50;
+            color: var(--text);
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.3px;
         }
 
         .close-btn {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
-            color: #7f8c8d;
+            color: var(--muted);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
 
         .close-btn:hover {
-            color: #2c3e50;
+            color: var(--text);
+            background: #f8f9fa;
         }
 
         .alert {
-            padding: 12px 20px;
-            border-radius: 6px;
+            padding: 14px 18px;
+            border-radius: 12px;
             margin-bottom: 20px;
+            font-weight: 500;
+            border: 1px solid;
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: var(--success-bg);
+            color: #065f46;
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: var(--danger-bg);
+            color: #991b1b;
+            border-color: rgba(239, 68, 68, 0.3);
         }
 
         .loading {
             text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
+            padding: 60px 20px;
+            color: var(--muted);
+            font-size: 16px;
         }
 
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .number-input {
-            width: 100px;
+            width: 120px;
+        }
+
+        /* ======================================
+           관리자 상품 목록 - 검색/필터 패널
+           ====================================== */
+        .product-list-container {
+            width: 100%;
+            max-width: 100%;
+            overflow: visible;
+        }
+
+        /* 필터 전체 박스 */
+        .filter-panel {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--card);
+            margin-bottom: 20px;
+        }
+
+        /* 필터 한 줄 */
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* 공통 인풋/셀렉트 */
+        .filter-control {
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--card);
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
+            color: var(--text);
+        }
+
+        .filter-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* 검색창 */
+        .filter-search {
+            flex: 1 1 240px;
+            min-width: 220px;
+        }
+
+        /* 셀렉트들 */
+        .filter-select {
+            flex: 0 1 120px;
+            min-width: 100px;
+        }
+
+        /* 정렬 드롭다운 (한 줄 전체 사용) */
+        .filter-sort {
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        /* 에러 박스 */
+        #errorBox {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: var(--danger-bg);
+            color: #991b1b;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* 코드 스타일 */
+        code {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #475569;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .products-list,
+            .product-detail {
+                max-height: 50vh;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .filter-row {
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 18px 14px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            header {
+                padding: 18px;
+            }
+
+            .products-list,
+            .product-detail {
+                padding: 18px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab {
+                white-space: nowrap;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+
+            .filter-search {
+                flex: 1 1 100%;
+            }
+            
+            .filter-select {
+                flex: 1 1 48%;
+                min-width: 140px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls label {
+                margin-left: 0 !important;
+            }
+
+            .product-item h3 {
+                font-size: 15px;
+            }
+
+            .product-item .meta {
+                font-size: 11px;
+            }
+
+            .table {
+                font-size: 13px;
+            }
+
+            .table th,
+            .table td {
+                padding: 10px 12px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            h1 {
+                font-size: 22px;
+            }
+
+            button {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .status-badge {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+
+            .filter-search {
+                flex: 1 1 100%;
+            }
+            
+            .filter-select {
+                flex: 1 1 48%;
+                min-width: 140px;
+            }
+
+            .filter-panel {
+                padding: 12px;
+            }
+
+            .filter-control {
+                height: 38px;
+                font-size: 13px;
+            }
+        }
+
+        /* 스크롤바 스타일 */
+        .products-list::-webkit-scrollbar,
+        .product-detail::-webkit-scrollbar,
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .products-list::-webkit-scrollbar-track,
+        .product-detail::-webkit-scrollbar-track,
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .products-list::-webkit-scrollbar-thumb,
+        .product-detail::-webkit-scrollbar-thumb,
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .products-list::-webkit-scrollbar-thumb:hover,
+        .product-detail::-webkit-scrollbar-thumb:hover,
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
@@ -354,11 +766,12 @@
         <header>
             <h1>🐾 상품 관리 대시보드</h1>
             <div class="controls">
-                <button class="btn-primary" onclick="showCreateProductModal()">+ 새 상품 등록</button>
-                <button class="btn-secondary" onclick="loadProducts()">🔄 새로고침</button>
-                <label style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
-                    <input type="checkbox" id="includeInactive" onchange="loadProducts()">
-                    비활성 상품 포함
+                <button class="btn-primary" onclick="handlers.showCreateProductModal()">+ 새 상품 등록</button>
+                <button class="btn-secondary" onclick="handlers.loadProducts()">🔄 새로고침</button>
+                <label style="display: flex; align-items: center; gap: 10px; margin-left: auto; cursor: pointer; font-size: 14px; color: var(--text);">
+                    <input type="checkbox" id="includeInactive" onchange="handlers.loadProducts()" 
+                           style="width: auto; cursor: pointer;">
+                    <span>비활성 상품 포함</span>
                 </label>
             </div>
         </header>
@@ -368,13 +781,75 @@
         <div class="products-grid">
             <div class="products-list">
                 <h2>상품 목록</h2>
+                
+                <!-- 필터 패널 -->
+                <div class="product-list-container">
+                    <div class="filter-panel">
+                        <div class="filter-row">
+                            <input
+                                class="filter-control filter-search"
+                                type="text"
+                                placeholder="🔍 검색 (브랜드 / 상품명 / 용량)"
+                                id="filterQuery"
+                                onkeyup="handlers.applyFilters()"
+                            />
+
+                            <select class="filter-control filter-select" id="filterSpecies" onchange="handlers.applyFilters()">
+                            <option value="ALL">전체 종류</option>
+                            <option value="DOG">강아지</option>
+                            <option value="CAT">고양이</option>
+                        </select>
+
+                            <select class="filter-control filter-select" id="filterActive" onchange="handlers.applyFilters()">
+                            <option value="ACTIVE">활성</option>
+                            <option value="ARCHIVED">비활성</option>
+                            <option value="ALL">전체</option>
+                        </select>
+
+                            <select class="filter-control filter-select" id="filterCompletion" onchange="handlers.applyFilters()">
+                                <option value="ALL">완성도 전체</option>
+                            <option value="COMPLETE">완성</option>
+                                <option value="MISSING_INGREDIENTS">성분 미완</option>
+                                <option value="MISSING_NUTRITION">영양 미완</option>
+                                <option value="MISSING_OFFERS">판매처 미완</option>
+                        </select>
+
+                            <select class="filter-control filter-select" id="filterHasImage" onchange="handlers.applyFilters()">
+                            <option value="ALL">이미지 전체</option>
+                                <option value="YES">이미지 있음</option>
+                                <option value="NO">이미지 없음</option>
+                        </select>
+
+                            <select class="filter-control filter-select" id="filterHasOffers" onchange="handlers.applyFilters()">
+                                <option value="ALL">판매처 전체</option>
+                                <option value="YES">판매처 있음</option>
+                                <option value="NO">판매처 없음</option>
+                        </select>
+
+                            <select class="filter-control filter-sort" id="filterSort" onchange="handlers.applyFilters()">
+                            <option value="UPDATED_DESC">최근 수정순</option>
+                                <option value="BRAND_ASC">브랜드순</option>
+                            <option value="INCOMPLETE_FIRST">미완성 우선</option>
+                        </select>
+                    </div>
+                        
+                        <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap;">
+                            <span id="paginationInfo" style="font-size: 13px; color: var(--muted); font-weight: 500;">총 0개 (페이지 1)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 에러 박스 -->
+                    <div id="errorBox"></div>
+                </div>
+                
                 <div id="productsList" class="loading">로딩 중...</div>
             </div>
 
             <div class="product-detail">
                 <div id="productDetail">
                     <div class="empty-state">
-                        <p>상품을 선택하면 상세 정보를 볼 수 있습니다.</p>
+                        <p style="font-size: 16px; color: var(--muted);">상품을 선택하면 상세 정보를 볼 수 있습니다.</p>
+                        <p style="font-size: 14px; color: var(--muted); margin-top: 8px;">좌측 목록에서 상품을 클릭하세요.</p>
                     </div>
                 </div>
             </div>
@@ -434,890 +909,1464 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn-success">저장</button>
+                <div class="form-group">
+                    <label>관리자 메모</label>
+                    <textarea id="adminMemo" rows="3" placeholder="관리용 메모를 입력하세요"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
                     <button type="button" class="btn-secondary" onclick="closeProductModal()">취소</button>
+                    <button type="submit" class="btn-success">저장</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8000/api/v1';
-        let selectedProductId = null;
-        let currentTab = 'info';
-
-        // 페이지 로드 시 상품 목록 불러오기
-        window.onload = () => {
-            loadProducts();
+        // ==============================================
+        // 전역 상태 객체
+        // ==============================================
+        const state = {
+            products: [],
+            selectedProductId: null,
+            filters: {
+                query: '',
+                species: 'ALL',
+                active: 'ACTIVE',
+                completion: 'ALL',
+                hasImage: 'ALL',
+                hasOffers: 'ALL'
+            },
+            sort: 'UPDATED_DESC',
+            pagination: {
+                page: 1,
+                size: 30,
+                total: 0
+            },
+            codes: {
+                allergenCodes: [],
+                claimCodes: []
+            },
+            ui: {
+                tab: 'BASIC',
+                dirty: false
+            }
         };
 
-        // 상품 목록 불러오기
-        async function loadProducts() {
-            const includeInactive = document.getElementById('includeInactive').checked;
-            const container = document.getElementById('productsList');
-            
-            try {
-                container.innerHTML = '<div class="loading">로딩 중...</div>';
-                const response = await fetch(`${API_BASE}/admin/products?include_inactive=${includeInactive}`);
-                
-                if (!response.ok) throw new Error('상품 목록을 불러오는데 실패했습니다.');
-                
-                const products = await response.json();
-                
-                if (products.length === 0) {
-                    container.innerHTML = '<div class="empty-state">등록된 상품이 없습니다.</div>';
-                    return;
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        // ==============================================
+        // API 호출 함수들 (api.*)
+        // ==============================================
+        const api = {
+            // 백엔드 연결 테스트
+            async testConnection() {
+                try {
+                    const response = await fetch('http://localhost:8000/health', {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(3000) // 3초 타임아웃
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('[API] Health check 실패:', error);
+                    return false;
                 }
+            },
 
-                container.innerHTML = products.map(product => `
-                    <div class="product-item ${!product.is_active ? 'inactive' : ''} ${selectedProductId === product.id ? 'active' : ''}" 
-                         onclick="selectProduct('${product.id}')">
-                        <h3>${product.brand_name} ${product.product_name}</h3>
-                        <div class="meta">
-                            <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #666;">${product.id}</code>
-                            ${product.size_label ? ` | 용량: ${product.size_label} | ` : ' | '}
-                            ${product.species || '공용'} | 
-                            ${product.category}
-                        </div>
-                        <span class="status-badge ${product.is_active ? 'status-active' : 'status-inactive'}">
-                            ${product.is_active ? '활성' : '비활성'}
-                        </span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 상품 선택
-        async function selectProduct(productId) {
-            selectedProductId = productId;
-            loadProducts(); // 목록 새로고침하여 active 상태 업데이트
-            
-            const container = document.getElementById('productDetail');
-            container.innerHTML = '<div class="loading">로딩 중...</div>';
-
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}`);
-                if (!response.ok) throw new Error('상품 정보를 불러오는데 실패했습니다.');
-                
-                const product = await response.json();
-                renderProductDetail(product);
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 상품 상세 정보 렌더링
-        function renderProductDetail(product) {
-            const container = document.getElementById('productDetail');
-            container.innerHTML = `
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab('info')">기본 정보</button>
-                    <button class="tab" onclick="switchTab('ingredient')">성분 정보</button>
-                    <button class="tab" onclick="switchTab('nutrition')">영양 정보</button>
-                    <button class="tab" onclick="switchTab('allergen')">알레르겐</button>
-                    <button class="tab" onclick="switchTab('claim')">기능성 클레임</button>
-                </div>
-
-                <div class="tab-content active" id="tab-info">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>${product.brand_name} ${product.product_name}</h2>
-                        <div>
-                            <button class="btn-primary" onclick="editProduct('${product.id}')">수정</button>
-                            <button class="btn-danger" onclick="deleteProduct('${product.id}')" style="margin-left: 10px;">삭제</button>
-                        </div>
-                    </div>
-                    
-                    <table class="table">
-                        <tr><th>상품 ID</th><td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${product.id}</code></td></tr>
-                        <tr><th>브랜드명</th><td>${product.brand_name}</td></tr>
-                        <tr><th>상품명</th><td>${product.product_name}</td></tr>
-                        <tr><th>용량</th><td>${product.size_label || '-'}</td></tr>
-                        <tr><th>카테고리</th><td>${product.category || 'FOOD'}</td></tr>
-                        <tr><th>반려동물 종류</th><td>${product.species || '공용'}</td></tr>
-                        <tr><th>상태</th><td><span class="status-badge ${product.is_active ? 'status-active' : 'status-inactive'}">${product.is_active ? '활성' : '비활성'}</span></td></tr>
-                    </table>
-                </div>
-
-                <div class="tab-content" id="tab-ingredient">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>성분 정보</h3>
-                        <button class="btn-primary" onclick="editIngredient('${product.id}')">수정</button>
-                    </div>
-                    <div id="ingredientContent" class="loading">로딩 중...</div>
-                </div>
-
-                <div class="tab-content" id="tab-nutrition">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>영양 정보</h3>
-                        <button class="btn-primary" onclick="editNutrition('${product.id}')">수정</button>
-                    </div>
-                    <div id="nutritionContent" class="loading">로딩 중...</div>
-                </div>
-
-                <div class="tab-content" id="tab-allergen">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>알레르겐</h3>
-                        <button class="btn-primary" onclick="editAllergen('${product.id}')">수정</button>
-                    </div>
-                    <div id="allergenContent" class="loading">로딩 중...</div>
-                </div>
-
-                <div class="tab-content" id="tab-claim">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>기능성 클레임</h3>
-                        <button class="btn-primary" onclick="editClaim('${product.id}')">수정</button>
-                    </div>
-                    <div id="claimContent" class="loading">로딩 중...</div>
-                </div>
-            `;
-
-            // 각 탭의 데이터 로드
-            loadIngredientData(product.id);
-            loadNutritionData(product.id);
-            loadAllergenData(product.id);
-            loadClaimData(product.id);
-        }
-
-        // 탭 전환
-        function switchTab(tabName) {
-            currentTab = tabName;
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-        }
-
-        // 성분 정보 로드
-        async function loadIngredientData(productId) {
-            const container = document.getElementById('ingredientContent');
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}/ingredient`);
-                if (!response.ok && response.status !== 404) throw new Error('성분 정보를 불러오는데 실패했습니다.');
-                
-                if (response.status === 404) {
-                    container.innerHTML = '<div class="empty-state">등록된 성분 정보가 없습니다.</div>';
-                    return;
-                }
-                
-                const data = await response.json();
-                container.innerHTML = `
-                    <table class="table">
-                        <tr><th>원재료</th><td>${data.ingredients_text || '-'}</td></tr>
-                        <tr><th>첨가물</th><td>${data.additives_text || '-'}</td></tr>
-                        <tr><th>출처</th><td>${data.source || '-'}</td></tr>
-                        <tr><th>버전</th><td>${data.version || 1}</td></tr>
-                        <tr><th>최종 수정일</th><td>${data.updated_at || '-'}</td></tr>
-                    </table>
-                `;
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 영양 정보 로드
-        async function loadNutritionData(productId) {
-            const container = document.getElementById('nutritionContent');
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}/nutrition`);
-                if (!response.ok && response.status !== 404) throw new Error('영양 정보를 불러오는데 실패했습니다.');
-                
-                if (response.status === 404) {
-                    container.innerHTML = '<div class="empty-state">등록된 영양 정보가 없습니다.</div>';
-                    return;
-                }
-                
-                const data = await response.json();
-                container.innerHTML = `
-                    <table class="table">
-                        <tr><th>단백질 (%)</th><td>${data.protein_pct !== null ? data.protein_pct : '-'}</td></tr>
-                        <tr><th>지방 (%)</th><td>${data.fat_pct !== null ? data.fat_pct : '-'}</td></tr>
-                        <tr><th>섬유질 (%)</th><td>${data.fiber_pct !== null ? data.fiber_pct : '-'}</td></tr>
-                        <tr><th>수분 (%)</th><td>${data.moisture_pct !== null ? data.moisture_pct : '-'}</td></tr>
-                        <tr><th>회분 (%)</th><td>${data.ash_pct !== null ? data.ash_pct : '-'}</td></tr>
-                        <tr><th>칼로리 (kcal/100g)</th><td>${data.kcal_per_100g !== null ? data.kcal_per_100g : '-'}</td></tr>
-                        <tr><th>칼슘 (%)</th><td>${data.calcium_pct !== null ? data.calcium_pct : '-'}</td></tr>
-                        <tr><th>인 (%)</th><td>${data.phosphorus_pct !== null ? data.phosphorus_pct : '-'}</td></tr>
-                        <tr><th>AAFCO 기준</th><td>${data.aafco_statement || '-'}</td></tr>
-                        <tr><th>버전</th><td>${data.version || 1}</td></tr>
-                        <tr><th>최종 수정일</th><td>${data.updated_at || '-'}</td></tr>
-                    </table>
-                `;
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 알레르겐 정보 로드
-        async function loadAllergenData(productId) {
-            const container = document.getElementById('allergenContent');
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}/allergens`);
-                if (!response.ok) throw new Error('알레르겐 정보를 불러오는데 실패했습니다.');
-                
-                const allergens = await response.json();
-                
-                if (allergens.length === 0) {
-                    container.innerHTML = '<div class="empty-state">등록된 알레르겐이 없습니다.</div>';
-                    return;
-                }
-                
-                container.innerHTML = `
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>알레르겐</th>
-                                <th>신뢰도 (%)</th>
-                                <th>출처</th>
-                                <th>작업</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${allergens.map(a => `
-                                <tr>
-                                    <td>${a.allergen_display_name || a.allergen_code}</td>
-                                    <td>${a.confidence}</td>
-                                    <td>${a.source || '-'}</td>
-                                    <td>
-                                        <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
-                                                onclick="deleteAllergen('${productId}', '${a.allergen_code}')">삭제</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 클레임 정보 로드
-        async function loadClaimData(productId) {
-            const container = document.getElementById('claimContent');
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}/claims`);
-                if (!response.ok) throw new Error('클레임 정보를 불러오는데 실패했습니다.');
-                
-                const claims = await response.json();
-                
-                if (claims.length === 0) {
-                    container.innerHTML = '<div class="empty-state">등록된 클레임이 없습니다.</div>';
-                    return;
-                }
-                
-                container.innerHTML = `
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>클레임</th>
-                                <th>증거 수준 (%)</th>
-                                <th>비고</th>
-                                <th>작업</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${claims.map(c => `
-                                <tr>
-                                    <td>${c.claim_display_name || c.claim_code}</td>
-                                    <td>${c.evidence_level}</td>
-                                    <td>${c.note || '-'}</td>
-                                    <td>
-                                        <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
-                                                onclick="deleteClaim('${productId}', '${c.claim_code}')">삭제</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-            }
-        }
-
-        // 상품 생성 모달 표시
-        function showCreateProductModal() {
-            document.getElementById('modalTitle').textContent = '상품 등록';
-            document.getElementById('productForm').reset();
-            document.getElementById('productId').value = '';
-            document.getElementById('productModal').classList.add('active');
-        }
-
-        // 상품 수정 모달 표시
-        async function editProduct(productId) {
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}`);
-                if (!response.ok) throw new Error('상품 정보를 불러오는데 실패했습니다.');
-                
-                const product = await response.json();
-                
-                document.getElementById('modalTitle').textContent = '상품 수정';
-                document.getElementById('productId').value = product.id;
-                document.getElementById('brandName').value = product.brand_name;
-                document.getElementById('productName').value = product.product_name;
-                document.getElementById('sizeLabel').value = product.size_label || '';
-                document.getElementById('category').value = product.category || 'FOOD';
-                document.getElementById('species').value = product.species || '';
-                document.getElementById('isActive').value = product.is_active ? 'true' : 'false';
-                
-                document.getElementById('productModal').classList.add('active');
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
-
-        // 상품 저장
-        async function saveProduct(event) {
-            event.preventDefault();
-            
-            const productId = document.getElementById('productId').value;
-            const productData = {
-                brand_name: document.getElementById('brandName').value,
-                product_name: document.getElementById('productName').value,
-                size_label: document.getElementById('sizeLabel').value || null,
-                category: document.getElementById('category').value,
-                species: document.getElementById('species').value || null,
-                is_active: document.getElementById('isActive').value === 'true'
-            };
-
-            try {
-                const url = productId 
-                    ? `${API_BASE}/admin/products/${productId}`
-                    : `${API_BASE}/admin/products`;
-                
-                const method = productId ? 'PUT' : 'POST';
-                
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(productData)
+            async getProducts() {
+                const params = new URLSearchParams({
+                    query: state.filters.query || '',
+                    species: state.filters.species !== 'ALL' ? state.filters.species : '',
+                    active: state.filters.active,
+                    completion_status: state.filters.completion !== 'ALL' ? state.filters.completion : '',
+                    has_image: state.filters.hasImage !== 'ALL' ? state.filters.hasImage : '',
+                    has_offers: state.filters.hasOffers !== 'ALL' ? state.filters.hasOffers : '',
+                    sort: state.sort,
+                    page: state.pagination.page,
+                    size: state.pagination.size
                 });
+                
+                const url = `${API_BASE}/admin/products?${params}`;
+                console.log('[API] 요청 URL:', url);
+                console.log('[API] 요청 파라미터:', Object.fromEntries(params));
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    console.error('[API] 타임아웃 발생 - 백엔드가 응답하지 않습니다');
+                    controller.abort();
+                }, 15000); // 15초 타임아웃 (백엔드 응답이 느릴 수 있으므로)
+                
+                try {
+                    const response = await fetch(url, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    console.log('[API] 응답 상태:', response.status, response.statusText);
+                    console.log('[API] 응답 헤더:', Object.fromEntries(response.headers.entries()));
+                    
+                if (!response.ok) {
+                        let errorMessage = '상품 목록을 불러오는데 실패했습니다.';
+                        try {
+                    const error = await response.json();
+                            console.error('[API] 에러 응답:', error);
+                            errorMessage = error.detail || errorMessage;
+                        } catch (e) {
+                            console.error('[API] JSON 파싱 실패:', e);
+                            const text = await response.text();
+                            console.error('[API] 응답 본문:', text);
+                            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('[API] 성공 응답:', data);
+                    return data;
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    console.error('[API] 요청 실패:', error);
+                    if (error.name === 'AbortError') {
+                        throw new Error('요청 시간이 초과되었습니다. 백엔드 서버가 실행 중인지 확인하세요.');
+                    }
+                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        throw new Error('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요. (http://localhost:8000)');
+                    }
+                    throw error;
+                }
+            },
 
+            async getProduct(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}`);
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || '상품 저장에 실패했습니다.');
+                    throw new Error(error.detail || '상품 정보를 불러오는데 실패했습니다.');
                 }
+                return await response.json();
+            },
 
-                showAlert(productId ? '상품이 수정되었습니다.' : '상품이 등록되었습니다.', 'success');
-                closeProductModal();
-                loadProducts();
-                
-                if (productId && selectedProductId === productId) {
-                    selectProduct(productId);
+            async createProduct(data) {
+                const response = await fetch(`${API_BASE}/admin/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '상품 등록에 실패했습니다.');
                 }
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                return await response.json();
+            },
 
-        // 상품 삭제
-        async function deleteProduct(productId) {
-            if (!confirm('정말 이 상품을 삭제하시겠습니까?')) return;
-
-            try {
+            async updateProduct(productId, data) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '상품 수정에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async archiveProduct(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/archive`, {
+                    method: 'POST'
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '상품 비활성화에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async unarchiveProduct(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/unarchive`, {
+                    method: 'POST'
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '상품 복구에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async updateProductImages(productId, data) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/images`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '이미지 업데이트에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async getProductOffers(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/offers`);
+                if (!response.ok) throw new Error('판매처 목록을 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async createOffer(productId, data) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/offers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '판매처 등록에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async updateOffer(offerId, data) {
+                const response = await fetch(`${API_BASE}/admin/offers/${offerId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '판매처 수정에 실패했습니다.');
+                }
+                return await response.json();
+            },
+
+            async deleteOffer(offerId) {
+                const response = await fetch(`${API_BASE}/admin/offers/${offerId}`, {
                     method: 'DELETE'
                 });
+                if (!response.ok) throw new Error('판매처 삭제에 실패했습니다.');
+            },
 
-                if (!response.ok) throw new Error('상품 삭제에 실패했습니다.');
-
-                showAlert('상품이 삭제되었습니다.', 'success');
-                selectedProductId = null;
-                document.getElementById('productDetail').innerHTML = '<div class="empty-state">상품을 선택하면 상세 정보를 볼 수 있습니다.</div>';
-                loadProducts();
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
-
-        // 모달 닫기
-        function closeProductModal() {
-            document.getElementById('productModal').classList.remove('active');
-        }
-
-        // 알림 표시
-        function showAlert(message, type = 'success') {
-            const container = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            container.appendChild(alert);
-
-            setTimeout(() => {
-                alert.remove();
-            }, 3000);
-        }
-
-        // 성분 정보 수정
-        async function editIngredient(productId) {
-            try {
+            async getIngredientProfile(productId) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/ingredient`);
-                const data = response.status === 404 ? null : await response.json();
-                
-                showIngredientModal(productId, data);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                if (response.status === 404) return null;
+                if (!response.ok) throw new Error('성분 정보를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
 
-        // 영양 정보 수정
-        async function editNutrition(productId) {
-            try {
-                const response = await fetch(`${API_BASE}/admin/products/${productId}/nutrition`);
-                const data = response.status === 404 ? null : await response.json();
-                
-                showNutritionModal(productId, data);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
-
-        // 알레르겐 수정
-        async function editAllergen(productId) {
-            try {
-                const [allergensResponse, codesResponse] = await Promise.all([
-                    fetch(`${API_BASE}/admin/products/${productId}/allergens`),
-                    fetch(`${API_BASE}/admin/allergen-codes`)
-                ]);
-                
-                const allergens = await allergensResponse.json();
-                const codes = await codesResponse.json();
-                
-                showAllergenModal(productId, allergens, codes);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
-
-        // 클레임 수정
-        async function editClaim(productId) {
-            try {
-                const [claimsResponse, codesResponse] = await Promise.all([
-                    fetch(`${API_BASE}/admin/products/${productId}/claims`),
-                    fetch(`${API_BASE}/admin/claim-codes`)
-                ]);
-                
-                const claims = await claimsResponse.json();
-                const codes = await codesResponse.json();
-                
-                showClaimModal(productId, claims, codes);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
-
-        // 성분 정보 모달
-        function showIngredientModal(productId, data) {
-            const modal = document.createElement('div');
-            modal.className = 'modal active';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>성분 정보 ${data ? '수정' : '등록'}</h2>
-                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                    </div>
-                    <form onsubmit="saveIngredient(event, '${productId}')">
-                        <div class="form-group">
-                            <label>원재료</label>
-                            <textarea id="ingredientText" rows="5">${data?.ingredients_text || ''}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>첨가물</label>
-                            <textarea id="additivesText" rows="5">${data?.additives_text || ''}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>출처</label>
-                            <input type="text" id="ingredientSource" value="${data?.source || ''}">
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <button type="submit" class="btn-success">저장</button>
-                            <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // 영양 정보 모달
-        function showNutritionModal(productId, data) {
-            const modal = document.createElement('div');
-            modal.className = 'modal active';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>영양 정보 ${data ? '수정' : '등록'}</h2>
-                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                    </div>
-                    <form onsubmit="saveNutrition(event, '${productId}')">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>단백질 (%)</label>
-                                <input type="number" step="0.01" id="proteinPct" value="${data?.protein_pct || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>지방 (%)</label>
-                                <input type="number" step="0.01" id="fatPct" value="${data?.fat_pct || ''}">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>섬유질 (%)</label>
-                                <input type="number" step="0.01" id="fiberPct" value="${data?.fiber_pct || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>수분 (%)</label>
-                                <input type="number" step="0.01" id="moisturePct" value="${data?.moisture_pct || ''}">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>회분 (%)</label>
-                                <input type="number" step="0.01" id="ashPct" value="${data?.ash_pct || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>칼로리 (kcal/100g)</label>
-                                <input type="number" id="kcalPer100g" value="${data?.kcal_per_100g || ''}">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>칼슘 (%)</label>
-                                <input type="number" step="0.01" id="calciumPct" value="${data?.calcium_pct || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>인 (%)</label>
-                                <input type="number" step="0.01" id="phosphorusPct" value="${data?.phosphorus_pct || ''}">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>AAFCO 기준</label>
-                            <textarea id="aafcoStatement" rows="3">${data?.aafco_statement || ''}</textarea>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <button type="submit" class="btn-success">저장</button>
-                            <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // 알레르겐 모달
-        function showAllergenModal(productId, allergens, codes) {
-            const existingCodes = new Set(allergens.map(a => a.allergen_code));
-            const modal = document.createElement('div');
-            modal.className = 'modal active';
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 800px;">
-                    <div class="modal-header">
-                        <h2>알레르겐 관리</h2>
-                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <h3>알레르겐 추가</h3>
-                        <form onsubmit="addAllergen(event, '${productId}')" style="display: flex; gap: 10px; align-items: end;">
-                            <div class="form-group" style="flex: 1;">
-                                <label>알레르겐</label>
-                                <select id="newAllergenCode" required>
-                                    <option value="">선택하세요</option>
-                                    ${codes.filter(c => !existingCodes.has(c.code)).map(c => 
-                                        `<option value="${c.code}">${c.display_name}</option>`
-                                    ).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group" style="width: 120px;">
-                                <label>신뢰도 (%)</label>
-                                <input type="number" id="newAllergenConfidence" min="0" max="100" value="80" required>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>출처</label>
-                                <input type="text" id="newAllergenSource">
-                            </div>
-                            <button type="submit" class="btn-primary">추가</button>
-                        </form>
-                    </div>
-                    <div>
-                        <h3>등록된 알레르겐</h3>
-                        ${allergens.length === 0 ? '<p>등록된 알레르겐이 없습니다.</p>' : `
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>알레르겐</th>
-                                        <th>신뢰도</th>
-                                        <th>출처</th>
-                                        <th>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${allergens.map(a => `
-                                        <tr>
-                                            <td>${a.allergen_display_name || a.allergen_code}</td>
-                                            <td>${a.confidence}%</td>
-                                            <td>${a.source || '-'}</td>
-                                            <td>
-                                                <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
-                                                        onclick="deleteAllergen('${productId}', '${a.allergen_code}'); this.closest('.modal').remove();">삭제</button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        `}
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">닫기</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // 클레임 모달
-        function showClaimModal(productId, claims, codes) {
-            const existingCodes = new Set(claims.map(c => c.claim_code));
-            const modal = document.createElement('div');
-            modal.className = 'modal active';
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 800px;">
-                    <div class="modal-header">
-                        <h2>기능성 클레임 관리</h2>
-                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <h3>클레임 추가</h3>
-                        <form onsubmit="addClaim(event, '${productId}')" style="display: flex; gap: 10px; align-items: end;">
-                            <div class="form-group" style="flex: 1;">
-                                <label>클레임</label>
-                                <select id="newClaimCode" required>
-                                    <option value="">선택하세요</option>
-                                    ${codes.filter(c => !existingCodes.has(c.code)).map(c => 
-                                        `<option value="${c.code}">${c.display_name}</option>`
-                                    ).join('')}
-                                </select>
-                            </div>
-                            <div class="form-group" style="width: 120px;">
-                                <label>증거 수준 (%)</label>
-                                <input type="number" id="newClaimEvidence" min="0" max="100" value="50" required>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label>비고</label>
-                                <input type="text" id="newClaimNote">
-                            </div>
-                            <button type="submit" class="btn-primary">추가</button>
-                        </form>
-                    </div>
-                    <div>
-                        <h3>등록된 클레임</h3>
-                        ${claims.length === 0 ? '<p>등록된 클레임이 없습니다.</p>' : `
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>클레임</th>
-                                        <th>증거 수준</th>
-                                        <th>비고</th>
-                                        <th>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${claims.map(c => `
-                                        <tr>
-                                            <td>${c.claim_display_name || c.claim_code}</td>
-                                            <td>${c.evidence_level}%</td>
-                                            <td>${c.note || '-'}</td>
-                                            <td>
-                                                <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
-                                                        onclick="deleteClaim('${productId}', '${c.claim_code}'); this.closest('.modal').remove();">삭제</button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        `}
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">닫기</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // 성분 정보 저장
-        async function saveIngredient(event, productId) {
-            event.preventDefault();
-            try {
-                const data = {
-                    ingredients_text: document.getElementById('ingredientText').value || null,
-                    additives_text: document.getElementById('additivesText').value || null,
-                    source: document.getElementById('ingredientSource').value || null
-                };
-                
+            async updateIngredientProfile(productId, data) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/ingredient`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || '저장에 실패했습니다.');
+                    throw new Error(error.detail || '성분 정보 저장에 실패했습니다.');
                 }
-                
-                showAlert('성분 정보가 저장되었습니다.', 'success');
-                event.target.closest('.modal').remove();
-                loadIngredientData(productId);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                return await response.json();
+            },
 
-        // 영양 정보 저장
-        async function saveNutrition(event, productId) {
-            event.preventDefault();
-            try {
-                const getValue = (id) => {
-                    const val = document.getElementById(id).value;
-                    return val === '' ? null : (id.includes('Pct') ? parseFloat(val) : parseInt(val));
-                };
-                
-                const data = {
-                    protein_pct: getValue('proteinPct'),
-                    fat_pct: getValue('fatPct'),
-                    fiber_pct: getValue('fiberPct'),
-                    moisture_pct: getValue('moisturePct'),
-                    ash_pct: getValue('ashPct'),
-                    kcal_per_100g: getValue('kcalPer100g'),
-                    calcium_pct: getValue('calciumPct'),
-                    phosphorus_pct: getValue('phosphorusPct'),
-                    aafco_statement: document.getElementById('aafcoStatement').value || null
-                };
-                
+            async getNutritionFacts(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/nutrition`);
+                if (response.status === 404) return null;
+                if (!response.ok) throw new Error('영양 정보를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async updateNutritionFacts(productId, data) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/nutrition`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || '저장에 실패했습니다.');
+                    throw new Error(error.detail || '영양 정보 저장에 실패했습니다.');
                 }
-                
-                showAlert('영양 정보가 저장되었습니다.', 'success');
-                event.target.closest('.modal').remove();
-                loadNutritionData(productId);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                return await response.json();
+            },
 
-        // 알레르겐 추가
-        async function addAllergen(event, productId) {
-            event.preventDefault();
-            try {
-                const data = {
-                    allergen_code: document.getElementById('newAllergenCode').value,
-                    confidence: parseInt(document.getElementById('newAllergenConfidence').value),
-                    source: document.getElementById('newAllergenSource').value || null
-                };
-                
+            async getAllergenCodes() {
+                const response = await fetch(`${API_BASE}/admin/allergen-codes`);
+                if (!response.ok) throw new Error('알레르겐 코드를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async getProductAllergens(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/allergens`);
+                if (!response.ok) throw new Error('알레르겐 정보를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async addProductAllergen(productId, data) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/allergens`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || '추가에 실패했습니다.');
+                    throw new Error(error.detail || '알레르겐 추가에 실패했습니다.');
                 }
-                
-                showAlert('알레르겐이 추가되었습니다.', 'success');
-                event.target.closest('.modal').remove();
-                loadAllergenData(productId);
-                if (selectedProductId === productId) {
-                    editAllergen(productId);
-                }
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                return await response.json();
+            },
 
-        // 알레르겐 삭제
-        async function deleteAllergen(productId, allergenCode) {
-            if (!confirm('정말 이 알레르겐을 삭제하시겠습니까?')) return;
-            
-            try {
+            async deleteProductAllergen(productId, allergenCode) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/allergens/${allergenCode}`, {
                     method: 'DELETE'
                 });
-                
-                if (!response.ok) throw new Error('삭제에 실패했습니다.');
-                
-                showAlert('알레르겐이 삭제되었습니다.', 'success');
-                loadAllergenData(productId);
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                if (!response.ok) throw new Error('알레르겐 삭제에 실패했습니다.');
+            },
 
-        // 클레임 추가
-        async function addClaim(event, productId) {
-            event.preventDefault();
-            try {
-                const data = {
-                    claim_code: document.getElementById('newClaimCode').value,
-                    evidence_level: parseInt(document.getElementById('newClaimEvidence').value),
-                    note: document.getElementById('newClaimNote').value || null
-                };
-                
+            async getClaimCodes() {
+                const response = await fetch(`${API_BASE}/admin/claim-codes`);
+                if (!response.ok) throw new Error('클레임 코드를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async getProductClaims(productId) {
+                const response = await fetch(`${API_BASE}/admin/products/${productId}/claims`);
+                if (!response.ok) throw new Error('클레임 정보를 불러오는데 실패했습니다.');
+                return await response.json();
+            },
+
+            async addProductClaim(productId, data) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/claims`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || '추가에 실패했습니다.');
+                    throw new Error(error.detail || '클레임 추가에 실패했습니다.');
                 }
-                
-                showAlert('클레임이 추가되었습니다.', 'success');
-                event.target.closest('.modal').remove();
-                loadClaimData(productId);
-                if (selectedProductId === productId) {
-                    editClaim(productId);
-                }
-            } catch (error) {
-                showAlert(error.message, 'error');
-            }
-        }
+                return await response.json();
+            },
 
-        // 클레임 삭제
-        async function deleteClaim(productId, claimCode) {
-            if (!confirm('정말 이 클레임을 삭제하시겠습니까?')) return;
-            
-            try {
+            async deleteProductClaim(productId, claimCode) {
                 const response = await fetch(`${API_BASE}/admin/products/${productId}/claims/${claimCode}`, {
                     method: 'DELETE'
                 });
-                
-                if (!response.ok) throw new Error('삭제에 실패했습니다.');
-                
-                showAlert('클레임이 삭제되었습니다.', 'success');
-                loadClaimData(productId);
-            } catch (error) {
-                showAlert(error.message, 'error');
+                if (!response.ok) throw new Error('클레임 삭제에 실패했습니다.');
             }
-        }
+        };
+
+        // ==============================================
+        // 유틸리티 함수들 (utils.*)
+        // ==============================================
+        const utils = {
+            showAlert(message, type = 'success') {
+                const container = document.getElementById('alertContainer');
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                container.appendChild(alert);
+                setTimeout(() => alert.remove(), 3000);
+            },
+
+            formatDate(dateString) {
+                if (!dateString) return '-';
+                const date = new Date(dateString);
+                return date.toLocaleString('ko-KR', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+
+            confirmAction(message) {
+                return confirm(message);
+            },
+
+            checkDirty() {
+                if (state.ui.dirty) {
+                    return utils.confirmAction('저장하지 않은 변경사항이 있습니다. 계속하시겠습니까?');
+                }
+                return true;
+            },
+
+            setDirty(value) {
+                state.ui.dirty = value;
+            },
+
+            showError(message) {
+                const errorBox = document.getElementById('errorBox');
+                if (!errorBox) return;
+                errorBox.innerText = message;
+                errorBox.style.display = 'block';
+                // 5초 후 자동 숨김
+                setTimeout(() => {
+                    errorBox.style.display = 'none';
+                }, 5000);
+            },
+
+            hideError() {
+                const errorBox = document.getElementById('errorBox');
+                if (errorBox) {
+                    errorBox.style.display = 'none';
+                }
+            }
+        };
+
+        // ==============================================
+        // 렌더링 함수들 (render.*)
+        // ==============================================
+        const render = {
+            productList(products) {
+                const container = document.getElementById('productsList');
+                if (products.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p style="font-size: 16px; color: var(--muted);">등록된 상품이 없습니다.</p><p style="font-size: 14px; color: var(--muted); margin-top: 8px;">새 상품을 등록해보세요.</p></div>';
+                    return;
+                }
+
+                container.innerHTML = products.map(product => {
+                    const badges = [];
+                    if (!product.has_image) badges.push('<span class="status-badge" style="background: var(--warning-bg); color: #92400e; border: 1px solid rgba(245, 158, 11, 0.2);">이미지X</span>');
+                    if (product.offers_count === 0) badges.push('<span class="status-badge" style="background: var(--danger-bg); color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.2);">오퍼0</span>');
+                    if (!product.ingredient_exists) badges.push('<span class="status-badge" style="background: #dbeafe; color: #1e40af; border: 1px solid rgba(37, 99, 235, 0.2);">성분X</span>');
+                    if (!product.nutrition_exists) badges.push('<span class="status-badge" style="background: #dbeafe; color: #1e40af; border: 1px solid rgba(37, 99, 235, 0.2);">영양X</span>');
+                    
+                    const completionBadge = product.completion_status 
+                        ? `<span class="status-badge" style="background: ${product.completion_status === 'COMPLETE' ? 'var(--success-bg)' : 'var(--warning-bg)'}; color: ${product.completion_status === 'COMPLETE' ? '#065f46' : '#92400e'}; border: 1px solid ${product.completion_status === 'COMPLETE' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'};">${product.completion_status}</span>`
+                        : '';
+
+                    return `
+                        <div class="product-item ${!product.is_active ? 'inactive' : ''} ${state.selectedProductId === product.id ? 'active' : ''}" 
+                             onclick="handlers.selectProduct('${product.id}')">
+                            ${product.thumbnail_url ? `<img src="${product.thumbnail_url}" style="width: 64px; height: 64px; object-fit: cover; border-radius: 10px; float: left; margin-right: 12px; border: 1px solid var(--line);" onerror="this.style.display='none'">` : ''}
+                            <h3>${product.brand_name} ${product.product_name}</h3>
+                            <div class="meta">
+                                <code>${product.id}</code>
+                                ${product.size_label ? ` · 용량: ${product.size_label} · ` : ' · '}
+                                ${product.species || '공용'} · 
+                                ${product.category}
+                                ${product.last_admin_updated_at ? ` · 수정: ${utils.formatDate(product.last_admin_updated_at)}` : ''}
+                            </div>
+                            <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">
+                                ${badges.join('')}
+                                ${completionBadge}
+                                <span class="status-badge ${product.is_active ? 'status-active' : 'status-inactive'}">
+                                    ${product.is_active ? '활성' : '비활성'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            productDetail(product) {
+                const container = document.getElementById('productDetail');
+                container.innerHTML = `
+                    <div class="tabs">
+                        <button class="tab ${state.ui.tab === 'BASIC' ? 'active' : ''}" onclick="handlers.switchTab('BASIC', this)">기본 정보</button>
+                        <button class="tab ${state.ui.tab === 'IMAGES' ? 'active' : ''}" onclick="handlers.switchTab('IMAGES', this)">이미지</button>
+                        <button class="tab ${state.ui.tab === 'OFFERS' ? 'active' : ''}" onclick="handlers.switchTab('OFFERS', this)">판매처</button>
+                        <button class="tab ${state.ui.tab === 'INGREDIENTS' ? 'active' : ''}" onclick="handlers.switchTab('INGREDIENTS', this)">성분</button>
+                        <button class="tab ${state.ui.tab === 'NUTRITION' ? 'active' : ''}" onclick="handlers.switchTab('NUTRITION', this)">영양</button>
+                        <button class="tab ${state.ui.tab === 'ALLERGENS' ? 'active' : ''}" onclick="handlers.switchTab('ALLERGENS', this)">알레르겐</button>
+                        <button class="tab ${state.ui.tab === 'CLAIMS' ? 'active' : ''}" onclick="handlers.switchTab('CLAIMS', this)">클레임</button>
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'BASIC' ? 'active' : ''}" id="tab-BASIC">
+                        ${render.tabBasic(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'IMAGES' ? 'active' : ''}" id="tab-IMAGES">
+                        ${render.tabImages(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'OFFERS' ? 'active' : ''}" id="tab-OFFERS">
+                        ${render.tabOffers(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'INGREDIENTS' ? 'active' : ''}" id="tab-INGREDIENTS">
+                        ${render.tabIngredients(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'NUTRITION' ? 'active' : ''}" id="tab-NUTRITION">
+                        ${render.tabNutrition(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'ALLERGENS' ? 'active' : ''}" id="tab-ALLERGENS">
+                        ${render.tabAllergens(product)}
+                    </div>
+
+                    <div class="tab-content ${state.ui.tab === 'CLAIMS' ? 'active' : ''}" id="tab-CLAIMS">
+                        ${render.tabClaims(product)}
+                    </div>
+                `;
+
+                // 각 탭 데이터 로드
+                if (state.ui.tab === 'INGREDIENTS') handlers.loadIngredientData(product.id);
+                if (state.ui.tab === 'NUTRITION') handlers.loadNutritionData(product.id);
+                if (state.ui.tab === 'OFFERS') handlers.loadOffersData(product.id);
+                if (state.ui.tab === 'ALLERGENS') handlers.loadAllergenData(product.id);
+                if (state.ui.tab === 'CLAIMS') handlers.loadClaimData(product.id);
+            },
+
+            tabBasic(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>${product.brand_name} ${product.product_name}</h2>
+                        <div>
+                            <button class="btn-primary" onclick="handlers.editProduct('${product.id}')">수정</button>
+                            <button class="btn-${product.is_active ? 'danger' : 'success'}" onclick="handlers.toggleArchive('${product.id}', ${!product.is_active})" style="margin-left: 10px;">
+                                ${product.is_active ? '비활성화' : '복구'}
+                            </button>
+                        </div>
+                    </div>
+                    <table class="table">
+                        <tr><th>상품 ID</th><td><code>${product.id}</code></td></tr>
+                        <tr><th>브랜드명</th><td>${product.brand_name}</td></tr>
+                        <tr><th>상품명</th><td>${product.product_name}</td></tr>
+                        <tr><th>용량</th><td>${product.size_label || '-'}</td></tr>
+                        <tr><th>카테고리</th><td>${product.category || 'FOOD'}</td></tr>
+                        <tr><th>반려동물 종류</th><td>${product.species || '공용'}</td></tr>
+                        <tr><th>완성도 상태</th><td>${product.completion_status ? `<span class="status-badge" style="background: ${product.completion_status === 'COMPLETE' ? 'var(--success-bg)' : 'var(--warning-bg)'}; color: ${product.completion_status === 'COMPLETE' ? '#065f46' : '#92400e'}; border: 1px solid ${product.completion_status === 'COMPLETE' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'};">${product.completion_status}</span>` : '-'}</td></tr>
+                        <tr><th>관리자 메모</th><td>${product.admin_memo || '-'}</td></tr>
+                        <tr><th>상태</th><td><span class="status-badge ${product.is_active ? 'status-active' : 'status-inactive'}">${product.is_active ? '활성' : '비활성'}</span></td></tr>
+                    </table>
+                `;
+            },
+
+            tabImages(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>이미지 관리</h3>
+                        <button class="btn-primary" onclick="handlers.editImages('${product.id}')">수정</button>
+                    </div>
+                    <div id="imagesContent">
+                        <table class="table">
+                            <tr><th>대표 이미지</th><td>${product.primary_image_url ? `<img src="${product.primary_image_url}" style="max-width: 200px; border-radius: 10px; border: 1px solid var(--line);" onerror="this.style.display='none'">` : '-'}</td></tr>
+                            <tr><th>썸네일</th><td>${product.thumbnail_url ? `<img src="${product.thumbnail_url}" style="max-width: 200px; border-radius: 10px; border: 1px solid var(--line);" onerror="this.style.display='none'">` : '-'}</td></tr>
+                            <tr><th>추가 이미지</th><td>${product.images && product.images.length > 0 ? product.images.map(url => `<img src="${url}" style="max-width: 100px; margin: 5px; border-radius: 8px; border: 1px solid var(--line);" onerror="this.style.display='none'">`).join('') : '-'}</td></tr>
+                        </table>
+                    </div>
+                `;
+            },
+
+            tabOffers(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>판매처 관리</h3>
+                        <button class="btn-primary" onclick="handlers.addOffer('${product.id}')">+ 판매처 추가</button>
+                    </div>
+                    <div id="offersContent" class="loading">로딩 중...</div>
+                `;
+            },
+
+            tabIngredients(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>성분 정보</h3>
+                        <button class="btn-primary" onclick="handlers.editIngredient('${product.id}')">수정</button>
+                    </div>
+                    <div id="ingredientContent" class="loading">로딩 중...</div>
+                `;
+            },
+
+            tabNutrition(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>영양 정보</h3>
+                        <button class="btn-primary" onclick="handlers.editNutrition('${product.id}')">수정</button>
+                    </div>
+                    <div id="nutritionContent" class="loading">로딩 중...</div>
+                `;
+            },
+
+            tabAllergens(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>알레르겐</h3>
+                        <button class="btn-primary" onclick="handlers.addAllergenInline('${product.id}')">+ 추가</button>
+                    </div>
+                    <div id="allergenContent" class="loading">로딩 중...</div>
+                `;
+            },
+
+            tabClaims(product) {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>기능성 클레임</h3>
+                        <button class="btn-primary" onclick="handlers.addClaimInline('${product.id}')">+ 추가</button>
+                    </div>
+                    <div id="claimContent" class="loading">로딩 중...</div>
+                `;
+            }
+        };
+
+        // ==============================================
+        // 이벤트 핸들러들 (handlers.*)
+        // ==============================================
+        const handlers = {
+            async init() {
+                // 상품 목록 바로 로드 (health check는 선택적)
+                await this.loadProducts();
+                
+                // 코드 목록 미리 로드
+                try {
+                    state.codes.allergenCodes = await api.getAllergenCodes();
+                    state.codes.claimCodes = await api.getClaimCodes();
+                } catch (error) {
+                    console.error('코드 목록 로드 실패:', error);
+                }
+            },
+
+            async loadProducts() {
+                const container = document.getElementById('productsList');
+                try {
+                    utils.hideError();
+                    container.innerHTML = '<div class="loading">로딩 중...</div>';
+                    
+                    // 백엔드 연결 확인
+                    console.log('백엔드 연결 확인 중...');
+                    const isConnected = await api.testConnection();
+                    if (!isConnected) {
+                        throw new Error('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.\n\n백엔드 서버 실행 방법:\n1. 터미널에서 cd backend\n2. uvicorn app.main:app --reload --host 0.0.0.0 --port 8000');
+                    }
+                    console.log('백엔드 연결 확인 완료');
+                    
+                    console.log('상품 목록 로드 시작...');
+                    const response = await api.getProducts();
+                    console.log('API Response:', response); // 디버깅용
+                    
+                    // 응답 형식 확인 및 처리
+                    if (!response) {
+                        throw new Error('서버에서 응답을 받지 못했습니다.');
+                    }
+                    
+                    state.products = response.items || [];
+                    state.pagination.total = response.total || response.total_count || 0;
+                    state.pagination.page = response.page || 1;
+                    
+                    console.log(`로드된 상품 수: ${state.products.length}, 총: ${state.pagination.total}`);
+                    
+                    // 페이지네이션 정보 업데이트
+                    const paginationInfo = document.getElementById('paginationInfo');
+                    if (paginationInfo) {
+                        paginationInfo.textContent = `총 ${state.pagination.total}개 (페이지 ${state.pagination.page})`;
+                    }
+                    
+                    render.productList(state.products);
+                } catch (error) {
+                    console.error('Load products error:', error);
+                    const errorMessage = error.message || '상품 목록을 불러오는데 실패했습니다.';
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p style="font-size: 16px; color: var(--muted); margin-bottom: 10px;">상품 목록을 불러올 수 없습니다.</p>
+                            <p style="font-size: 14px; color: var(--muted);">${errorMessage}</p>
+                            <button class="btn-primary" onclick="handlers.loadProducts()" style="margin-top: 16px;">다시 시도</button>
+                        </div>
+                    `;
+                    utils.showError(errorMessage);
+                    utils.showAlert(errorMessage, 'error');
+                }
+            },
+
+            applyFilters() {
+                state.filters.query = document.getElementById('filterQuery').value;
+                state.filters.species = document.getElementById('filterSpecies').value;
+                state.filters.active = document.getElementById('filterActive').value;
+                state.filters.completion = document.getElementById('filterCompletion').value;
+                state.filters.hasImage = document.getElementById('filterHasImage').value;
+                state.filters.hasOffers = document.getElementById('filterHasOffers').value;
+                state.sort = document.getElementById('filterSort').value;
+                state.pagination.page = 1; // 필터 변경 시 첫 페이지로
+                this.loadProducts();
+            },
+
+            async selectProduct(productId) {
+                if (!utils.checkDirty()) return;
+                
+                state.selectedProductId = productId;
+                utils.setDirty(false);
+                await this.loadProducts(); // 목록 새로고침하여 active 상태 업데이트
+                
+                const container = document.getElementById('productDetail');
+                container.innerHTML = '<div class="loading">로딩 중...</div>';
+
+                try {
+                    const product = await api.getProduct(productId);
+                    render.productDetail(product);
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            switchTab(tabName, eventElement) {
+                if (!utils.checkDirty()) return;
+                
+                state.ui.tab = tabName;
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // 이벤트 요소가 전달된 경우에만 active 클래스 추가
+                if (eventElement) {
+                    eventElement.classList.add('active');
+                } else {
+                    // 이벤트 요소가 없으면 탭 이름으로 찾기
+                    const tabButton = Array.from(document.querySelectorAll('.tab')).find(btn => 
+                        btn.textContent.includes(tabName === 'BASIC' ? '기본' : 
+                                                tabName === 'IMAGES' ? '이미지' :
+                                                tabName === 'OFFERS' ? '판매처' :
+                                                tabName === 'INGREDIENTS' ? '성분' :
+                                                tabName === 'NUTRITION' ? '영양' :
+                                                tabName === 'ALLERGENS' ? '알레르겐' :
+                                                tabName === 'CLAIMS' ? '클레임' : '')
+                    );
+                    if (tabButton) tabButton.classList.add('active');
+                }
+                
+                const tabContent = document.getElementById(`tab-${tabName}`);
+                if (tabContent) tabContent.classList.add('active');
+                
+                // 탭별 데이터 로드
+                if (state.selectedProductId) {
+                    if (tabName === 'INGREDIENTS') this.loadIngredientData(state.selectedProductId);
+                    if (tabName === 'NUTRITION') this.loadNutritionData(state.selectedProductId);
+                    if (tabName === 'OFFERS') this.loadOffersData(state.selectedProductId);
+                    if (tabName === 'ALLERGENS') this.loadAllergenData(state.selectedProductId);
+                    if (tabName === 'CLAIMS') this.loadClaimData(state.selectedProductId);
+                }
+            },
+
+            showCreateProductModal() {
+                document.getElementById('modalTitle').textContent = '상품 등록';
+                document.getElementById('productForm').reset();
+                document.getElementById('productId').value = '';
+                document.getElementById('productModal').classList.add('active');
+            },
+
+            async editProduct(productId) {
+                try {
+                    const product = await api.getProduct(productId);
+                    document.getElementById('modalTitle').textContent = '상품 수정';
+                    document.getElementById('productId').value = product.id;
+                    document.getElementById('brandName').value = product.brand_name;
+                    document.getElementById('productName').value = product.product_name;
+                    document.getElementById('sizeLabel').value = product.size_label || '';
+                    document.getElementById('category').value = product.category || 'FOOD';
+                    document.getElementById('species').value = product.species || '';
+                    document.getElementById('isActive').value = product.is_active ? 'true' : 'false';
+                    document.getElementById('adminMemo').value = product.admin_memo || '';
+                    document.getElementById('productModal').classList.add('active');
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async saveProduct(event) {
+                event.preventDefault();
+                const productId = document.getElementById('productId').value;
+                const productData = {
+                    brand_name: document.getElementById('brandName').value,
+                    product_name: document.getElementById('productName').value,
+                    size_label: document.getElementById('sizeLabel').value || null,
+                    category: document.getElementById('category').value,
+                    species: document.getElementById('species').value || null,
+                    is_active: document.getElementById('isActive').value === 'true',
+                    admin_memo: document.getElementById('adminMemo').value || null
+                };
+
+                try {
+                    const product = productId 
+                        ? await api.updateProduct(productId, productData)
+                        : await api.createProduct(productData);
+                    
+                    utils.showAlert(productId ? '상품이 수정되었습니다.' : '상품이 등록되었습니다.', 'success');
+                    this.closeProductModal();
+                    await this.loadProducts();
+                    
+                    if (productId && state.selectedProductId === productId) {
+                        await this.selectProduct(productId);
+                    }
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async toggleArchive(productId, unarchive) {
+                const action = unarchive ? '복구' : '비활성화';
+                if (!utils.confirmAction(`정말 이 상품을 ${action}하시겠습니까?`)) return;
+
+                try {
+                    const product = unarchive 
+                        ? await api.unarchiveProduct(productId)
+                        : await api.archiveProduct(productId);
+                    
+                    utils.showAlert(`상품이 ${action}되었습니다.`, 'success');
+                    await this.loadProducts();
+                    if (state.selectedProductId === productId) {
+                        await this.selectProduct(productId);
+                    }
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            closeProductModal() {
+                document.getElementById('productModal').classList.remove('active');
+            },
+
+            async loadIngredientData(productId) {
+                const container = document.getElementById('ingredientContent');
+                try {
+                    const data = await api.getIngredientProfile(productId);
+                    if (!data) {
+                        container.innerHTML = '<div class="empty-state"><p style="font-size: 14px; color: var(--muted);">등록된 성분 정보가 없습니다.</p><p style="font-size: 13px; color: var(--muted); margin-top: 8px;">수정 버튼을 클릭하여 등록하세요.</p></div>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table class="table">
+                            <tr><th>원재료</th><td>${data.ingredients_text || '-'}</td></tr>
+                            <tr><th>첨가물</th><td>${data.additives_text || '-'}</td></tr>
+                            <tr><th>출처</th><td>${data.source || '-'}</td></tr>
+                            <tr><th>버전</th><td>v${data.version || 1}</td></tr>
+                            <tr><th>최종 수정일</th><td>${utils.formatDate(data.updated_at)}</td></tr>
+                        </table>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                }
+            },
+
+            async loadNutritionData(productId) {
+                const container = document.getElementById('nutritionContent');
+                try {
+                    const data = await api.getNutritionFacts(productId);
+                    if (!data) {
+                        container.innerHTML = '<div class="empty-state"><p style="font-size: 14px; color: var(--muted);">등록된 영양 정보가 없습니다.</p><p style="font-size: 13px; color: var(--muted); margin-top: 8px;">수정 버튼을 클릭하여 등록하세요.</p></div>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table class="table">
+                            <tr><th>단백질 (%)</th><td>${data.protein_pct !== null ? data.protein_pct : '-'}</td></tr>
+                            <tr><th>지방 (%)</th><td>${data.fat_pct !== null ? data.fat_pct : '-'}</td></tr>
+                            <tr><th>섬유질 (%)</th><td>${data.fiber_pct !== null ? data.fiber_pct : '-'}</td></tr>
+                            <tr><th>수분 (%)</th><td>${data.moisture_pct !== null ? data.moisture_pct : '-'}</td></tr>
+                            <tr><th>회분 (%)</th><td>${data.ash_pct !== null ? data.ash_pct : '-'}</td></tr>
+                            <tr><th>칼로리 (kcal/100g)</th><td>${data.kcal_per_100g !== null ? data.kcal_per_100g : '-'}</td></tr>
+                            <tr><th>칼슘 (%)</th><td>${data.calcium_pct !== null ? data.calcium_pct : '-'}</td></tr>
+                            <tr><th>인 (%)</th><td>${data.phosphorus_pct !== null ? data.phosphorus_pct : '-'}</td></tr>
+                            <tr><th>AAFCO 기준</th><td>${data.aafco_statement || '-'}</td></tr>
+                            <tr><th>버전</th><td>v${data.version || 1}</td></tr>
+                            <tr><th>최종 수정일</th><td>${utils.formatDate(data.updated_at)}</td></tr>
+                        </table>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                }
+            },
+
+            async loadOffersData(productId) {
+                const container = document.getElementById('offersContent');
+                try {
+                    const offers = await api.getProductOffers(productId);
+                    if (offers.length === 0) {
+                        container.innerHTML = '<div class="empty-state"><p style="font-size: 14px; color: var(--muted);">등록된 판매처가 없습니다.</p><p style="font-size: 13px; color: var(--muted); margin-top: 8px;">판매처 추가 버튼을 클릭하여 등록하세요.</p></div>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>플랫폼</th>
+                                    <th>우선순위</th>
+                                    <th>현재가</th>
+                                    <th>통화</th>
+                                    <th>Fetch 상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${offers.map(offer => `
+                                    <tr>
+                                        <td>${offer.merchant}</td>
+                                        <td>${offer.display_priority}</td>
+                                        <td>${offer.current_price ? offer.current_price.toLocaleString() : '-'}</td>
+                                        <td>${offer.currency}</td>
+                                        <td>
+                                            <span class="status-badge" style="background: ${offer.last_fetch_status === 'SUCCESS' ? '#d4edda' : '#f8d7da'};">
+                                                ${offer.last_fetch_status || 'NOT_FETCHED'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn-primary" style="padding: 5px 10px; font-size: 12px;" 
+                                                    onclick="handlers.editOffer('${offer.id}')">수정</button>
+                                            <button class="btn-danger" style="padding: 5px 10px; font-size: 12px; margin-left: 5px;" 
+                                                    onclick="handlers.deleteOffer('${offer.id}')">삭제</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                }
+            },
+
+            async loadAllergenData(productId) {
+                const container = document.getElementById('allergenContent');
+                try {
+                    const allergens = await api.getProductAllergens(productId);
+                    if (allergens.length === 0) {
+                        container.innerHTML = '<div class="empty-state"><p style="font-size: 14px; color: var(--muted);">등록된 알레르겐이 없습니다.</p><p style="font-size: 13px; color: var(--muted); margin-top: 8px;">추가 버튼을 클릭하여 등록하세요.</p></div>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>알레르겐</th>
+                                    <th>신뢰도 (%)</th>
+                                    <th>출처</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${allergens.map(a => `
+                                    <tr>
+                                        <td>${a.allergen_display_name || a.allergen_code}</td>
+                                        <td>${a.confidence}</td>
+                                        <td>${a.source || '-'}</td>
+                                        <td>
+                                            <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
+                                                    onclick="handlers.deleteAllergen('${productId}', '${a.allergen_code}')">삭제</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                }
+            },
+
+            async loadClaimData(productId) {
+                const container = document.getElementById('claimContent');
+                try {
+                    const claims = await api.getProductClaims(productId);
+                    if (claims.length === 0) {
+                        container.innerHTML = '<div class="empty-state"><p style="font-size: 14px; color: var(--muted);">등록된 클레임이 없습니다.</p><p style="font-size: 13px; color: var(--muted); margin-top: 8px;">추가 버튼을 클릭하여 등록하세요.</p></div>';
+                        return;
+                    }
+                    container.innerHTML = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>클레임</th>
+                                    <th>증거 수준 (%)</th>
+                                    <th>비고</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${claims.map(c => `
+                                    <tr>
+                                        <td>${c.claim_display_name || c.claim_code}</td>
+                                        <td>${c.evidence_level}</td>
+                                        <td>${c.note || '-'}</td>
+                                        <td>
+                                            <button class="btn-danger" style="padding: 5px 10px; font-size: 12px;" 
+                                                    onclick="handlers.deleteClaim('${productId}', '${c.claim_code}')">삭제</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } catch (error) {
+                    container.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+                }
+            },
+
+            async editIngredient(productId) {
+                try {
+                    const data = await api.getIngredientProfile(productId);
+                    this.showIngredientModal(productId, data);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async editNutrition(productId) {
+                try {
+                    const data = await api.getNutritionFacts(productId);
+                    this.showNutritionModal(productId, data);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async editImages(productId) {
+                try {
+                    const product = await api.getProduct(productId);
+                    this.showImagesModal(productId, product);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async addOffer(productId) {
+                this.showOfferModal(productId, null);
+            },
+
+            async editOffer(offerId) {
+                // TODO: offer 상세 조회 후 모달 표시
+                utils.showAlert('판매처 수정 기능은 곧 추가됩니다.', 'info');
+            },
+
+            async deleteOffer(offerId) {
+                if (!utils.confirmAction('정말 이 판매처를 삭제하시겠습니까?')) return;
+                try {
+                    await api.deleteOffer(offerId);
+                    utils.showAlert('판매처가 삭제되었습니다.', 'success');
+                    if (state.selectedProductId) {
+                        await this.loadOffersData(state.selectedProductId);
+                    }
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async addAllergenInline(productId) {
+                if (state.codes.allergenCodes.length === 0) {
+                    state.codes.allergenCodes = await api.getAllergenCodes();
+                }
+                const allergens = await api.getProductAllergens(productId);
+                const existingCodes = new Set(allergens.map(a => a.allergen_code));
+                const availableCodes = state.codes.allergenCodes.filter(c => !existingCodes.has(c.code));
+                
+                if (availableCodes.length === 0) {
+                    utils.showAlert('추가할 수 있는 알레르겐이 없습니다.', 'info');
+                    return;
+                }
+                
+                const code = prompt(`추가할 알레르겐을 선택하세요:\n${availableCodes.map((c, i) => `${i + 1}. ${c.display_name}`).join('\n')}`);
+                if (!code) return;
+                
+                const selected = availableCodes[parseInt(code) - 1];
+                if (!selected) {
+                    utils.showAlert('잘못된 선택입니다.', 'error');
+                    return;
+                }
+                
+                try {
+                    await api.addProductAllergen(productId, {
+                        allergen_code: selected.code,
+                        confidence: 80,
+                        source: null
+                    });
+                    utils.showAlert('알레르겐이 추가되었습니다.', 'success');
+                    await this.loadAllergenData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async deleteAllergen(productId, allergenCode) {
+                if (!utils.confirmAction('정말 이 알레르겐을 삭제하시겠습니까?')) return;
+                try {
+                    await api.deleteProductAllergen(productId, allergenCode);
+                    utils.showAlert('알레르겐이 삭제되었습니다.', 'success');
+                    await this.loadAllergenData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async addClaimInline(productId) {
+                if (state.codes.claimCodes.length === 0) {
+                    state.codes.claimCodes = await api.getClaimCodes();
+                }
+                const claims = await api.getProductClaims(productId);
+                const existingCodes = new Set(claims.map(c => c.claim_code));
+                const availableCodes = state.codes.claimCodes.filter(c => !existingCodes.has(c.code));
+                
+                if (availableCodes.length === 0) {
+                    utils.showAlert('추가할 수 있는 클레임이 없습니다.', 'info');
+                    return;
+                }
+                
+                const code = prompt(`추가할 클레임을 선택하세요:\n${availableCodes.map((c, i) => `${i + 1}. ${c.display_name}`).join('\n')}`);
+                if (!code) return;
+                
+                const selected = availableCodes[parseInt(code) - 1];
+                if (!selected) {
+                    utils.showAlert('잘못된 선택입니다.', 'error');
+                    return;
+                }
+                
+                try {
+                    await api.addProductClaim(productId, {
+                        claim_code: selected.code,
+                        evidence_level: 50,
+                        note: null
+                    });
+                    utils.showAlert('클레임이 추가되었습니다.', 'success');
+                    await this.loadClaimData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async deleteClaim(productId, claimCode) {
+                if (!utils.confirmAction('정말 이 클레임을 삭제하시겠습니까?')) return;
+                try {
+                    await api.deleteProductClaim(productId, claimCode);
+                    utils.showAlert('클레임이 삭제되었습니다.', 'success');
+                    await this.loadClaimData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            showIngredientModal(productId, data) {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>성분 정보 ${data ? '수정' : '등록'}</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <form onsubmit="handlers.saveIngredient(event, '${productId}')">
+                            <div class="form-group">
+                                <label>원재료</label>
+                                <textarea id="ingredientText" rows="5">${data?.ingredients_text || ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>첨가물</label>
+                                <textarea id="additivesText" rows="5">${data?.additives_text || ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>출처</label>
+                                <input type="text" id="ingredientSource" value="${data?.source || ''}">
+                            </div>
+                            ${data ? `<div style="margin-bottom: 10px; color: #666;">현재 버전: v${data.version || 1}</div>` : ''}
+                            <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
+                                <button type="submit" class="btn-success">저장</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            },
+
+            showNutritionModal(productId, data) {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>영양 정보 ${data ? '수정' : '등록'}</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <form onsubmit="handlers.saveNutrition(event, '${productId}')">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>단백질 (%)</label>
+                                    <input type="number" step="0.01" id="proteinPct">
+                                </div>
+                                <div class="form-group">
+                                    <label>지방 (%)</label>
+                                    <input type="number" step="0.01" id="fatPct">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>섬유질 (%)</label>
+                                    <input type="number" step="0.01" id="fiberPct">
+                                </div>
+                                <div class="form-group">
+                                    <label>수분 (%)</label>
+                                    <input type="number" step="0.01" id="moisturePct">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>회분 (%)</label>
+                                    <input type="number" step="0.01" id="ashPct">
+                                </div>
+                                <div class="form-group">
+                                    <label>칼로리 (kcal/100g)</label>
+                                    <input type="number" id="kcalPer100g">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>칼슘 (%)</label>
+                                    <input type="number" step="0.01" id="calciumPct">
+                                </div>
+                                <div class="form-group">
+                                    <label>인 (%)</label>
+                                    <input type="number" step="0.01" id="phosphorusPct">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>AAFCO 기준</label>
+                                <textarea id="aafcoStatement" rows="3">${data?.aafco_statement || ''}</textarea>
+                            </div>
+                            ${data ? `<div style="margin-bottom: 10px; color: #666;">현재 버전: v${data.version || 1}</div>` : ''}
+                            <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
+                                <button type="submit" class="btn-success">저장</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // 숫자 필드에 값 설정 (null이 아닐 때만)
+                if (data) {
+                    if (data.protein_pct != null) document.getElementById('proteinPct').value = data.protein_pct;
+                    if (data.fat_pct != null) document.getElementById('fatPct').value = data.fat_pct;
+                    if (data.fiber_pct != null) document.getElementById('fiberPct').value = data.fiber_pct;
+                    if (data.moisture_pct != null) document.getElementById('moisturePct').value = data.moisture_pct;
+                    if (data.ash_pct != null) document.getElementById('ashPct').value = data.ash_pct;
+                    if (data.kcal_per_100g != null) document.getElementById('kcalPer100g').value = data.kcal_per_100g;
+                    if (data.calcium_pct != null) document.getElementById('calciumPct').value = data.calcium_pct;
+                    if (data.phosphorus_pct != null) document.getElementById('phosphorusPct').value = data.phosphorus_pct;
+                }
+            },
+
+            showImagesModal(productId, product) {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>이미지 관리</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <form onsubmit="handlers.saveImages(event, '${productId}')">
+                            <div class="form-group">
+                                <label>대표 이미지 URL</label>
+                                <input type="url" id="primaryImageUrl" value="${product.primary_image_url || ''}">
+                                ${product.primary_image_url ? `<img src="${product.primary_image_url}" style="max-width: 200px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line);" onerror="this.style.display='none'">` : ''}
+                            </div>
+                            <div class="form-group">
+                                <label>썸네일 URL</label>
+                                <input type="url" id="thumbnailUrl" value="${product.thumbnail_url || ''}">
+                                ${product.thumbnail_url ? `<img src="${product.thumbnail_url}" style="max-width: 200px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--line);" onerror="this.style.display='none'">` : ''}
+                            </div>
+                            <div class="form-group">
+                                <label>추가 이미지 (JSON 배열)</label>
+                                <textarea id="imagesJson" rows="3" placeholder='["url1", "url2"]'>${product.images ? JSON.stringify(product.images, null, 2) : '[]'}</textarea>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
+                                <button type="submit" class="btn-success">저장</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            },
+
+            showOfferModal(productId, offer) {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div class="modal-header">
+                            <h2>판매처 ${offer ? '수정' : '추가'}</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <form onsubmit="handlers.saveOffer(event, '${productId}', '${offer?.id || ''}')">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>플랫폼 *</label>
+                                    <select id="offerMerchant" required>
+                                        <option value="COUPANG" ${offer?.merchant === 'COUPANG' ? 'selected' : ''}>쿠팡</option>
+                                        <option value="NAVER" ${offer?.merchant === 'NAVER' ? 'selected' : ''}>네이버</option>
+                                        <option value="BRAND" ${offer?.merchant === 'BRAND' ? 'selected' : ''}>브랜드</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>상품 ID *</label>
+                                    <input type="text" id="offerMerchantProductId" value="${offer?.merchant_product_id || ''}" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>URL *</label>
+                                <input type="url" id="offerUrl" value="${offer?.url || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>어필리에이트 URL</label>
+                                <input type="url" id="offerAffiliateUrl" value="${offer?.affiliate_url || ''}">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>우선순위</label>
+                                    <input type="number" id="offerPriority" value="${offer?.display_priority || 10}" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>현재가</label>
+                                    <input type="number" id="offerCurrentPrice" value="${offer?.current_price || ''}">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>통화</label>
+                                    <input type="text" id="offerCurrency" value="${offer?.currency || 'KRW'}" maxlength="3">
+                                </div>
+                                <div class="form-group">
+                                    <label>활성 상태</label>
+                                    <select id="offerIsActive">
+                                        <option value="true" ${offer?.is_active !== false ? 'selected' : ''}>활성</option>
+                                        <option value="false" ${offer?.is_active === false ? 'selected' : ''}>비활성</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">취소</button>
+                                <button type="submit" class="btn-success">저장</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            },
+
+            async saveIngredient(event, productId) {
+                event.preventDefault();
+                try {
+                    const oldData = await api.getIngredientProfile(productId);
+                    const oldVersion = oldData?.version || 0;
+                    
+                    const data = {
+                        ingredients_text: document.getElementById('ingredientText').value || null,
+                        additives_text: document.getElementById('additivesText').value || null,
+                        source: document.getElementById('ingredientSource').value || null
+                    };
+                    
+                    const result = await api.updateIngredientProfile(productId, data);
+                    utils.showAlert(`저장 완료 · v${oldVersion} → v${result.version}`, 'success');
+                    event.target.closest('.modal').remove();
+                    await this.loadIngredientData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async saveNutrition(event, productId) {
+                event.preventDefault();
+                try {
+                    const oldData = await api.getNutritionFacts(productId);
+                    const oldVersion = oldData?.version || 0;
+                    
+                    const getValue = (id) => {
+                        const val = document.getElementById(id).value;
+                        return val === '' ? null : (id.includes('Pct') ? parseFloat(val) : parseInt(val));
+                    };
+                    
+                    const data = {
+                        protein_pct: getValue('proteinPct'),
+                        fat_pct: getValue('fatPct'),
+                        fiber_pct: getValue('fiberPct'),
+                        moisture_pct: getValue('moisturePct'),
+                        ash_pct: getValue('ashPct'),
+                        kcal_per_100g: getValue('kcalPer100g'),
+                        calcium_pct: getValue('calciumPct'),
+                        phosphorus_pct: getValue('phosphorusPct'),
+                        aafco_statement: document.getElementById('aafcoStatement').value || null
+                    };
+                    
+                    const result = await api.updateNutritionFacts(productId, data);
+                    utils.showAlert(`저장 완료 · v${oldVersion} → v${result.version}`, 'success');
+                    event.target.closest('.modal').remove();
+                    await this.loadNutritionData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async saveImages(event, productId) {
+                event.preventDefault();
+                try {
+                    let images = [];
+                    try {
+                        images = JSON.parse(document.getElementById('imagesJson').value);
+                    } catch (e) {
+                        throw new Error('추가 이미지 JSON 형식이 올바르지 않습니다.');
+                    }
+                    
+                    const data = {
+                        primary_image_url: document.getElementById('primaryImageUrl').value || null,
+                        thumbnail_url: document.getElementById('thumbnailUrl').value || null,
+                        images: images
+                    };
+                    
+                    await api.updateProductImages(productId, data);
+                    utils.showAlert('이미지가 저장되었습니다.', 'success');
+                    event.target.closest('.modal').remove();
+                    if (state.selectedProductId === productId) {
+                        const product = await api.getProduct(productId);
+                        render.productDetail(product);
+                    }
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            },
+
+            async saveOffer(event, productId, offerId) {
+                event.preventDefault();
+                try {
+                    const data = {
+                        merchant: document.getElementById('offerMerchant').value,
+                        merchant_product_id: document.getElementById('offerMerchantProductId').value,
+                        url: document.getElementById('offerUrl').value,
+                        affiliate_url: document.getElementById('offerAffiliateUrl').value || null,
+                        display_priority: parseInt(document.getElementById('offerPriority').value) || 10,
+                        current_price: document.getElementById('offerCurrentPrice').value ? parseInt(document.getElementById('offerCurrentPrice').value) : null,
+                        currency: document.getElementById('offerCurrency').value || 'KRW',
+                        is_active: document.getElementById('offerIsActive').value === 'true'
+                    };
+                    
+                    if (offerId) {
+                        await api.updateOffer(offerId, data);
+                        utils.showAlert('판매처가 수정되었습니다.', 'success');
+                    } else {
+                        await api.createOffer(productId, data);
+                        utils.showAlert('판매처가 추가되었습니다.', 'success');
+                    }
+                    
+                    event.target.closest('.modal').remove();
+                    await this.loadOffersData(productId);
+                } catch (error) {
+                    utils.showAlert(error.message, 'error');
+                }
+            }
+        };
+
+        // 기존 함수들을 handlers로 리다이렉트 (하위 호환성)
+        function loadProducts() { return handlers.loadProducts(); }
+        function selectProduct(id) { return handlers.selectProduct(id); }
+        function showCreateProductModal() { return handlers.showCreateProductModal(); }
+        function closeProductModal() { return handlers.closeProductModal(); }
+        function showAlert(msg, type) { return utils.showAlert(msg, type); }
+        function switchTab(tab) { return handlers.switchTab(tab); }
+        function editProduct(id) { return handlers.editProduct(id); }
+        function saveProduct(e) { return handlers.saveProduct(e); }
+        function deleteProduct(id) { return handlers.deleteProduct(id); }
+        function editIngredient(id) { return handlers.editIngredient(id); }
+        function editNutrition(id) { return handlers.editNutrition(id); }
+        function editAllergen(id) { return handlers.editAllergen(id); }
+        function editClaim(id) { return handlers.editClaim(id); }
+        function deleteAllergen(pid, code) { return handlers.deleteAllergen(pid, code); }
+        function deleteClaim(pid, code) { return handlers.deleteClaim(pid, code); }
+
+        // 페이지 로드 시 초기화 (handlers 정의 후)
+        window.onload = async () => {
+            await handlers.init();
+        };
     </script>
 </body>
 </html>

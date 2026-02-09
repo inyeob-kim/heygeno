@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     # API Keys
     AFFILIATE_API_KEY: Optional[str] = None
     
+    # OpenAI
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_TEMPERATURE: float = 0.3
+    OPENAI_MAX_TOKENS: int = 1200
+    
     # Worker Settings
     PRICE_COLLECTOR_INTERVAL_MINUTES: int = 60
     
