@@ -19,6 +19,13 @@ class RoutePaths {
   static const String productDetail = '/products/:id';
   static const String petProfileDetail = '/pet-profile-detail';
   
+  // 설정 화면 (중첩 라우트 - /me 하위)
+  static const String notificationSettings = '/settings/notifications';
+  static const String privacySettings = 'me.privacy'; // 고유한 라우트 이름
+  static const String help = 'me.help'; // 고유한 라우트 이름
+  static const String contact = 'me.contact'; // 고유한 라우트 이름
+  static const String appInfo = 'me.app-info'; // 고유한 라우트 이름
+  
   /// 경로에서 productId 추출
   static String productDetailPath(String productId) => '/products/$productId';
 }

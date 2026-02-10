@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../theme_v2/app_colors.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_radius.dart';
 
-/// Progress bar component matching React implementation
+/// Progress bar component - DESIGN_GUIDE v1.0 준수
 class ProgressBar extends StatelessWidget {
   final int current;
   final int total;
@@ -16,23 +17,30 @@ class ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (current / total).clamp(0.0, 1.0);
 
-    return Container(
-      width: double.infinity,
-      height: 4,
-      decoration: BoxDecoration(
-        color: AppColorsV2.divider,
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: progress,
-        child: Container(
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: progress),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Container(
+          width: double.infinity,
+          height: 4,
           decoration: BoxDecoration(
-            color: AppColorsV2.primary,
-            borderRadius: BorderRadius.circular(2),
+            color: AppColors.divider,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-        ),
-      ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: value,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue, // 결정/이동용
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

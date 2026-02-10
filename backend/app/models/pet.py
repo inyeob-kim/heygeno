@@ -76,6 +76,7 @@ class Pet(Base, TimestampMixin):
     health_concerns = relationship("PetHealthConcern", back_populates="pet", cascade="all, delete-orphan")
     food_allergies = relationship("PetFoodAllergy", back_populates="pet", cascade="all, delete-orphan")
     other_allergies = relationship("PetOtherAllergy", back_populates="pet", cascade="all, delete-orphan", uselist=False)
+    current_foods = relationship("PetCurrentFood", back_populates="pet", cascade="all, delete-orphan")
 
 
 # 건강 고민 코드 테이블

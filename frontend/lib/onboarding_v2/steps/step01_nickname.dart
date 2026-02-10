@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 
 /// Step 1: Nickname - matches React Step1Nickname
 class Step01Nickname extends StatelessWidget {
@@ -47,14 +48,14 @@ class Step01Nickname extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TossTextInput(
             value: value,
             onChanged: onUpdate,
             placeholder: '닉네임을 입력해주세요',
             maxLength: 12,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '2~12자',
             style: AppTypography.small,

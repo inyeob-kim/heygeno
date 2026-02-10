@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
-import '../../theme_v2/app_colors.dart' as v2;
+import '../../app/theme/app_spacing.dart';
 
-/// Step 8: BCS - matches React Step8BCS
+/// Step 8: BCS - DESIGN_GUIDE v1.0 준수
 class Step08BCS extends StatelessWidget {
   final int value;
   final ValueChanged<int> onUpdate;
@@ -25,7 +25,7 @@ class Step08BCS extends StatelessWidget {
 
   String getBCSLabel(int score) {
     if (score <= 3) return '조금 마른 편이에요';
-    if (score <= 6) return '딱 좋아요! 💚';
+    if (score <= 6) return '딱 좋아요!';
     return '조금 관리해볼까요?';
   }
 
@@ -36,7 +36,7 @@ class Step08BCS extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🧡',
-      title: '체형은 어느 쪽에 가까울까요? 🧡',
+      title: '체형은 어느 쪽에 가까울까요?',
       ctaText: '다음',
       onCTAClick: onNext,
       child: Column(
@@ -48,7 +48,7 @@ class Step08BCS extends StatelessWidget {
               Text(
                 '$value',
                 style: AppTypography.h1Mobile.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.primaryBlue,
                 ),
               ),
               Text(
@@ -60,13 +60,13 @@ class Step08BCS extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           // Slider
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.primary,
-              inactiveTrackColor: v2.AppColorsV2.divider,
-              thumbColor: AppColors.primary,
+              activeTrackColor: AppColors.primaryBlue,
+              inactiveTrackColor: AppColors.divider,
+              thumbColor: AppColors.primaryBlue,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
               trackHeight: 4,
             ),
@@ -81,8 +81,18 @@ class Step08BCS extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('마른 편', style: AppTypography.small),
-              Text('통통한 편', style: AppTypography.small),
+              Text(
+                '마른 편',
+                style: AppTypography.small.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                '통통한 편',
+                style: AppTypography.small.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ],

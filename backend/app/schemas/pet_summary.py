@@ -19,5 +19,6 @@ class PetSummaryResponse(BaseModel):
     sex: Optional[str] = None  # 'MALE' | 'FEMALE' | 'UNKNOWN'
     food_allergies: List[str] = []  # 음식 알레르기 코드 리스트
     other_allergies: Optional[str] = None  # 기타 알레르기 텍스트
+    is_primary: bool = False  # 주 반려동물 여부
 
     model_config = {"from_attributes": True}

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_radius.dart';
 
-/// Text input component matching React implementation
+/// Text input component - DESIGN_GUIDE v1.0 준수
 class TossTextInput extends StatelessWidget {
   final String? value;
   final ValueChanged<String>? onChanged;
@@ -93,11 +95,13 @@ class _TossTextInputStatefulState extends State<_TossTextInputStateful> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: _hasFocus ? Colors.white : const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(12),
+        color: _hasFocus ? Colors.white : AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: _hasFocus ? AppColors.primary : Colors.transparent,
-          width: 2,
+          color: _hasFocus
+              ? AppColors.primaryBlue // 결정/이동용
+              : AppColors.divider,
+          width: _hasFocus ? 2 : 1,
         ),
       ),
       child: Focus(
@@ -114,21 +118,26 @@ class _TossTextInputStatefulState extends State<_TossTextInputStateful> {
           },
           maxLength: widget.maxLength,
           keyboardType: widget.keyboardType,
-          style: AppTypography.body,
+          style: AppTypography.body.copyWith(
+            color: AppColors.textPrimary,
+          ),
           decoration: InputDecoration(
             hintText: widget.placeholder,
             hintStyle: AppTypography.body.copyWith(
               color: AppColors.textSecondary,
             ),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
+            ),
             // 기본 counter 숨기기 (우리가 커스텀 counter를 사용하므로)
             counterText: widget.counterText ?? (widget.maxLength != null ? '' : null),
             counterStyle: AppTypography.small,
             // 커스텀 counter를 suffixIcon으로 표시
             suffixIcon: widget.maxLength != null && widget.counterText == null
                 ? Padding(
-                    padding: const EdgeInsets.only(right: 16),
+                    padding: const EdgeInsets.only(right: AppSpacing.lg),
                     child: Center(
                       widthFactor: 1.0,
                       child: Text(

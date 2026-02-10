@@ -5,6 +5,9 @@ from app.models.pet import (
     HealthConcernCode, PetHealthConcern,
     AllergenCode, PetFoodAllergy, PetOtherAllergy
 )
+from app.models.pet_current_food import (
+    PetCurrentFood, FeedType, DailyAmountLevel, TreatsLevel
+)
 from app.models.product import (
     Product,
     ProductIngredientProfile,
@@ -33,6 +36,7 @@ __all__ = [
     "Pet", "PetSpecies", "PetSex", "AgeInputMode", "AgeStage",
     "HealthConcernCode", "PetHealthConcern",
     "AllergenCode", "PetFoodAllergy", "PetOtherAllergy",
+    "PetCurrentFood", "FeedType", "DailyAmountLevel", "TreatsLevel",
     "Product",
     "ProductIngredientProfile",
     "ProductNutritionFacts",

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../theme_v2/app_colors.dart';
-import '../../theme_v2/app_typography.dart';
+import 'package:flutter/cupertino.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_radius.dart';
 
-/// CTA Button component matching React implementation
+/// CTA Button component - DESIGN_GUIDE v1.0 준수
 class PrimaryCTAButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -26,21 +29,26 @@ class PrimaryCTAButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: disabled ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            backgroundColor: AppColorsV2.surface,
-            foregroundColor: AppColorsV2.textMain,
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
             side: BorderSide(
-              color: disabled ? AppColorsV2.divider : AppColorsV2.divider,
-              width: 2,
+              color: disabled
+                  ? AppColors.divider
+                  : AppColors.primaryBlue, // 결정/이동용
+              width: 1.5,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           ),
           child: Text(
             text,
-            style: AppTypographyV2.body.copyWith(
-              fontWeight: FontWeight.w600,
+            style: AppTypography.button.copyWith(
+              color: disabled
+                  ? AppColors.textSecondary
+                  : AppColors.primaryBlue,
             ),
           ),
         ),
@@ -50,21 +58,15 @@ class PrimaryCTAButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 56,
-      child: ElevatedButton(
+      child: CupertinoButton(
         onPressed: disabled ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: disabled ? AppColorsV2.divider : AppColorsV2.primary,
-          foregroundColor: disabled ? AppColorsV2.textSub : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
+        color: disabled ? AppColors.divider : AppColors.primaryBlue, // 결정/이동용
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         child: Text(
           text,
-          style: AppTypographyV2.body.copyWith(
-            fontWeight: FontWeight.w600,
-            color: disabled ? AppColorsV2.textSub : Colors.white,
+          style: AppTypography.button.copyWith(
+            color: disabled ? AppColors.textSecondary : Colors.white,
           ),
         ),
       ),

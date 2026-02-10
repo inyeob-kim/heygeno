@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../../ui/widgets/figma_app_bar.dart';
-import '../../../../../ui/widgets/figma_primary_button.dart';
+import '../../../../../ui/widgets/top_bar.dart';
 import '../../../../../ui/widgets/match_score_badge.dart';
 import '../../../../../ui/widgets/card_container.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_spacing.dart';
+import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import '../../../../../core/utils/date_formatter.dart';
+import '../../../../../core/utils/snackbar_helper.dart';
 import '../../../../../core/widgets/loading.dart';
 import '../../../../../core/widgets/empty_state.dart';
+import '../../../../../core/widgets/loading_dialog.dart';
+import '../../../../../core/widgets/modal_bottom_sheet_wrapper.dart';
+import '../../../../../ui/widgets/setting_item.dart';
+import '../../../../../ui/widgets/toggle_switch.dart';
+import '../../../../../ui/widgets/section_header.dart';
+import '../../../../../features/home/presentation/widgets/pet_avatar.dart';
+import '../../../../../features/home/presentation/widgets/pet_constants.dart';
+import '../../../../../data/models/pet_summary_dto.dart';
+import '../../../../../app/router/route_paths.dart';
+import '../../../../../domain/services/pet_service.dart';
+import '../../../../../features/home/presentation/controllers/home_controller.dart';
 import '../controllers/my_controller.dart';
 
 /// 실제 API 데이터를 사용하는 My Screen
@@ -21,6 +36,8 @@ class MyScreen extends ConsumerStatefulWidget {
 }
 
 class _MyScreenState extends ConsumerState<MyScreen> {
+  bool _notificationEnabled = true; // 알림 설정 상태
+
   @override
   void initState() {
     super.initState();
@@ -54,22 +71,52 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       );
     }
 
-    final petSummary = state.petSummary;
     final settings = [
       SettingData(
-        icon: Icons.notifications,
+        icon: Icons.notifications_outlined,
         label: '알림 설정',
         hasToggle: true,
+        onTap: null, // 토글로 처리
       ),
       SettingData(
-        icon: Icons.lock,
+        icon: Icons.lock_outline,
         label: '개인정보 보호',
         hasChevron: true,
+        onTap: () {
+          context.push('privacy');
+        },
       ),
       SettingData(
         icon: Icons.help_outline,
         label: '도움말',
         hasChevron: true,
+        onTap: () {
+          context.push('help');
+        },
+      ),
+      SettingData(
+        icon: Icons.email_outlined,
+        label: '문의하기',
+        hasChevron: true,
+        onTap: () {
+          context.push('contact');
+        },
+      ),
+      SettingData(
+        icon: Icons.lightbulb_outline,
+        label: '기능 요청하기',
+        hasChevron: true,
+        onTap: () {
+          _showFeatureRequestBottomSheet(context);
+        },
+      ),
+      SettingData(
+        icon: Icons.info_outline,
+        label: '앱 정보',
+        hasChevron: true,
+        onTap: () {
+          context.push('app-info');
+        },
       ),
     ];
 
@@ -78,167 +125,118 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const FigmaAppBar(title: '더보기'),
+            const TopBar(title: '더보기'),
             Expanded(
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: CupertinoScrollbar(
                 child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
-                      // Greeting
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CardContainer(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      petSummary != null
-                                          ? '안녕하세요, ${petSummary.name}님'
-                                          : '안녕하세요',
-                                      style: AppTypography.h2.copyWith(
-                                        color: const Color(0xFF111827),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '오늘도 건강한 하루 보내세요',
-                                      style: AppTypography.small.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
+                      const SizedBox(height: AppSpacing.xl),
+                      // 펫 프로필 카드 섹션 (가로 스크롤)
+                      _buildPetProfilesSection(state.pets),
+                      const SizedBox(height: AppSpacing.lg),
+                      // Recent Recommendation History
+                      CardContainer(
+                        isHomeStyle: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionHeader(
+                              title: '최근 추천 히스토리',
+                              actionText: state.recentRecommendations.isNotEmpty ? '전체보기' : null,
+                              onActionTap: state.recentRecommendations.isNotEmpty
+                                  ? () {
+                                      // TODO: 전체 추천 히스토리 화면으로 이동
+                                    }
+                                  : null,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            if (state.recentRecommendations.isNotEmpty)
+                              ..._buildRecentRecommendations(state.recentRecommendations)
+                            else
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                child: Text(
+                                  '아직 추천 히스토리가 없어요',
+                                  style: AppTypography.small.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF7F8FA),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.edit,
-                                  size: 20,
-                                  color: Color(0xFF6B7280),
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // NEW: Recent Recommendation History
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(height: AppSpacing.lg),
+                      // Settings
+                      CardContainer(
+                        isHomeStyle: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            ...settings.map((setting) => Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: _buildSettingItem(setting),
+                            )),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      // Point Summary Section
+                      CardContainer(
+                        isHomeStyle: true,
+                        backgroundColor: AppColors.primaryBlue.withOpacity(0.05),
+                        showBorder: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '사용 가능 포인트',
+                                  style: AppTypography.body.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  '${state.totalPoints.toLocaleString()}P',
+                                  style: AppTypography.h3.copyWith(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryBlue, // 결정/정보용
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              '최근 추천 히스토리',
-                              style: AppTypography.body.copyWith(
-                                color: const Color(0xFF111827),
-                                fontWeight: FontWeight.w600,
+                              '다음 구매 시 할인받으세요',
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary,
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {},
-                              child: Text(
-                                '전체보기',
-                                style: AppTypography.small.copyWith(
-                                  color: AppColors.textSecondary,
+                            const SizedBox(height: AppSpacing.lg),
+                            SizedBox(
+                              width: double.infinity,
+                              child: CupertinoButton(
+                                color: AppColors.primaryBlue, // 결정/이동용
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                                onPressed: () {},
+                                child: Text(
+                                  '혜택 보기',
+                                  style: AppTypography.button.copyWith(color: Colors.white),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      if (state.recentRecommendations.isNotEmpty)
-                        ..._buildRecentRecommendations(state.recentRecommendations),
-                      const SizedBox(height: 16),
-                      // Notification Settings
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CardContainer(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '설정',
-                                style: AppTypography.body.copyWith(
-                                  color: const Color(0xFF111827),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              ...settings.map((setting) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildSettingItem(setting),
-                              )),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Point Summary Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CardContainer(
-                          padding: const EdgeInsets.all(20),
-                          backgroundColor: const Color(0xFFEFF6FF),
-                          showBorder: false,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '사용 가능 포인트',
-                                    style: AppTypography.body.copyWith(
-                                      color: const Color(0xFF111827),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${state.totalPoints.toLocaleString()}P',
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '다음 구매 시 할인받으세요',
-                                style: AppTypography.small.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FigmaPrimaryButton(
-                                  text: '혜택 보기',
-                                  onPressed: () {},
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: AppSpacing.xl * 2),
                     ],
                   ),
                 ),
@@ -250,12 +248,183 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     );
   }
 
+  /// 펫 프로필 카드 섹션 (가로 스크롤)
+  Widget _buildPetProfilesSection(List<PetSummaryDto> pets) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '우리 아이들',
+          style: AppTypography.body.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 140,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(right: AppSpacing.lg),
+            itemCount: pets.length + 1, // 아이 목록 + 추가 카드
+            itemBuilder: (context, index) {
+              if (index == pets.length) {
+                // 마지막: 아이 추가하기 카드
+                return _buildAddPetCard();
+              }
+              // 아이 프로필 카드
+              return _buildPetCard(pets[index]);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 펫 프로필 카드
+  Widget _buildPetCard(PetSummaryDto pet) {
+    final isPrimary = pet.isPrimary ?? false;
+    
+    return Padding(
+      padding: const EdgeInsets.only(
+        right: AppSpacing.md,
+      ),
+      child: GestureDetector(
+        onTap: () {
+          // 현재 아이가 아닌 경우에만 전환 확인 모달 표시
+          if (!isPrimary) {
+            _showPetSwitchConfirmDialog(context, pet);
+          }
+        },
+        child: SizedBox(
+          width: 120,
+          child: CardContainer(
+            isHomeStyle: true,
+            showBorder: true,
+            borderColor: isPrimary ? AppColors.primaryBlue : null,
+            borderWidth: isPrimary ? 2.0 : null,
+            padding: const EdgeInsets.symmetric(
+              vertical: 6,
+              horizontal: AppSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PetAvatar(
+                  species: pet.species,
+                  size: 36,
+                  backgroundColor: AppColors.petGreen.withOpacity(0.1),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  pet.name,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  pet.species == 'DOG' ? '강아지' : '고양이',
+                  style: AppTypography.small.copyWith(
+                    fontSize: 9,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (pet.ageStage != null) ...[
+                  const SizedBox(height: 0),
+                  Text(
+                    PetConstants.getAgeStageText(pet.ageStage) ?? '',
+                    style: AppTypography.small.copyWith(
+                      fontSize: 8,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 펫 추가하기 카드
+  Widget _buildAddPetCard() {
+    return Padding(
+      padding: EdgeInsets.only(right: 0),
+      child: GestureDetector(
+        onTap: () {
+          // 아이 추가 모드로 온보딩 화면 이동 (닉네임 스킵)
+          context.go('${RoutePaths.onboardingV2}?mode=add_pet');
+        },
+        child: SizedBox(
+          width: 120,
+          child: CardContainer(
+            isHomeStyle: true,
+            backgroundColor: AppColors.background,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 6,
+                horizontal: AppSpacing.md,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primaryBlue.withOpacity(0.3),
+                        width: 2,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      size: 22,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '아이 추가하기',
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: AppColors.primaryBlue,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildRecentRecommendations(List<RecentRecommendationData> recommendations) {
-    return recommendations.map((recommendation) {
+    return recommendations.asMap().entries.map((entry) {
+      final index = entry.key;
+      final recommendation = entry.value;
       return Padding(
-        padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-        child: CardContainer(
-          padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.only(
+          bottom: index == recommendations.length - 1 ? 0 : AppSpacing.md,
+        ),
+        child: GestureDetector(
           onTap: () {
             context.push('/products/${recommendation.productId}');
           },
@@ -265,39 +434,37 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FA),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: const Icon(
                   Icons.image_outlined,
                   size: 32,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.iconMuted,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      recommendation.recommendedAt != null
-                          ? '${recommendation.recommendedAt!.year}.${recommendation.recommendedAt!.month.toString().padLeft(2, '0')}.${recommendation.recommendedAt!.day.toString().padLeft(2, '0')}'
-                          : '최근',
+                      DateFormatter.formatDateOrRecent(recommendation.recommendedAt),
                       style: AppTypography.small.copyWith(
                         fontSize: 11,
-                        color: const Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       recommendation.productName,
                       style: AppTypography.small.copyWith(
-                        color: const Color(0xFF111827),
+                        color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         if (recommendation.matchScore != null)
@@ -306,12 +473,12 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                             size: MatchScoreSize.small,
                           ),
                         if (recommendation.matchScore != null)
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                         if (recommendation.price != null)
                           Text(
                             PriceFormatter.formatWithCurrency(recommendation.price!),
                             style: AppTypography.small.copyWith(
-                              color: const Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                       ],
@@ -321,8 +488,8 @@ class _MyScreenState extends ConsumerState<MyScreen> {
               ),
               const Icon(
                 Icons.chevron_right,
-                size: 20,
-                color: Color(0xFF6B7280),
+                size: 18,
+                color: AppColors.iconMuted,
               ),
             ],
           ),
@@ -332,68 +499,201 @@ class _MyScreenState extends ConsumerState<MyScreen> {
   }
 
   Widget _buildSettingItem(SettingData setting) {
-    Color iconBgColor;
-    Color iconColor;
+    Widget? trailing;
     
-    if (setting.icon == Icons.notifications) {
-      iconBgColor = const Color(0xFFFEF3C7);
-      iconColor = const Color(0xFFF59E0B);
-    } else {
-      iconBgColor = const Color(0xFFF7F8FA);
-      iconColor = const Color(0xFF6B7280);
+    if (setting.hasToggle) {
+      trailing = ToggleSwitch(
+        value: _notificationEnabled,
+        onChanged: (value) {
+          setState(() {
+            _notificationEnabled = value;
+          });
+          // TODO: 알림 설정 저장 로직 추가
+        },
+      );
+    } else if (setting.hasChevron) {
+      trailing = const Icon(
+        Icons.chevron_right,
+        size: 18,
+        color: AppColors.iconMuted,
+      );
     }
 
-    return Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  setting.icon,
-                  size: 20,
-                  color: iconColor,
-                ),
+    return SettingItem.withAutoColors(
+      icon: setting.icon,
+      label: setting.label,
+      onTap: setting.onTap,
+      trailing: trailing,
+    );
+  }
+
+  /// 펫 전환 확인 다이얼로그 표시
+  Future<void> _showPetSwitchConfirmDialog(BuildContext context, PetSummaryDto targetPet) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        title: Text(
+          '펫 전환',
+          style: AppTypography.h3.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${targetPet.name}로 전환하시겠어요?',
+              style: AppTypography.body.copyWith(
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(width: 12),
-              Expanded(
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '전환하면 홈 화면의 추천이 변경됩니다.',
+              style: AppTypography.small.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              '취소',
+              style: AppTypography.button.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          CupertinoButton(
+            color: AppColors.primaryBlue,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              '전환',
+              style: AppTypography.button.copyWith(
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _switchPet(targetPet);
+    }
+  }
+
+  /// 펫 전환 실행
+  Future<void> _switchPet(PetSummaryDto targetPet) async {
+    if (!mounted) return;
+    
+    LoadingDialog.show(context);
+
+    try {
+      // Primary pet 설정
+      final petService = ref.read(petServiceProvider);
+      await petService.setPrimaryPet(targetPet.petId);
+
+      // 화면 새로고침
+      await ref.read(myControllerProvider.notifier).refresh();
+      ref.read(homeControllerProvider.notifier).initialize();
+
+      // 로딩 닫기
+      if (mounted) {
+        LoadingDialog.hide(context);
+      }
+
+      // 성공 메시지
+      if (mounted) {
+        SnackBarHelper.showSuccess(context, '${targetPet.name}로 전환되었습니다');
+      }
+    } catch (e) {
+      // 로딩 닫기
+      if (mounted) {
+        LoadingDialog.hide(context);
+      }
+
+      // 에러 메시지
+      if (mounted) {
+        SnackBarHelper.showError(context, '아이 전환에 실패했습니다: ${e.toString()}');
+      }
+    }
+  }
+
+  /// 기능 요청 바텀시트 표시
+  void _showFeatureRequestBottomSheet(BuildContext context) {
+    final textController = TextEditingController();
+    
+    ModalBottomSheetWrapper.show(
+      context,
+      title: '기능 요청하기',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 텍스트 필드
+            TextField(
+              controller: textController,
+              maxLines: 8,
+              decoration: InputDecoration(
+                hintText: '원하시는 기능을 자유롭게 작성해주세요',
+                hintStyle: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(AppSpacing.md),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // 저장 버튼
+            SizedBox(
+              width: double.infinity,
+              child: CupertinoButton(
+                color: AppColors.primaryBlue,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                onPressed: () {
+                  if (textController.text.trim().isEmpty) {
+                    SnackBarHelper.showError(context, '내용을 입력해주세요');
+                    return;
+                  }
+                  // TODO: 기능 요청 저장 로직 추가
+                  Navigator.of(context).pop();
+                  SnackBarHelper.showSuccess(context, '기능 요청이 전송되었습니다');
+                },
                 child: Text(
-                  setting.label,
-                  style: AppTypography.body.copyWith(
-                    color: const Color(0xFF111827),
-                  ),
+                  '저장',
+                  style: AppTypography.button.copyWith(color: Colors.white),
                 ),
               ),
-              if (setting.hasToggle)
-                Container(
-                  width: 44,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 4),
-                      child: CircleAvatar(
-                        radius: 8,
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                )
-              else if (setting.hasChevron)
-                const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: Color(0xFF6B7280),
-                ),
-            ],
-          );
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -403,6 +703,7 @@ class SettingData {
   final String? value;
   final bool hasToggle;
   final bool hasChevron;
+  final VoidCallback? onTap;
 
   SettingData({
     required this.icon,
@@ -410,6 +711,7 @@ class SettingData {
     this.value,
     this.hasToggle = false,
     this.hasChevron = false,
+    this.onTap,
   });
 }
 

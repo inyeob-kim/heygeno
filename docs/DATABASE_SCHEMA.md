@@ -11,6 +11,7 @@
 - `pet_health_concerns` - 펫 건강 고민 (다대다)
 - `pet_food_allergies` - 펫 식품 알레르기 (다대다)
 - `pet_other_allergies` - 펫 기타 알레르기
+- `pet_current_foods` - 펫 현재 급여 사료
 
 ### 2. 코드 테이블
 - `health_concern_codes` - 건강 고민 코드
@@ -145,7 +146,37 @@
 - updated_at: TIMESTAMP WITH TIME ZONE
 ```
 
-### 8. products (상품)
+### 8. pet_current_foods (펫 현재 급여 사료)
+```sql
+- id: UUID (PK)
+- pet_id: UUID NOT NULL (FK -> pets.id, CASCADE)
+- product_id: UUID NOT NULL (FK -> products.id, RESTRICT)
+- feed_type: VARCHAR(10) NOT NULL ('MAIN' | 'SUB')
+- is_active: BOOLEAN NOT NULL DEFAULT true
+- started_at: TIMESTAMPTZ NULL
+- ended_at: TIMESTAMPTZ NULL
+- meals_per_day: SMALLINT NULL (1~4)
+- daily_amount_level: VARCHAR(10) NULL ('LOW'|'MEDIUM'|'HIGH')
+- treats_level: VARCHAR(10) NULL ('NONE'|'SOME'|'OFTEN')
+- estimated_days_per_bag: INTEGER NULL (1~365)
+- last_confirmed_at: TIMESTAMPTZ NULL
+- created_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+- updated_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+
+인덱스:
+- idx_pcf_pet_active (pet_id, is_active)
+- idx_pcf_product_active (product_id, is_active)
+- idx_pcf_pet_feedtype_active (pet_id, feed_type, is_active)
+- UNIQUE uq_pcf_pet_main_active (pet_id) WHERE is_active = true AND feed_type = 'MAIN'
+- UNIQUE uq_pcf_pet_sub_active (pet_id) WHERE is_active = true AND feed_type = 'SUB'
+
+제약조건:
+- CHECK (meals_per_day IS NULL OR meals_per_day BETWEEN 1 AND 4)
+- CHECK (estimated_days_per_bag IS NULL OR estimated_days_per_bag BETWEEN 1 AND 365)
+- CHECK (ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at)
+```
+
+### 9. products (상품)
 ```sql
 - id: UUID (PK)
 - category: VARCHAR(30) NOT NULL DEFAULT 'FOOD'
@@ -194,7 +225,7 @@
 - parsed: JSONB (nullable, 토큰화/정규화 결과)
 - source: VARCHAR(200) (nullable, 공식홈/포장지/크롤링 등)
 - version: INTEGER NOT NULL DEFAULT 1 [NEW] 포뮬러 변경 추적용
-- updated_at: VARCHAR NOT NULL DEFAULT 'now()'
+- updated_at: TIMESTAMPTZ NOT NULL DEFAULT now()
 ```
 
 ### 11. product_nutrition_facts (상품 영양 정보)
@@ -403,6 +434,7 @@ pets (1) ──< (N) trackings
 pets (1) ──< (N) pet_health_concerns ──> (N) health_concern_codes
 pets (1) ──< (N) pet_food_allergies ──> (N) allergen_codes
 pets (1) ──< (1) pet_other_allergies
+pets (1) ──< (N) pet_current_foods ──> (N) products
 pets (1) ──< (N) recommendation_runs
 
 products (1) ──< (N) product_offers

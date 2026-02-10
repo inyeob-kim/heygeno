@@ -12,7 +12,8 @@ import time
 
 from app.models.product import Product, ProductIngredientProfile, ProductNutritionFacts
 from app.models.pet import Pet, PetHealthConcern, PetFoodAllergy, PetOtherAllergy
-from app.schemas.product import ProductRead, ProductCreate, ProductUpdate, RecommendationResponse, RecommendationItem
+from app.models.recommendation import RecommendationRun, RecommendationItem, RecStrategy
+from app.schemas.product import ProductRead, ProductCreate, ProductUpdate, RecommendationResponse, RecommendationItem as RecommendationItemSchema
 from app.schemas.pet_summary import PetSummaryResponse
 from app.models.offer import Merchant, ProductOffer
 from app.services.recommendation_scoring_service import RecommendationScoringService
@@ -234,7 +235,7 @@ class ProductService:
                 # 실패해도 계속 진행 (explanation은 None)
             
             recommendation_items.append(
-                RecommendationItem(
+                RecommendationItemSchema(
                     product=ProductRead.model_validate(product),
                     offer_merchant=offer_merchant,
                     current_price=current_price,
@@ -253,10 +254,168 @@ class ProductService:
         total_duration_ms = int((time.time() - start_time) * 1000)
         logger.info(f"[ProductService] ✅ 추천 완료: {len(recommendation_items)}개 상품 반환, LLM 소요시간={llm_duration_ms}ms, 전체 소요시간={total_duration_ms}ms")
         
+        # 7. 추천 히스토리 저장
+        try:
+            save_start_time = time.time()
+            # PetSummary를 JSON으로 직렬화하여 context에 저장
+            context = {
+                "pet_id": str(pet_summary.id),
+                "pet_name": pet_summary.name,
+                "species": pet_summary.species,
+                "age_stage": pet_summary.age_stage,
+                "weight_kg": float(pet_summary.weight_kg),
+                "breed_code": pet_summary.breed_code,
+                "is_neutered": pet_summary.is_neutered,
+                "sex": pet_summary.sex,
+                "health_concerns": pet_summary.health_concerns or [],
+                "food_allergies": pet_summary.food_allergies or [],
+                "other_allergies": pet_summary.other_allergies,
+            }
+            
+            # RecommendationRun 생성
+            recommendation_run = RecommendationRun(
+                user_id=pet.user_id,
+                pet_id=pet_id,
+                strategy=RecStrategy.RULE_V1,
+                context=context
+            )
+            db.add(recommendation_run)
+            await db.flush()  # run_id를 얻기 위해 flush
+            
+            # RecommendationItem 생성
+            for rank, item in enumerate(recommendation_items, 1):
+                db_item = RecommendationItem(
+                    run_id=recommendation_run.id,
+                    product_id=item.product.id,
+                    rank=rank,
+                    score=item.match_score,
+                    reasons=item.match_reasons or [],
+                    score_components={
+                        "safety_score": item.safety_score,
+                        "fitness_score": item.fitness_score,
+                        "total_score": item.match_score,
+                    }
+                )
+                db.add(db_item)
+            
+            await db.commit()
+            save_duration_ms = int((time.time() - save_start_time) * 1000)
+            logger.info(f"[ProductService] 💾 추천 히스토리 저장 완료: run_id={recommendation_run.id}, 소요시간={save_duration_ms}ms")
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"[ProductService] ❌ 추천 히스토리 저장 실패: {str(e)}", exc_info=True)
+            # 히스토리 저장 실패해도 추천 결과는 반환
+        
         return RecommendationResponse(
             pet_id=pet_id,
             items=recommendation_items,
         )
+    
+    @staticmethod
+    async def get_recent_recommendation_history(
+        pet_id: UUID,
+        limit: int = 10,
+        db: AsyncSession = None
+    ) -> List[RecommendationItemSchema]:
+        """
+        최근 추천 히스토리 조회 (저장된 히스토리에서 조회)
+        """
+        logger.info(f"[ProductService] 📚 최근 추천 히스토리 조회 시작: pet_id={pet_id}, limit={limit}")
+        
+        # 가장 최근 추천 실행 조회
+        result = await db.execute(
+            select(RecommendationRun)
+            .where(RecommendationRun.pet_id == pet_id)
+            .order_by(RecommendationRun.created_at.desc())
+            .limit(1)
+        )
+        latest_run = result.scalar_one_or_none()
+        
+        if not latest_run:
+            logger.info(f"[ProductService] 📚 추천 히스토리 없음: pet_id={pet_id}")
+            return []
+        
+        # 해당 실행의 추천 아이템들 조회 (상위 N개)
+        items_result = await db.execute(
+            select(RecommendationItem)
+            .where(RecommendationItem.run_id == latest_run.id)
+            .order_by(RecommendationItem.rank.asc())
+            .limit(limit)
+        )
+        db_items = items_result.scalars().all()
+        
+        # Product 정보를 eager load
+        product_ids = [item.product_id for item in db_items]
+        products_result = await db.execute(
+            select(Product)
+            .options(
+                selectinload(Product.offers),
+                selectinload(Product.ingredient_profile),
+                selectinload(Product.nutrition_facts)
+            )
+            .where(Product.id.in_(product_ids))
+        )
+        products = {p.id: p for p in products_result.scalars().all()}
+        
+        # RecommendationItemSchema로 변환
+        recommendation_items = []
+        for db_item in db_items:
+            product = products.get(db_item.product_id)
+            if not product:
+                continue
+            
+            # Primary offer 찾기
+            primary_offer = None
+            for offer in product.offers:
+                if offer.is_primary and offer.is_active:
+                    primary_offer = offer
+                    break
+            
+            if not primary_offer:
+                for offer in product.offers:
+                    if offer.is_active:
+                        primary_offer = offer
+                        break
+            
+            # Offer가 없으면 기본값 사용
+            if not primary_offer:
+                offer_merchant = Merchant.COUPANG
+                current_price = 0
+                avg_price = 0
+                delta_percent = None
+                is_new_low = False
+            else:
+                offer_merchant = primary_offer.merchant
+                # TODO: 가격 정보는 PriceSnapshot에서 가져오기 (현재는 기본값)
+                current_price = 0
+                avg_price = 0
+                delta_percent = None
+                is_new_low = False
+            
+            # score_components에서 점수 추출
+            score_components = db_item.score_components or {}
+            safety_score = score_components.get("safety_score", 0.0)
+            fitness_score = score_components.get("fitness_score", 0.0)
+            total_score = float(db_item.score)
+            
+            recommendation_items.append(
+                RecommendationItemSchema(
+                    product=ProductRead.model_validate(product),
+                    offer_merchant=offer_merchant,
+                    current_price=current_price,
+                    avg_price=avg_price,
+                    delta_percent=delta_percent,
+                    is_new_low=is_new_low,
+                    match_score=total_score,
+                    safety_score=safety_score,
+                    fitness_score=fitness_score,
+                    match_reasons=db_item.reasons or [],
+                    explanation=None,  # 히스토리에서는 LLM 설명 제외 (용량 절약)
+                )
+            )
+        
+        logger.info(f"[ProductService] 📚 최근 추천 히스토리 조회 완료: {len(recommendation_items)}개")
+        return recommendation_items
     
     @staticmethod
     async def _build_pet_summary(pet: Pet, db: AsyncSession) -> PetSummaryResponse:

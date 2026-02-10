@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../../../../../ui/theme/app_colors.dart';
 import '../../../../../ui/theme/app_typography.dart';
 import '../../../../../ui/components/metric_row.dart';
@@ -28,14 +29,22 @@ class RecommendationCard extends StatelessWidget {
           : '분석 중...';
       
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Lottie.asset(
+            'assets/animations/paw_loading.json',
+            width: 80,
+            height: 80,
+            fit: BoxFit.contain,
+            repeat: true,
+            animate: true,
+          ),
+          const SizedBox(height: 16),
           Text(
             loadingText,
             style: AppTypography.body,
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          _buildSkeleton(),
         ],
       );
     }
@@ -122,25 +131,6 @@ class RecommendationCard extends StatelessWidget {
     return price.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
-    );
-  }
-
-  Widget _buildSkeleton() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          height: 20,
-          width: 200,
-          color: AppColors.divider.withOpacity(0.3),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 16,
-          width: 150,
-          color: AppColors.divider.withOpacity(0.3),
-        ),
-      ],
     );
   }
 }

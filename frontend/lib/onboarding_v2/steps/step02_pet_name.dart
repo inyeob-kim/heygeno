@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 
 /// Step 2: Pet Name - matches React Step2PetName
 class Step02PetName extends StatelessWidget {
@@ -31,7 +32,7 @@ class Step02PetName extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🐾',
-      title: '우리 아이 이름은요? 🐾',
+      title: '우리 아이 이름은요?',
       ctaText: '다음',
       ctaDisabled: !isValid,
       onCTAClick: onNext,
@@ -44,14 +45,14 @@ class Step02PetName extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TossTextInput(
             value: value,
             onChanged: onUpdate,
             placeholder: '이름을 입력해주세요',
             maxLength: 20,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             '1~20자',
             style: AppTypography.small,

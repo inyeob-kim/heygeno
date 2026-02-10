@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../theme_v2/app_colors.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_radius.dart';
 
-/// Selection card component matching React implementation
+/// Selection card component - DESIGN_GUIDE v1.0 준수
 class SelectionCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
@@ -21,16 +23,23 @@ class SelectionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
         constraints: const BoxConstraints(minHeight: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
         decoration: BoxDecoration(
-          color: selected ? AppColorsV2.primarySoft : AppColorsV2.background,
-          borderRadius: BorderRadius.circular(16),
+          color: selected
+              ? AppColors.primaryBlue.withOpacity(0.1)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? AppColorsV2.primary : Colors.transparent,
-            width: 2,
+            color: selected
+                ? AppColors.primaryBlue // 결정/이동용
+                : AppColors.divider,
+            width: selected ? 2 : 1,
           ),
         ),
         child: Row(
@@ -40,22 +49,24 @@ class SelectionCard extends StatelessWidget {
                 emoji!,
                 style: const TextStyle(fontSize: 32),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
             ],
             Expanded(
               child: child,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Container(
               width: 24,
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? AppColorsV2.primary : AppColorsV2.divider,
+                  color: selected
+                      ? AppColors.primaryBlue
+                      : AppColors.divider,
                   width: 2,
                 ),
-                color: selected ? AppColorsV2.primary : Colors.transparent,
+                color: selected ? AppColors.primaryBlue : Colors.transparent,
               ),
               child: selected
                   ? const Icon(

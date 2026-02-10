@@ -13,6 +13,7 @@ class PetSummaryDto {
   final String? sex; // 'MALE' | 'FEMALE' | 'UNKNOWN'
   final List<String> foodAllergies; // 음식 알레르기 코드 리스트
   final String? otherAllergies; // 기타 알레르기 텍스트
+  final bool? isPrimary; // 주 반려동물 여부
 
   PetSummaryDto({
     required this.petId,
@@ -28,6 +29,7 @@ class PetSummaryDto {
     this.sex,
     List<String>? foodAllergies,
     this.otherAllergies,
+    this.isPrimary,
   }) : healthConcerns = healthConcerns ?? [],
        foodAllergies = foodAllergies ?? [];
 
@@ -57,6 +59,7 @@ class PetSummaryDto {
               .toList() ??
           [],
       otherAllergies: json['other_allergies'] as String?,
+      isPrimary: (json['is_primary'] as bool?) ?? false,
     );
   }
 

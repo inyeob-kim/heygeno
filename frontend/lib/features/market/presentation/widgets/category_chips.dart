@@ -36,9 +36,9 @@ class CategoryChips extends StatelessWidget {
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.chipsGap),
+        separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = category.id == selectedCategoryId;
@@ -54,7 +54,7 @@ class CategoryChips extends StatelessWidget {
                     size: 16,
                     color: isSelected ? Colors.white : AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.xs + 2),
                 ],
                 Text(category.label),
               ],
@@ -69,8 +69,8 @@ class CategoryChips extends StatelessWidget {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
             padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.chip),

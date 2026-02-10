@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../widgets/selection_card.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 
-/// Step 6: Sex & Neutered - matches React Step6SexNeutered
+/// Step 6: Sex & Neutered - DESIGN_GUIDE v1.0 준수
 class Step06SexNeutered extends StatelessWidget {
   final String sex; // 'male' | 'female' | ''
   final bool? neutered; // true | false | null
@@ -33,7 +34,7 @@ class Step06SexNeutered extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '✨',
-      title: '성별과 중성화 정보를 알려주세요 ✨',
+      title: '성별과 중성화 정보를 알려주세요',
       ctaText: '다음',
       ctaDisabled: !isValid,
       onCTAClick: onNext,
@@ -47,7 +48,7 @@ class Step06SexNeutered extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: sex == 'male',
             onTap: () => onUpdate({'sex': 'male'}),
@@ -59,7 +60,7 @@ class Step06SexNeutered extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: sex == 'female',
             onTap: () => onUpdate({'sex': 'female'}),
@@ -71,7 +72,7 @@ class Step06SexNeutered extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           // Neutered Section
           Text(
             '중성화',
@@ -79,7 +80,7 @@ class Step06SexNeutered extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: neutered == true,
             onTap: () => onUpdate({'neutered': true}),
@@ -90,7 +91,7 @@ class Step06SexNeutered extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: neutered == false,
             onTap: () => onUpdate({'neutered': false}),
@@ -101,7 +102,7 @@ class Step06SexNeutered extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: neutered == null,
             onTap: () => onUpdate({'neutered': null}),

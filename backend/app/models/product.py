@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Text, SmallInteger, CheckConstraint, Integer, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SQLEnum, Index, Text, SmallInteger, CheckConstraint, Integer, UniqueConstraint, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.types import Numeric
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 import uuid
 import enum
 
@@ -38,6 +39,7 @@ class Product(Base, TimestampMixin):
     nutrition_facts = relationship("ProductNutritionFacts", back_populates="product", uselist=False, cascade="all, delete-orphan")
     allergens = relationship("ProductAllergen", back_populates="product", cascade="all, delete-orphan")
     claims = relationship("ProductClaim", back_populates="product", cascade="all, delete-orphan")
+    current_foods = relationship("PetCurrentFood", back_populates="product", cascade="all, delete-orphan")
 
 
 # 원재료/성분표 원문 + 파싱 결과
@@ -50,7 +52,7 @@ class ProductIngredientProfile(Base):
     parsed = Column(JSONB, nullable=True)  # JSONB: 토큰화/정규화 결과
     source = Column(String(200), nullable=True)  # 공식홈/포장지/크롤링 등
     version = Column(Integer, nullable=False, server_default='1')  # 포뮬러 변경 추적용
-    updated_at = Column(String, nullable=False, server_default='now()')  # TimestampMixin의 updated_at과 별도
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())  # TimestampMixin의 updated_at과 별도
     
     # Relationships
     product = relationship("Product", back_populates="ingredient_profile")
@@ -71,7 +73,7 @@ class ProductNutritionFacts(Base):
     phosphorus_pct = Column(Numeric(5, 2), nullable=True)
     aafco_statement = Column(Text, nullable=True)
     version = Column(Integer, nullable=False, server_default='1')  # 포뮬러 변경 추적용
-    updated_at = Column(String, nullable=False, server_default='now()')
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     
     # Relationships
     product = relationship("Product", back_populates="nutrition_facts")

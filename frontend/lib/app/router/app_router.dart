@@ -15,6 +15,10 @@ import '../../features/market/presentation/screens/market_screen.dart';
 import '../../features/me/presentation/screens/my_screen.dart';
 import '../../features/product_detail/presentation/screens/product_detail_screen.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_detail_screen.dart';
+import '../../features/me/presentation/screens/privacy_settings_screen.dart';
+import '../../features/me/presentation/screens/help_screen.dart';
+import '../../features/me/presentation/screens/contact_screen.dart';
+import '../../features/me/presentation/screens/app_info_screen.dart';
 import '../../onboarding_v2/onboarding_flow.dart';
 import '../../data/models/pet_summary_dto.dart';
 
@@ -45,8 +49,10 @@ GoRouter _createRouter(Ref ref) {
         return null;
       }
 
-      // 상세 페이지는 온보딩 체크 제외
-      if (location.startsWith('/products/') || location == RoutePaths.petProfileDetail) {
+      // 상세 페이지 및 펫 추가 페이지는 온보딩 체크 제외
+      if (location.startsWith('/products/') || 
+          location == RoutePaths.petProfileDetail ||
+          location == RoutePaths.onboardingV2) {
         return null;
       }
 
@@ -81,6 +87,16 @@ GoRouter _createRouter(Ref ref) {
         path: RoutePaths.onboarding,
         name: RoutePaths.onboarding,
         builder: (context, state) => const OnboardingFlowV2(),
+      ),
+      // 펫 추가용 온보딩 라우트 (V2) - 온보딩 완료 후에도 접근 가능
+      GoRoute(
+        path: RoutePaths.onboardingV2,
+        name: RoutePaths.onboardingV2,
+        builder: (context, state) {
+          // 쿼리 파라미터를 위젯에 전달하기 위해 extra로 전달
+          final isAddPetMode = state.uri.queryParameters['mode'] == 'add_pet';
+          return OnboardingFlowV2(isAddPetMode: isAddPetMode);
+        },
       ),
       // 스플래시 스크린 (온보딩 완료 후)
       GoRoute(
@@ -152,6 +168,25 @@ GoRouter _createRouter(Ref ref) {
                 path: RoutePaths.me,
                 name: RoutePaths.me,
                 builder: (context, state) => const MyScreen(),
+                routes: [
+                  // 설정 화면들 (중첩 라우트)
+                  GoRoute(
+                    path: 'privacy',
+                    builder: (context, state) => const PrivacySettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'help',
+                    builder: (context, state) => const HelpScreen(),
+                  ),
+                  GoRoute(
+                    path: 'contact',
+                    builder: (context, state) => const ContactScreen(),
+                  ),
+                  GoRoute(
+                    path: 'app-info',
+                    builder: (context, state) => const AppInfoScreen(),
+                  ),
+                ],
               ),
             ],
           ),

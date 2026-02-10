@@ -29,6 +29,7 @@ class MyState {
   final bool isLoading;
   final String? error;
   final PetSummaryDto? petSummary;
+  final List<PetSummaryDto> pets; // 모든 펫 목록
   final List<RecentRecommendationData> recentRecommendations;
   final int totalPoints; // TODO: 포인트 API 추가 시 사용
 
@@ -36,6 +37,7 @@ class MyState {
     this.isLoading = false,
     this.error,
     this.petSummary,
+    this.pets = const [],
     this.recentRecommendations = const [],
     this.totalPoints = 0,
   });
@@ -44,6 +46,7 @@ class MyState {
     bool? isLoading,
     String? error,
     PetSummaryDto? petSummary,
+    List<PetSummaryDto>? pets,
     List<RecentRecommendationData>? recentRecommendations,
     int? totalPoints,
   }) {
@@ -51,6 +54,7 @@ class MyState {
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       petSummary: petSummary ?? this.petSummary,
+      pets: pets ?? this.pets,
       recentRecommendations: recentRecommendations ?? this.recentRecommendations,
       totalPoints: totalPoints ?? this.totalPoints,
     );
@@ -70,40 +74,55 @@ class MyController extends StateNotifier<MyState> {
 
   /// 초기화
   Future<void> _initialize() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      pets: const [], // 초기화 시 빈 리스트로 명시적으로 설정
+    );
 
     try {
-      // 1. Primary Pet 조회
-      final petSummary = await _petService.getPrimaryPetSummary();
+      // 1. 모든 펫 목록 조회
+      print('[MyController] 모든 펫 목록 조회 시작');
+      final petsList = await _petService.getAllPetSummaries();
+      print('[MyController] 펫 목록 조회 완료: ${petsList.length}개');
+      
+      // 2. Primary Pet을 첫 번째로 정렬
+      final sortedPetsList = List<PetSummaryDto>.from(petsList)
+        ..sort((a, b) {
+          final aIsPrimary = a.isPrimary ?? false;
+          final bIsPrimary = b.isPrimary ?? false;
+          if (aIsPrimary && !bIsPrimary) return -1;
+          if (!aIsPrimary && bIsPrimary) return 1;
+          return 0;
+        });
+      
+      // 3. Primary Pet 찾기 (isPrimary 필드 사용)
+      PetSummaryDto? petSummary;
+      try {
+        petSummary = sortedPetsList.firstWhere((pet) => pet.isPrimary ?? false);
+      } catch (e) {
+        // isPrimary가 true인 펫이 없으면 첫 번째 펫 사용
+        petSummary = sortedPetsList.isNotEmpty ? sortedPetsList.first : null;
+      }
+      print('[MyController] Primary Pet: ${petSummary?.name ?? "없음"}');
 
-      // 2. 최근 추천 조회 (Pet이 있는 경우)
-      List<RecentRecommendationData> recentRecommendations = [];
+      // 3. 최근 추천 조회 (Pet이 있는 경우) - 병렬 처리로 성능 개선
       if (petSummary != null) {
         try {
-          final recommendations = await _productRepository.getRecommendations(
-            petSummary.petId,
-          );
-          recentRecommendations = recommendations.items
-              .take(3)
-              .map((item) => RecentRecommendationData(
-                    productId: item.product.id,
-                    productName: item.product.productName,
-                    brandName: item.product.brandName,
-                    price: item.currentPrice,
-                    // TODO: matchScore는 백엔드에서 제공되면 추가
-                    recommendedAt: DateTime.now(), // TODO: 실제 추천 시간
-                  ))
-              .toList();
+          // 추천 API 호출을 별도로 실행하여 펫 정보 로딩 후 바로 화면 표시 가능하도록
+          _loadRecommendations(petSummary.petId);
         } catch (e) {
           // 추천 실패해도 계속 진행
           print('[MyController] 추천 조회 실패: $e');
         }
       }
 
+      // 펫 정보만 먼저 표시하여 로딩 시간 단축
       state = state.copyWith(
         isLoading: false,
         petSummary: petSummary,
-        recentRecommendations: recentRecommendations,
+        pets: sortedPetsList,
+        recentRecommendations: const [],
       );
     } catch (e) {
       final failure = e is Exception
@@ -112,7 +131,38 @@ class MyController extends StateNotifier<MyState> {
       state = state.copyWith(
         isLoading: false,
         error: failure.message,
+        pets: const [], // 에러 시에도 빈 리스트로 명시적으로 설정
       );
+    }
+  }
+
+  /// 추천 데이터를 비동기로 로드 (히스토리에서 조회)
+  Future<void> _loadRecommendations(String petId) async {
+    try {
+      // 히스토리에서 최근 추천 조회 (빠름)
+      final recommendations = await _productRepository.getRecommendationHistory(
+        petId,
+        limit: 3,
+      );
+      final recentRecommendations = recommendations.items
+          .take(3)
+          .map((item) => RecentRecommendationData(
+                productId: item.product.id,
+                productName: item.product.productName,
+                brandName: item.product.brandName,
+                price: item.currentPrice,
+                matchScore: item.matchScore.toInt(),
+                recommendedAt: null, // 히스토리에서는 시간 정보 없음
+              ))
+          .toList();
+
+      // 추천 데이터가 로드되면 상태 업데이트
+      state = state.copyWith(
+        recentRecommendations: recentRecommendations,
+      );
+    } catch (e) {
+      // 추천 실패해도 화면은 계속 표시
+      print('[MyController] 추천 히스토리 조회 실패: $e');
     }
   }
 

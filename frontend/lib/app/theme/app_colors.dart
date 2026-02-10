@@ -24,6 +24,9 @@ class AppColors {
   static const Color positiveGreen = Color(0xFF00D084);
   static const Color dangerRed = Color(0xFFF04452);
   
+  // Pet Green (Status / Emotional - 현재 상태, 안심, 성공)
+  static const Color petGreen = Color(0xFF16A34A);
+  
   // Icon
   static const Color iconMuted = textSecondary;
   static const Color iconPrimary = textPrimary;

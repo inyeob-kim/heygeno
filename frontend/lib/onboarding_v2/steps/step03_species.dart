@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../widgets/selection_card.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 
 /// Step 3: Species - matches React Step3Species
 class Step03Species extends StatelessWidget {
@@ -28,8 +29,8 @@ class Step03Species extends StatelessWidget {
       currentStep: currentStep,
       totalSteps: totalSteps,
       onBack: onBack,
-      emoji: '🐶🐱',
-      title: '어떤 친구인가요? 🐶🐱',
+      emoji: '',
+      title: '어떤 친구인가요?',
       ctaText: '다음',
       ctaDisabled: value.isEmpty,
       onCTAClick: onNext,
@@ -46,7 +47,7 @@ class Step03Species extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           SelectionCard(
             selected: value == 'cat',
             onTap: () => onUpdate('cat'),

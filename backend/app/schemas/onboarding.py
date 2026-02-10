@@ -11,7 +11,8 @@ class AutoTrackConfig(BaseModel):
 
 class OnboardingCompleteRequest(BaseModel):
     device_uid: str = Field(..., min_length=1, description="Device UID (UUID v4)")
-    nickname: str = Field(..., min_length=2, max_length=12, description="사용자 닉네임")
+    nickname: str = Field('', min_length=0, max_length=12, description="사용자 닉네임 (펫 추가 모드에서는 빈 문자열 가능)")
+    is_add_pet_mode: bool = Field(False, description="펫 추가 모드 여부 (True면 새 펫 추가, False면 primary pet 업데이트/생성)")
     
     # Pet 정보
     pet_name: str = Field(..., min_length=1, max_length=20)

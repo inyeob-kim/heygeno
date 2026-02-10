@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../theme_v2/app_colors.dart';
-import '../../theme_v2/app_typography.dart';
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_radius.dart';
 
-/// Pill chip component matching React implementation
+/// Pill chip component - DESIGN_GUIDE v1.0 준수
 class PillChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -20,17 +22,31 @@ class PillChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: selected ? AppColorsV2.primary : AppColorsV2.background,
-          borderRadius: BorderRadius.circular(22),
+          color: selected
+              ? AppColors.primaryBlue // 결정/이동용
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryBlue
+                : AppColors.divider,
+            width: selected ? 2 : 1,
+          ),
         ),
         child: Text(
           label,
-          style: AppTypographyV2.body.copyWith(
-            fontWeight: FontWeight.w500,
-            color: selected ? Colors.white : AppColorsV2.textMain,
+          style: AppTypography.body.copyWith(
+            fontWeight: FontWeight.w600,
+            color: selected
+                ? Colors.white
+                : AppColors.textPrimary,
           ),
         ),
       ),

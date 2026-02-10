@@ -23,16 +23,28 @@ import 'steps/step11_photo.dart';
 
 /// Onboarding flow controller matching React OnboardingFlow
 class OnboardingFlowV2 extends ConsumerStatefulWidget {
-  const OnboardingFlowV2({super.key});
+  final bool isAddPetMode;
+  
+  const OnboardingFlowV2({
+    super.key,
+    this.isAddPetMode = false,
+  });
 
   @override
   ConsumerState<OnboardingFlowV2> createState() => _OnboardingFlowV2State();
 }
 
 class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
-  int _currentStep = 1;
+  late int _currentStep;
   OnboardingStateV2 _data = const OnboardingStateV2();
   bool _isCompleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 펫 추가 모드면 Step 2부터 시작, 아니면 Step 1부터
+    _currentStep = widget.isAddPetMode ? 2 : 1;
+  }
 
   void _updateData(OnboardingStateV2 Function(OnboardingStateV2) updater) {
     setState(() {
@@ -54,8 +66,15 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
 
       // API 요청 데이터 생성
       final requestData = _data.toApiRequest(deviceUid);
+      // 펫 추가 모드면 닉네임을 빈 문자열로 설정하고 is_add_pet_mode 플래그 추가
+      if (widget.isAddPetMode) {
+        requestData['nickname'] = '';
+        requestData['is_add_pet_mode'] = true;
+      } else {
+        requestData['is_add_pet_mode'] = false;
+      }
       
-      debugPrint('[OnboardingFlowV2] 온보딩 완료 요청: $requestData');
+      debugPrint('[OnboardingFlowV2] 온보딩 완료 요청 (펫 추가 모드: ${widget.isAddPetMode}): $requestData');
 
       // API 클라이언트 가져오기
       final apiClient = ref.read(apiClientProvider);
@@ -115,37 +134,36 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
 
   void _nextStep() {
     setState(() {
-      // Handle Dog/Cat branching logic (matching React)
-      if (_currentStep == 4 && _data.species == 'cat') {
-        _currentStep = 6; // Skip breed step for cats
-      } else if (_currentStep == 6 && _data.species == 'cat' && _currentStep > 4) {
-        _currentStep = 7;
-      } else {
-        _currentStep = _currentStep + 1;
-      }
+      // 고양이도 품종 선택 단계를 거치므로 분기 로직 제거
+      _currentStep = _currentStep + 1;
     });
   }
 
   void _prevStep() {
     setState(() {
-      // Handle Dog/Cat branching logic in reverse
-      if (_currentStep == 6 && _data.species == 'cat') {
-        _currentStep = 4; // Go back to age step for cats
-      } else {
-        _currentStep = _currentStep - 1;
+      // 펫 추가 모드에서 Step 2에서 뒤로가기를 누르면 홈으로 이동
+      if (widget.isAddPetMode && _currentStep == 2) {
+        context.go(RoutePaths.home);
+        return;
       }
+      // 고양이도 품종 선택 단계를 거치므로 분기 로직 제거
+      _currentStep = _currentStep - 1;
     });
   }
 
   int _getTotalSteps() {
-    return _data.species == 'cat' ? 11 : 12;
+    // 펫 추가 모드면 닉네임 스텝 제외, 고양이와 강아지 모두 동일한 스텝 수
+    final baseSteps = 12;
+    return widget.isAddPetMode ? baseSteps - 1 : baseSteps;
   }
 
   int _getCurrentStepNumber() {
-    if (_data.species == 'cat' && _currentStep > 4) {
-      return _currentStep - 1; // Adjust step number for cats (skipped breed)
+    // 펫 추가 모드면 Step 번호를 1 감소 (닉네임 스텝 제외)
+    int stepNumber = _currentStep;
+    if (widget.isAddPetMode) {
+      stepNumber = _currentStep - 1;
     }
-    return _currentStep;
+    return stepNumber;
   }
 
   @override
@@ -200,24 +218,10 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
           totalSteps: totalSteps,
         );
       case 5:
-        if (_data.species == 'dog') {
-          return Step05Breed(
-            value: _data.breed,
-            onUpdate: (breed) => _updateData((d) => d.copyWith(breed: breed)),
-            onNext: _nextStep,
-            onBack: _prevStep,
-            currentStep: currentStepNumber,
-            totalSteps: totalSteps,
-          );
-        }
-        // Should not reach here for cat, but fall through to step 6
-        return Step06SexNeutered(
-          sex: _data.sex,
-          neutered: _data.neutered,
-          onUpdate: (updates) => _updateData((d) => d.copyWith(
-            sex: updates['sex'] as String? ?? d.sex,
-            neutered: updates['neutered'] as bool? ?? d.neutered,
-          )),
+        return Step05Breed(
+          value: _data.breed,
+          species: _data.species,
+          onUpdate: (breed) => _updateData((d) => d.copyWith(breed: breed)),
           onNext: _nextStep,
           onBack: _prevStep,
           currentStep: currentStepNumber,

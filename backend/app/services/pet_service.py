@@ -168,3 +168,37 @@ class PetService:
             )
         )
         return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def set_primary_pet(
+        pet_id: UUID,
+        user_id: UUID,
+        db: AsyncSession
+    ) -> Pet:
+        """특정 펫을 Primary Pet으로 설정"""
+        # 1. 펫 조회 및 소유자 확인
+        pet = await PetService.get_pet_by_id(pet_id, db)
+        if pet.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to modify this pet"
+            )
+        
+        # 2. 같은 사용자의 다른 모든 펫의 is_primary를 False로 설정
+        other_pets_result = await db.execute(
+            select(Pet).where(
+                Pet.user_id == user_id,
+                Pet.id != pet_id
+            )
+        )
+        other_pets = other_pets_result.scalars().all()
+        for other_pet in other_pets:
+            other_pet.is_primary = False
+        
+        # 3. 선택한 펫을 primary로 설정
+        pet.is_primary = True
+        
+        await db.commit()
+        await db.refresh(pet)
+        
+        return pet

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../ui/widgets/figma_app_bar.dart';
-import '../../../../../ui/widgets/figma_primary_button.dart';
+import '../../../../../ui/widgets/top_bar.dart';
 import '../../../../../ui/widgets/card_container.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_spacing.dart';
+import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/widgets/loading.dart';
 import '../../../../../core/widgets/empty_state.dart';
 import '../controllers/benefits_controller.dart';
@@ -60,75 +62,102 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const FigmaAppBar(title: '혜택'),
+            const TopBar(title: '혜택'),
             Expanded(
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: CupertinoScrollbar(
                 child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xl),
                       // Hero Point Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CardContainer(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.card_giftcard,
-                                    size: 24,
-                                    color: Color(0xFF2563EB),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '내 포인트',
-                                    style: AppTypography.body.copyWith(
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                '${totalPoints.toLocaleString()}P',
-                                style: const TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2563EB),
+                      CardContainer(
+                        isHomeStyle: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.card_giftcard,
+                                  size: 24,
+                                  color: AppColors.primaryBlue, // 결정/정보용
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${availablePoints.toLocaleString()}P 더 받을 수 있어요',
-                                style: AppTypography.body.copyWith(
-                                  color: const Color(0xFF6B7280),
+                                const SizedBox(width: AppSpacing.sm),
+                                Text(
+                                  '내 포인트',
+                                  style: AppTypography.body.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              '${totalPoints.toLocaleString()}P',
+                              style: AppTypography.h1Mobile.copyWith(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryBlue, // 결정/정보용
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              '${availablePoints.toLocaleString()}P 더 받을 수 있어요',
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       // Mission List Header
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '미션 완료하고 포인트 받기',
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${state.completedCount}/${missions.length}',
+                            style: AppTypography.small.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      // Mission Cards
+                      ...missions.map((mission) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _buildMissionCard(context, mission),
+                      )),
+                      const SizedBox(height: AppSpacing.lg),
+                      // Points Usage
+                      CardContainer(
+                        isHomeStyle: true,
+                        backgroundColor: AppColors.primaryBlue.withOpacity(0.05),
+                        showBorder: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '미션 완료하고 포인트 받기',
+                              '포인트 사용 방법',
                               style: AppTypography.body.copyWith(
-                                color: const Color(0xFF111827),
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              '${state.completedCount}/${missions.length}',
+                              '100P = 100원 할인 (다음 구매 시 자동 적용)',
                               style: AppTypography.small.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -136,42 +165,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // Mission Cards
-                      ...missions.map((mission) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildMissionCard(context, mission),
-                      )),
-                      const SizedBox(height: 16),
-                      // Points Usage
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: CardContainer(
-                          padding: const EdgeInsets.all(20),
-                          backgroundColor: const Color(0xFFEFF6FF),
-                          showBorder: false,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '포인트 사용 방법',
-                                style: AppTypography.body.copyWith(
-                                  color: const Color(0xFF111827),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '100P = 100원 할인 (다음 구매 시 자동 적용)',
-                                style: AppTypography.small.copyWith(
-                                  color: const Color(0xFF6B7280),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: AppSpacing.xl * 2),
                     ],
                   ),
                 ),
@@ -184,102 +178,97 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
   }
 
   Widget _buildMissionCard(BuildContext context, MissionData mission) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: CardContainer(
-        padding: const EdgeInsets.all(16),
-        backgroundColor: mission.completed
-            ? const Color(0xFFF0FDF4)
-            : Colors.white,
-        showBorder: mission.completed,
-        onTap: () {
-          _showMissionBottomSheet(context, mission);
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: mission.completed
-                    ? const Color(0xFF16A34A)
-                    : Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                mission.completed ? Icons.check_circle : Icons.flag,
-                size: 18,
-                color: mission.completed
-                    ? Colors.white
-                    : const Color(0xFF6B7280),
-              ),
+    return CardContainer(
+      isHomeStyle: true,
+      backgroundColor: mission.completed
+          ? AppColors.petGreen.withOpacity(0.1) // 상태/안심용
+          : Colors.white,
+      showBorder: mission.completed,
+      onTap: () {
+        _showMissionBottomSheet(context, mission);
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: mission.completed
+                  ? AppColors.petGreen // 상태/안심용
+                  : Colors.white,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 12),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mission.title,
-                    style: AppTypography.body.copyWith(
-                      color: mission.completed
-                          ? AppColors.textSecondary
-                          : const Color(0xFF111827),
-                      fontWeight: FontWeight.w600,
-                    ),
+            child: Icon(
+              mission.completed ? Icons.check_circle : Icons.flag,
+              size: 18,
+              color: mission.completed
+                  ? Colors.white
+                  : AppColors.iconMuted,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mission.title,
+                  style: AppTypography.body.copyWith(
+                    color: mission.completed
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    mission.description,
-                    style: AppTypography.small.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  mission.description,
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
+                ),
+                const SizedBox(height: AppSpacing.xs + 2),
+                Row(
+                  children: [
+                    Text(
+                      '+${mission.reward}P',
+                      style: AppTypography.small.copyWith(
+                        color: mission.completed
+                            ? AppColors.petGreen // 상태/안심용
+                            : AppColors.primaryBlue, // 결정/정보용
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (!mission.completed) ...[
+                      const SizedBox(width: AppSpacing.sm),
                       Text(
-                        '+${mission.reward}P',
+                        '· ${mission.current}/${mission.total} 완료',
                         style: AppTypography.small.copyWith(
-                          color: mission.completed
-                              ? const Color(0xFF16A34A)
-                              : const Color(0xFF2563EB),
-                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      if (!mission.completed) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          '· ${mission.current}/${mission.total} 완료',
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: Color(0xFF6B7280),
-            ),
-          ],
-        ),
+          ),
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: AppColors.iconMuted,
+          ),
+        ],
       ),
     );
   }
 
   void _showMissionBottomSheet(BuildContext context, MissionData mission) {
-    showModalBottomSheet(
+    showCupertinoModalPopup(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (context) => _MissionBottomSheet(mission: mission),
     );
   }
@@ -293,182 +282,199 @@ class _MissionBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FractionallySizedBox(
-      heightFactor: 0.5,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(18),
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            // Grabber
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
             ),
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icon and Title
-                    Row(
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Grabber
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: mission.completed
-                                ? const Color(0xFF16A34A)
-                                : Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFE5E7EB),
-                              width: 1,
-                            ),
-                          ),
+                        // Icon and Title
+                        Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: mission.completed
+                                    ? AppColors.petGreen // 상태/안심용
+                                    : Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.divider,
+                                  width: 1,
+                                ),
+                              ),
                           child: Icon(
-                            mission.completed ? Icons.check_circle : Icons.flag,
+                            mission.completed 
+                                ? Icons.check_circle 
+                                : Icons.flag,
                             size: 24,
                             color: mission.completed
                                 ? Colors.white
-                                : const Color(0xFF6B7280),
+                                : AppColors.iconMuted,
+                          ),
+                            ),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    mission.title,
+                                    style: AppTypography.h2.copyWith(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    '+${mission.reward}P',
+                                    style: AppTypography.body.copyWith(
+                                      color: mission.completed
+                                          ? AppColors.petGreen // 상태/안심용
+                                          : AppColors.primaryBlue, // 결정/정보용
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        // Description
+                        Text(
+                          mission.description,
+                          style: AppTypography.body.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: AppSpacing.xl),
+                        // Progress
+                        if (!mission.completed) ...[
+                          Text(
+                            '진행 상황',
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                mission.title,
-                                style: AppTypography.h2.copyWith(
-                                  color: const Color(0xFF111827),
+                                '${mission.current}/${mission.total} 완료',
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 4),
                               Text(
-                                '+${mission.reward}P',
-                                style: AppTypography.body.copyWith(
-                                  color: mission.completed
-                                      ? const Color(0xFF16A34A)
-                                      : const Color(0xFF2563EB),
+                                '${((mission.current / mission.total) * 100).round()}%',
+                                style: AppTypography.small.copyWith(
+                                  color: AppColors.primaryBlue, // 결정/정보용
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Description
-                    Text(
-                      mission.description,
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Progress
-                    if (!mission.completed) ...[
-                      Text(
-                        '진행 상황',
-                        style: AppTypography.body.copyWith(
-                          color: const Color(0xFF111827),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${mission.current}/${mission.total} 완료',
-                            style: AppTypography.small.copyWith(
-                              color: AppColors.textSecondary,
+                          const SizedBox(height: AppSpacing.sm),
+                          Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.divider,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
-                          ),
-                          Text(
-                            '${((mission.current / mission.total) * 100).round()}%',
-                            style: AppTypography.small.copyWith(
-                              color: const Color(0xFF2563EB),
-                              fontWeight: FontWeight.w600,
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: mission.total > 0
+                                  ? mission.current / mission.total
+                                  : 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue, // 결정/정보용
+                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                ),
+                              ),
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE5E7EB),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: mission.total > 0
-                              ? mission.current / mission.total
-                              : 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
-            // Fixed Bottom Button
-            if (!mission.completed)
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FigmaPrimaryButton(
-                      text: '시작하기',
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // TODO: 미션 시작 로직 구현
-                      },
+                        const SizedBox(height: AppSpacing.xl * 2),
+                      ],
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
-        ),
-      ),
+                // Fixed Bottom Button
+                if (!mission.completed)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.xl,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.divider,
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          color: AppColors.primaryBlue, // 결정/이동용
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            // TODO: 미션 시작 로직 구현
+                          },
+                          child: Text(
+                            '시작하기',
+                            style: AppTypography.button.copyWith(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

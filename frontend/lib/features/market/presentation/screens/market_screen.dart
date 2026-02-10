@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../../ui/widgets/top_bar.dart';
 import '../../../../../ui/widgets/figma_search_bar.dart';
 import '../../../../../ui/widgets/figma_section_header.dart';
-import '../../../../../ui/widgets/figma_product_tile.dart';
 import '../../../../../ui/widgets/figma_pill_chip.dart';
-import '../../../../../app/theme/app_typography.dart';
+import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../core/widgets/loading.dart';
 import '../../../../../core/widgets/empty_state.dart';
 import '../controllers/market_controller.dart';
 import '../widgets/product_card.dart';
-import '../widgets/category_chips.dart';
 
 /// 실제 API 데이터를 사용하는 Market Screen
 class MarketScreen extends ConsumerStatefulWidget {
@@ -43,33 +43,12 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Sticky AppBar
-              Container(
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Text(
-                            '사료마켓',
-                            style: AppTypography.body.copyWith(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF111827),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: const FigmaSearchBar(placeholder: '사료 브랜드나 제품명을 검색하세요'),
-                    ),
-                  ],
-                ),
+              // TopBar
+              const TopBar(title: '사료마켓'),
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
+                child: const FigmaSearchBar(placeholder: '사료 브랜드나 제품명을 검색하세요'),
               ),
               Expanded(
                 child: _buildBody(state),
@@ -105,9 +84,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
       },
       child: RefreshIndicator(
         onRefresh: () => ref.read(marketControllerProvider.notifier).refresh(),
-        child: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: CupertinoScrollbar(
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

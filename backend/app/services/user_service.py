@@ -27,10 +27,10 @@ class UserService:
     @staticmethod
     async def get_user_by_device_uid(device_uid: str, db: AsyncSession) -> User | None:
         """Device UID로 사용자 조회"""
-        from app.models.user import AuthProvider
+        # User.provider는 String 타입이므로 문자열로 비교
         result = await db.execute(
             select(User).where(
-                User.provider == AuthProvider.DEVICE,
+                User.provider == 'DEVICE',
                 User.provider_user_id == device_uid
             )
         )

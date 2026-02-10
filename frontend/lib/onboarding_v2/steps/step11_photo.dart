@@ -4,9 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import '../onboarding_shell.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
-import '../../theme_v2/app_colors.dart' as v2;
+import '../../app/theme/app_spacing.dart';
+import '../../app/theme/app_radius.dart';
 
-/// Step 11: Photo - matches React Step11Photo
+/// Step 11: Photo - DESIGN_GUIDE v1.0 준수
 class Step11Photo extends StatefulWidget {
   final String value; // base64 or file path
   final String petName;
@@ -59,9 +60,9 @@ class _Step11PhotoState extends State<Step11Photo> {
       totalSteps: widget.totalSteps,
       onBack: widget.onBack,
       emoji: '📸',
-      title: '아이 사진을 올려볼까요? 📸',
+      title: '아이 사진을 올려볼까요?',
       subtitle: '나중에 해도 괜찮아요',
-      ctaText: hasPhoto ? '헤이제노 시작하기' : '건너뛰기',
+      ctaText: '헤이제노 시작하기',
       onCTAClick: widget.onNext,
       ctaSecondary: hasPhoto
           ? CTASecondary(
@@ -70,20 +71,36 @@ class _Step11PhotoState extends State<Step11Photo> {
             )
           : null,
       child: hasPhoto
-          ? Container(
-              width: double.infinity,
-              height: 256,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary, width: 2),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Image.file(
-                  File(_pickedFile?.path ?? widget.value),
-                  fit: BoxFit.cover,
-                ),
-              ),
+          ? TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: 0.95 + (0.05 * value.clamp(0.0, 1.0)),
+                    child: Container(
+                      width: double.infinity,
+                      height: 256,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: AppColors.primaryBlue,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.md - 2),
+                        child: Image.file(
+                          File(_pickedFile?.path ?? widget.value),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             )
           : GestureDetector(
               onTap: () => _showImageSourceDialog(context),
@@ -91,12 +108,11 @@ class _Step11PhotoState extends State<Step11Photo> {
                 width: double.infinity,
                 height: 256,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FA),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
-                    color: v2.AppColorsV2.divider,
-                    width: 2,
-                    style: BorderStyle.solid,
+                    color: AppColors.divider,
+                    width: 1,
                   ),
                 ),
                 child: Column(
@@ -105,27 +121,34 @@ class _Step11PhotoState extends State<Step11Photo> {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.divider,
+                          width: 1,
+                        ),
                       ),
                       child: const Icon(
-                        Icons.upload,
+                        Icons.add_photo_alternate_outlined,
                         size: 28,
-                        color: AppColors.primary,
+                        color: AppColors.iconMuted,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       '사진을 선택해주세요',
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       '탭하여 사진을 선택하세요',
-                      style: AppTypography.small,
+                      style: AppTypography.small.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -137,27 +160,65 @@ class _Step11PhotoState extends State<Step11Photo> {
   void _showImageSourceDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('갤러리에서 선택'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('사진 촬영'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-          ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.sm,
+                ),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.iconPrimary,
+                ),
+                title: Text(
+                  '갤러리에서 선택',
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.iconPrimary,
+                ),
+                title: Text(
+                  '사진 촬영',
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
     );

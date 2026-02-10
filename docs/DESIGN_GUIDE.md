@@ -1,1146 +1,660 @@
-# 쌤대신 디자인 가이드
+# 헤이제노 디자인 시스템 가이드 v1.0 (Final)
 
-이 문서는 디자인 시스템을 상세히 정리한 가이드입니다. 다른 프로젝트에 그대로 적용할 수 있도록 모든 디자인 토큰, 컴포넌트, 레이아웃 규칙을 포함합니다.
+> 일상 관리형 펫 서비스에 최적화된 iOS 스타일 디자인 시스템
 
 ---
 
 ## 📋 목차
 
-1. [디자인 토큰 (Design Tokens)](#1-디자인-토큰-design-tokens)
-2. [색상 시스템](#2-색상-시스템)
-3. [타이포그래피](#3-타이포그래피)
-4. [간격 시스템](#4-간격-시스템)
-5. [그림자 & 효과](#5-그림자--효과)
-6. [컴포넌트 스타일](#6-컴포넌트-스타일)
-7. [레이아웃 시스템](#7-레이아웃-시스템)
-8. [반응형 디자인](#8-반응형-디자인)
-9. [애니메이션 & 트랜지션](#9-애니메이션--트랜지션)
-10. [구현 예제](#10-구현-예제)
+0. [헤이제노 디자인 철학](#0-헤이제노-디자인-철학-최종)
+1. [헤이제노 전용 컬러 시스템](#1-헤이제노-전용-컬러-시스템)
+2. [이모지 사용 규칙](#2-이모지-사용-규칙-헤이제노만의-감성)
+3. [간격 시스템](#3-간격-시스템-appspacing)
+4. [AppRadius 가이드](#4-appradius-가이드)
+5. [AppElevation 가이드](#5-appelevation-가이드-중요)
+6. [CardContainer 최종 규칙](#6-cardcontainer-최종-규칙)
+7. [홈 화면 전용 UI 원칙](#7-홈-화면-전용-ui-원칙-핵심)
+8. [애니메이션 원칙](#8-애니메이션-원칙-헤이제노-스타일)
+9. [컴포넌트 가이드](#9-컴포넌트-가이드)
+10. [최종 체크리스트](#-최종-체크리스트)
 
 ---
 
-## 1. 디자인 토큰 (Design Tokens)
+## 0️⃣ 헤이제노 디자인 철학 (최종)
 
-### CSS 변수 정의
+### 헤이제노는 이런 앱이다
 
-모든 디자인 토큰은 CSS 변수로 정의되어 있으며, `:root`에 선언됩니다.
+❌ **"매번 추천받는 앱"**
 
-```css
-:root {
-  /* 배경색 */
-  --bg: #f7f8fb;
-  --card: #ffffff;
-  
-  /* 텍스트 색상 */
-  --text: #0f172a;
-  --muted: #64748b;
-  
-  /* 경계선 */
-  --line: #e5e7eb;
-  
-  /* Primary 색상 */
-  --primary: #2563eb;
-  --primary2: #1d4ed8;
-  
-  /* Border Radius */
-  --radius: 18px;
-  
-  /* 그림자 */
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  
-  /* Chip/Badge 배경 */
-  --chip: #eef2ff;
-  
-  /* AI 관련 색상 */
-  --ai: #7c3aed;
-  --ai2: #6d28d9;
-  --aiChip: #f3e8ff;
-}
-```
+✅ **"지금 상태를 한눈에 확인하는 앱"**
+
+### 핵심 키워드
+
+- **관리 (Manage)** - 현재 상태를 체계적으로 관리
+- **안심 (Reassurance)** - 잘하고 있다는 신호 제공
+- **일상 (Daily)** - 매일 사용하는 일상 도구
+- **우리 아이 (Emotional, but 절제된)** - 감정적이지만 과하지 않게
+
+### 디자인 원칙
+
+👉 **차분하지만 차갑지 않게**  
+👉 **귀엽지만 유치하지 않게**
 
 ---
 
-## 2. 색상 시스템
+## 1️⃣ 헤이제노 전용 컬러 시스템
 
-### 기본 색상 팔레트
+### 🎨 컬러 역할 분리 (가장 중요)
 
-#### 배경색
-- **Background (`--bg`)**: `#f7f8fb`
-  - 메인 페이지 배경색
-  - 부드러운 회색 톤으로 눈의 피로를 줄임
+**색은 감정이 아니라 "역할"로 쓴다**
 
-- **Card (`--card`)**: `#ffffff`
-  - 카드, 모달 등 컨테이너 배경색
-  - 순수한 흰색으로 콘텐츠를 강조
+### Primary 컬러 2축 구조
 
-#### 텍스트 색상
-- **Text (`--text`)**: `#0f172a`
-  - 주요 텍스트 색상 (Slate 900)
-  - 높은 가독성을 위한 진한 색상
+```dart
+// Decision / Navigation (정보, 이동, 비교)
+AppColors.primaryBlue   // #2563EB
 
-- **Muted (`--muted`)**: `#64748b`
-  - 보조 텍스트 색상 (Slate 500)
-  - 설명, 부제목 등에 사용
-
-#### 경계선
-- **Line (`--line`)**: `#e5e7eb`
-  - 경계선, 구분선 색상 (Gray 200)
-  - 부드러운 구분을 위한 연한 회색
-
-### Primary 색상
-
-- **Primary (`--primary`)**: `#2563eb`
-  - 메인 액션 색상 (Blue 600)
-  - 버튼, 링크, 강조 요소에 사용
-
-- **Primary Hover (`--primary2`)**: `#1d4ed8`
-  - Primary의 호버 상태 (Blue 700)
-  - 더 진한 톤으로 상호작용 피드백 제공
-
-### AI 관련 색상
-
-- **AI (`--ai`)**: `#7c3aed`
-  - AI 기능 강조 색상 (Violet 600)
-  - AI 섹션, 배지 등에 사용
-
-- **AI Hover (`--ai2`)**: `#6d28d9`
-  - AI의 호버 상태 (Violet 700)
-
-- **AI Chip (`--aiChip`)**: `#f3e8ff`
-  - AI 관련 칩/배지 배경색 (Violet 100)
-
-### Chip/Badge 색상
-
-- **Chip Background (`--chip`)**: `#eef2ff`
-  - 일반 칩/배지 배경색 (Blue 100)
-
-- **Chip Text**: `#1e3a8a` (Blue 900)
-- **AI Chip Text**: `#4c1d95` (Violet 900)
-
-### 투명도 사용
-
-- **Primary Border**: `rgba(37, 99, 235, 0.18)` - Primary 색상의 18% 투명도
-- **AI Border**: `rgba(124, 58, 237, 0.18)` - AI 색상의 18% 투명도
-- **AI Border Strong**: `rgba(124, 58, 237, 0.22)` - AI 색상의 22% 투명도
-- **Modal Overlay**: `rgba(15, 23, 42, 0.55)` - 배경 오버레이
-- **Shadow**: `rgba(15, 23, 42, 0.08)` - 그림자 효과
-
-### 그라데이션
-
-#### Primary 그라데이션
-```css
-background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(255, 255, 255, 0.92));
-border: 1px solid rgba(37, 99, 235, 0.18);
+// Status / Emotional (현재 상태, 안심, 성공)
+AppColors.petGreen      // #16A34A
 ```
 
-#### AI 그라데이션
-```css
-background:
-  radial-gradient(900px 240px at 12% 0%, rgba(124, 58,237, 0.14), transparent 55%),
-  radial-gradient(700px 260px at 88% 10%, rgba(37, 99, 235, 0.08), transparent 55%),
-  linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 250, 252, 1));
-border: 1px solid rgba(124, 58, 237, 0.18);
+### 컬러 사용 규칙 (명문화)
+
+#### 🔵 Primary Blue (#2563EB)
+
+**언제 쓰나**
+- 이동 / 전환 / 비교
+- "결정"이 필요한 버튼
+- CTA 중 행동 유도
+
+**사용 예**
+- 비교해보기
+- 상세보기
+- 추천 결과 보기
+- 링크 / 강조 텍스트
+
+```dart
+OutlinedButton(
+  side: BorderSide(color: AppColors.primaryBlue),
+  child: Text('비교해보기'),
+)
+```
+
+#### 🟢 Pet Green (#16A34A)
+
+**언제 쓰나**
+- 현재 상태
+- 잘하고 있다는 신호
+- 등록 완료 / 유지 중
+- "안심" 메시지
+
+**사용 예**
+- 현재 급여 중
+- 가격 알림 ON
+- 정상 / 적합 / 완료
+
+```dart
+Container(
+  color: AppColors.petGreen.withOpacity(0.1),
+  child: Text('현재 급여 중'),
+)
+```
+
+#### ❌ 금지 규칙
+
+- **Primary Blue + Pet Green 동시 강조 금지**
+- **감정용 컬러(초록)를 CTA 메인으로 남발 금지**
+
+### 전체 색상 팔레트
+
+```dart
+// 배경
+AppColors.background  // #F7F8FB - 전체 배경
+AppColors.surface     // #FFFFFF - 카드/컨테이너 배경
+
+// 텍스트
+AppColors.textPrimary    // #0F172A - 주요 텍스트
+AppColors.textSecondary  // #64748B - 보조 텍스트
+
+// Primary (Blue)
+AppColors.primaryBlue   // #2563EB - 결정/이동/비교
+AppColors.primary2      // #1D4ED8 - 호버/활성 상태
+
+// Status (Green)
+AppColors.petGreen      // #16A34A - 상태/안심/성공
+
+// 상태 색상
+AppColors.positiveGreen  // #00D084 - 성공/긍정
+AppColors.dangerRed      // #F04452 - 에러/위험
+
+// 아이콘
+AppColors.iconPrimary  // #0F172A - 주요 아이콘
+AppColors.iconMuted    // #64748B - 보조 아이콘
 ```
 
 ---
 
-## 3. 타이포그래피
+## 2️⃣ 이모지 사용 규칙 (헤이제노만의 감성)
 
-### 폰트 패밀리
+### 핵심 원칙
 
-```css
-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-```
+**이모지는 정보 보조 도구이지, 장식이 아니다**
 
-- 시스템 기본 폰트 우선 사용
-- 한국어 지원을 위해 "Noto Sans KR" 포함
-- 폴백으로 sans-serif 사용
+### 허용 위치
 
-### 폰트 크기
+✅ 섹션 타이틀  
+✅ 카드 헤더  
+✅ 상태 요약
 
-#### 제목 (Headings)
-- **H1**: `42px` (모바일: `34px`)
-  - 메인 히어로 섹션 제목
-  - `letter-spacing: -1px` (자간 조정)
-  - `margin: 0 0 12px`
+### 금지 위치
 
-- **H2**: `26px`
-  - 섹션 제목
-  - `letter-spacing: -0.5px`
-  - `margin: 0 0 10px`
+❌ 본문 문장 중간  
+❌ 버튼 텍스트  
+❌ 리스트 아이템마다 반복
 
-- **H3**: `18px`
-  - 서브 섹션 제목
-  - `letter-spacing: -0.2px`
-  - `margin: 20px 0 10px` (첫 번째는 `margin-top: 0`)
+### 기본 이모지 세트 (고정)
 
-#### 본문
-- **Lead**: `17px`
-  - 강조되는 본문 텍스트
-  - `color: var(--muted)`
-  - `margin: 0 0 18px`
+| 용도 | 이모지 | 사용 예 |
+|------|--------|---------|
+| 펫 | 🐶 🐱 | 펫 프로필 |
+| 사료 | 🥣 | 현재 급여 사료 |
+| 가격 | 📉 | 가격 하락 |
+| 시간 | ⏰ | 소진 예상 |
+| 혜택 | 🎁 | 포인트 |
+| 상태 OK | ✅ | 완료 |
+| 주의 | ⚠️ | 변경 필요 |
 
-- **Body**: 기본 (보통 `16px`)
-  - 일반 본문 텍스트
-  - `line-height: 1.6` (메인 페이지)
-  - `line-height: 1.75` (약관/개인정보 페이지)
+### 이모지 사용 규칙
 
-- **Small**: `14px`
-  - 작은 설명 텍스트
-  - Footer 등에 사용
+- **한 섹션당 최대 1개**
+- **크기 조절 ❌** → 기본 폰트 크기 사용
+- **색상 변경 ❌** (이모지는 항상 기본 컬러)
 
-- **Badge/Chip**: `13px`
-  - 배지, 칩 텍스트
-  - `font-weight: 700` 또는 `800`
+```dart
+// ✅ 올바른 사용
+Text('🐶 ${petName}')  // 섹션 헤더
+Text('🥣 현재 급여 중')  // 카드 타이틀
 
-### 폰트 굵기
-
-- **900 (Black)**: 브랜드명, 주요 CTA 버튼, 제목
-- **800 (Extra Bold)**: 배지, 칩, 강조 텍스트
-- **700 (Bold)**: 배지, 칩, 네비게이션 링크
-- **600 (Semi Bold)**: 기본 (명시되지 않은 경우)
-- **400 (Regular)**: 본문 텍스트
-
-### Line Height
-
-- **본문**: `1.6` (메인 페이지)
-- **약관/법적 문서**: `1.75` (가독성 향상)
-
----
-
-## 4. 간격 시스템
-
-### 패딩 (Padding)
-
-#### 컨테이너
-- **Wrap Padding**: `28px 18px 80px`
-  - 상단: `28px`
-  - 좌우: `18px`
-  - 하단: `80px`
-
-- **Nav Padding**: `14px 18px` (모바일: `12px 14px`)
-
-#### 카드
-- **Card Padding**: `28px`
-- **Item Padding**: `16px`
-- **Panel Padding**: `18px` (모달)
-- **Callout Padding**: `18px` 또는 `16px`
-
-#### 버튼
-- **Primary Button**: `12px 16px`
-- **Nav CTA**: `10px 12px` (모바일: `9px 10px`)
-- **Modal Button**: `10px 12px`
-
-#### 칩/배지
-- **Badge**: `6px 12px` (모바일: `6px 10px`)
-- **Chip**: `8px 10px`
-- **AI Badge**: `6px 12px`
-- **AI Kicker**: `7px 10px`
-
-### 마진 (Margin)
-
-#### 섹션 간격
-- **Section Margin Top**: `32px`
-- **Section Margin Top (약관)**: `18px`
-
-#### 요소 간격
-- **Hero Margin Top**: `28px`
-- **Card Margin Top**: `14px` (일반)
-- **Item Margin**: `0` (카드 내부)
-- **List Item Margin**: `8px 0` (일반), `6px 0` (약관)
-
-#### 그리드 간격
-- **Grid Gap**: `14px`
-- **Step Grid Gap**: `14px`
-- **Button Row Gap**: `10px`
-- **Nav Gap**: `12px` (내부), `10px` (요소 간)
-
-### Gap (Flexbox/Grid)
-
-- **Nav Inner Gap**: `12px`
-- **Nav Right Gap**: `10px`
-- **Button Row Gap**: `10px`
-- **Grid Gap**: `14px`
-- **Step Gap**: `14px`
-- **Chips Gap**: `8px`
-- **Footer Links Gap**: `10px`
-
----
-
-## 5. 그림자 & 효과
-
-### 그림자
-
-#### 기본 카드 그림자
-```css
---shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-```
-
-#### 버튼 그림자
-```css
-box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
-```
-
-#### AI 마크 그림자
-```css
-box-shadow: 0 10px 22px rgba(124, 58, 237, 0.18);
-```
-
-#### 모달 그림자
-```css
-box-shadow: 0 18px 60px rgba(15, 23, 42, 0.25);
-```
-
-### Border Radius
-
-- **기본 Radius (`--radius`)**: `18px`
-  - 카드, 모달 등 주요 컨테이너
-
-- **버튼 Radius**: `14px` (일반), `12px` (모달)
-- **Nav CTA Radius**: `999px` (완전한 둥근 모서리)
-- **Chip/Badge Radius**: `999px`
-- **Step Num Radius**: `10px`
-- **Media Radius**: `14px`
-- **Panel Radius**: `16px`
-- **Callout Radius**: `16px` 또는 `18px`
-- **Code Radius**: `8px`
-
-### Border
-
-- **기본 Border**: `1px solid var(--line)`
-- **Primary Border**: `1px solid rgba(37, 99, 235, 0.18)`
-- **AI Border**: `1px solid rgba(124, 58, 237, 0.18)`
-- **AI Border Strong**: `1px solid rgba(124, 58, 237, 0.22)`
-- **Dashed Border**: `1px dashed var(--line)` (약관 섹션 구분)
-
----
-
-## 6. 컴포넌트 스타일
-
-### 네비게이션 (Navigation)
-
-#### 구조
-```css
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #fff;
-  border-bottom: 1px solid var(--line);
-}
-
-.navInner {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-```
-
-#### 브랜드
-```css
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 900;
-  font-size: 18px; /* 모바일: 16px */
-  white-space: nowrap;
-}
-
-.brand img {
-  height: 36px; /* 모바일: 32px */
-  width: auto;
-}
-```
-
-#### Nav CTA 버튼
-```css
-.navCta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 12px; /* 모바일: 9px 10px */
-  border-radius: 999px;
-  font-weight: 900;
-  font-size: 13px; /* 모바일: 12px */
-  color: #fff;
-  background: var(--primary);
-  border: 1px solid var(--primary);
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
-  white-space: nowrap;
-  transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
-}
-
-.navCta:hover {
-  transform: translateY(-1px);
-  background: var(--primary2);
-  border-color: var(--primary2);
-}
-```
-
-#### 배지
-```css
-.badge {
-  font-size: 13px; /* 모바일: 12px */
-  padding: 6px 12px; /* 모바일: 6px 10px */
-  border-radius: 999px;
-  background: var(--chip);
-  color: #1e3a8a;
-  font-weight: 700;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  white-space: nowrap;
-}
-```
-
-### 카드 (Card)
-
-```css
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 28px;
-  box-shadow: var(--shadow);
-}
-```
-
-### 버튼 (Button)
-
-#### 기본 버튼
-```css
-.btn {
-  padding: 12px 16px;
-  border-radius: 14px;
-  font-weight: 800;
-  border: 1px solid var(--line);
-  background: #fff;
-  transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
-  cursor: pointer;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-```
-
-#### Primary 버튼
-```css
-.btn.primary {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-.btn.primary:hover {
-  background: var(--primary2);
-  border-color: var(--primary2);
-}
-```
-
-#### Subtle 버튼
-```css
-.btn.subtle {
-  background: #fff;
-  border-color: #dbe3f4;
-}
-```
-
-#### 버튼 행
-```css
-.btnRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-}
-```
-
-### 칩 (Chip)
-
-```css
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: var(--chip);
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  color: #1e3a8a;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-```
-
-### Callout 박스
-
-```css
-.callout {
-  margin-top: 14px;
-  border: 1px solid rgba(37, 99, 235, 0.22);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.92));
-  border-radius: 18px;
-  padding: 18px;
-}
-
-.callout p {
-  margin: 6px 0;
-  color: var(--muted);
-}
-
-.callout b {
-  color: #0f172a;
-}
-```
-
-### Warm Line (따뜻한 메시지 박스)
-
-```css
-.warmLine {
-  margin-top: 14px;
-  padding: 14px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(255, 255, 255, 0.92));
-  color: var(--muted);
-}
-
-.warmLine b {
-  color: #0f172a;
-}
-```
-
-### Step (단계 표시)
-
-```css
-.step {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.stepNum {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: var(--chip);
-  color: #1d4ed8;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-}
-
-.step p {
-  margin: 4px 0 0;
-  color: var(--muted);
-}
-```
-
-### Item (그리드 아이템)
-
-```css
-.item {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #fff;
-  padding: 16px;
-}
-
-.item b {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.item p {
-  margin: 0;
-  color: var(--muted);
-}
-```
-
-### Media (이미지/비디오)
-
-```css
-.media {
-  margin-top: 10px;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: #fff;
-}
-
-.media img,
-.media video {
-  width: 100%;
-  display: block;
-}
-```
-
-### AI 섹션 컴포넌트
-
-#### AI Wrap
-```css
-.aiWrap {
-  border: 1px solid rgba(124, 58, 237, 0.18);
-  background:
-    radial-gradient(900px 240px at 12% 0%, rgba(124, 58, 237, 0.14), transparent 55%),
-    radial-gradient(700px 260px at 88% 10%, rgba(37, 99, 235, 0.08), transparent 55%),
-    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(248, 250, 252, 1));
-}
-```
-
-#### AI Mark
-```css
-.aiMark {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  color: #fff;
-  background: linear-gradient(135deg, var(--ai), var(--primary));
-  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.18);
-}
-```
-
-#### AI Badge
-```css
-.aiBadge {
-  font-size: 13px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--aiChip);
-  color: #4c1d95;
-  border: 1px solid rgba(124, 58, 237, 0.22);
-  font-weight: 800;
-  white-space: nowrap;
-}
-```
-
-#### AI Panel
-```css
-.aiPanel {
-  border: 1px solid rgba(124, 58, 237, 0.18);
-  border-radius: 16px;
-  background: #fff;
-  padding: 16px;
-}
-
-.aiPanel h3 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  letter-spacing: -0.2px;
-}
-
-.aiPanel p {
-  margin: 0;
-  color: var(--muted);
-}
-```
-
-#### AI Kicker
-```css
-.aiKicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: rgba(124, 58, 237, 0.08);
-  border: 1px solid rgba(124, 58, 237, 0.18);
-  color: #4c1d95;
-  font-weight: 800;
-  margin: 10px 0 0;
-}
-```
-
-### 모달 (Modal)
-
-#### Overlay
-```css
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  z-index: 9999;
-}
-```
-
-#### Modal
-```css
-.modal {
-  width: 100%;
-  max-width: 520px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.25);
-  padding: 18px;
-}
-
-.modalTitle {
-  margin: 0 0 6px;
-  font-weight: 900;
-  letter-spacing: -0.3px;
-}
-
-.modalBody {
-  margin: 0 0 14px;
-  color: var(--muted);
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.modalActions .btn {
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-```
-
-### Footer
-
-```css
-footer {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 14px;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.footerLinks {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.footerLinks a {
-  color: var(--muted);
-}
-
-.footerLinks a:hover {
-  color: #334155;
-}
-```
-
-### 리스트 (List)
-
-```css
-.list {
-  padding-left: 18px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.list li {
-  margin: 8px 0;
-}
+// ❌ 잘못된 사용
+Text('사료를 🥣 등록해주세요')  // 본문 중간
+Text('🥣🥣🥣')  // 반복 사용
 ```
 
 ---
 
-## 7. 레이아웃 시스템
+## 3️⃣ 간격 시스템 (AppSpacing)
 
-### 컨테이너
+### 핵심 원칙
 
-#### Wrap (메인 컨테이너)
-```css
-.wrap {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 28px 18px 80px;
+**간격은 디자인 언어다**
+
+```dart
+class AppSpacing {
+  static const double xs = 4;   // 미세 간격 (거의 사용 안 함)
+  static const double sm = 8;   // 아이콘-텍스트, 작은 요소 간
+  static const double md = 12;  // 섹션 내부 그룹
+  static const double lg = 16;  // 카드 내부 주요 구분, 페이지 padding
+  static const double xl = 24;  // 카드 간, 페이지 섹션 간
 }
 ```
 
-#### Nav Inner
-```css
-.navInner {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 14px 18px;
-}
-```
+### 사용 원칙
 
-### 그리드 레이아웃
+- **카드 내부 기본 padding** → `lg` (16)
+- **카드 간 간격** → `lg` (16)
+- **섹션 간 간격** → `xl` (24)
+- **아이콘–텍스트** → `sm` (8)
 
-#### Hero Grid
-```css
-.hero {
-  margin-top: 28px;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 20px;
-}
-```
+### ❌ 금지 규칙
 
-#### Step Grid
-```css
-.stepGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 16px;
-}
-```
+```dart
+// ❌ 하드코딩된 간격 사용 금지
+SizedBox(height: 20)  // ❌
+SizedBox(width: 10)   // ❌
+EdgeInsets.all(15)    // ❌
 
-#### Grid 2
-```css
-.grid2 {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-```
-
-#### AI Grid
-```css
-.aiGrid {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 14px;
-}
-```
-
-### CTA Card
-
-```css
-.ctaCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
+// ✅ 올바른 사용
+SizedBox(height: AppSpacing.lg)  // ✅
+SizedBox(width: AppSpacing.sm)   // ✅
+EdgeInsets.all(AppSpacing.lg)    // ✅
 ```
 
 ---
 
-## 8. 반응형 디자인
+## 4️⃣ AppRadius 가이드
 
-### 브레이크포인트
+### 핵심 원칙
 
-- **모바일**: `max-width: 520px`
-- **태블릿**: `max-width: 900px`
-- **데스크톱**: `900px` 이상
+**둥글수록 친절해 보인다, 하지만 과하면 유치하다**
 
-### 모바일 스타일 (`max-width: 520px`)
+```dart
+class AppRadius {
+  static const double sm = 8;   // 배지 / Chip
+  static const double md = 12;  // 카드 / 버튼 (기본)
+  static const double lg = 16;  // 바텀시트
+  static const double xl = 20;  // 큰 바텀시트
+}
+```
 
-```css
-@media (max-width: 520px) {
-  .navInner {
-    padding: 12px 14px;
-  }
+### 적용 규칙
+
+| 요소 | Radius | 예시 |
+|------|--------|------|
+| 카드 (CardContainer) | `md` (12) | 기본 카드 |
+| 버튼 | `md` (12) | 모든 버튼 |
+| 배지 / Chip | `sm` (8) | 상태 배지 |
+| 바텀시트 | `lg` (16~20) | 모달 시트 |
+| 아이콘 배경 | `sm` (8) | 아이콘 컨테이너 |
+
+### ❌ 금지 규칙
+
+- **radius 혼용 금지** (한 화면에서 여러 radius 사용 금지)
+- **한 카드 안에서 radius 2종 이상 사용 금지**
+
+```dart
+// ✅ 올바른 사용
+CardContainer(
+  borderRadius: BorderRadius.circular(AppRadius.md),  // 일관된 radius
+)
+
+// ❌ 잘못된 사용
+Container(
+  borderRadius: BorderRadius.circular(8),  // 하드코딩
+  child: Container(
+    borderRadius: BorderRadius.circular(16),  // 혼용
+  ),
+)
+```
+
+---
+
+## 5️⃣ AppElevation 가이드 (중요)
+
+### 핵심 원칙
+
+**헤이제노는 그림자를 거의 쓰지 않는다**
+
+### 기본 원칙
+
+- **Shadow ❌**
+- **Border + Background 대비 ⭕**
+
+```dart
+class AppElevation {
+  static const double none = 0;  // 기본값
+}
+```
+
+### 예외적으로 허용되는 경우 (아주 제한적)
+
+- BottomSheet
+- Floating CTA
+
+```dart
+// 예외적 사용 (제한적)
+BoxShadow(
+  blurRadius: 8,
+  color: Colors.black.withOpacity(0.05),
+  offset: Offset(0, 2),
+)
+```
+
+### ❌ 금지 규칙
+
+👉 **홈 카드에는 절대 사용 금지**
+
+```dart
+// ✅ 올바른 사용 (Border 사용)
+CardContainer(
+  showBorder: true,  // Border로 구분
+  backgroundColor: Colors.white,
+)
+
+// ❌ 잘못된 사용
+Container(
+  decoration: BoxDecoration(
+    boxShadow: [...],  // 홈 카드에 Shadow 사용 금지
+  ),
+)
+```
+
+---
+
+## 6️⃣ CardContainer 최종 규칙
+
+### 기본 구조
+
+```dart
+CardContainer(
+  padding: EdgeInsets.all(AppSpacing.lg),  // 기본 16px
+  borderRadius: AppRadius.md,              // 기본 12px
+  backgroundColor: AppColors.surface,      // 기본 White
+  showBorder: true,                        // Border로 구분
+  isHomeStyle: true,                       // 홈 화면 스타일 (선택)
+  child: Column(...),
+)
+```
+
+### 카드 디자인 원칙
+
+- **카드마다 역할이 명확해야 함**
+- **정보 밀도 ↑ / 장식 ↓**
+- **타이틀은 항상 h3**
+
+```dart
+// ✅ 올바른 카드 구조
+CardContainer(
+  isHomeStyle: true,
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('현재 급여 사료', style: AppTypography.h3),  // h3 타이틀
+      const SizedBox(height: AppSpacing.md),
+      Text('설명', style: AppTypography.body),
+    ],
+  ),
+)
+```
+
+---
+
+## 7️⃣ 홈 화면 전용 UI 원칙 (핵심)
+
+### 핵심 원칙
+
+**홈은 "추천 화면"이 아니다**
+
+- 홈의 주인공은 **"현재 급여 사료"**
+- 추천은 **문제 발생 시만** 등장
+- 혜택은 **항상 하단, 보조**
+
+### 홈 정보 우선순위
+
+1. **현재 급여 사료** (메인)
+2. **가격 / 소진 상태** (조건부)
+3. **조건부 추천** (문제 발생 시만)
+4. **혜택 / 포인트** (하단, 보조)
+
+### 레이아웃 구조
+
+```dart
+Scaffold(
+  body: SafeArea(
+    child: Column(
+      children: [
+        // 1. 상단 고정 바
+        const TopBar(title: '헤이제노'),
+        
+        // 2. 스크롤 가능한 콘텐츠
+        Expanded(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  // 1️⃣ 펫 프로필 헤더
+                  _buildPetSummaryHeader(),
+                  const SizedBox(height: AppSpacing.md),
+                  
+                  // 2️⃣ 현재 급여 사료 카드 (메인)
+                  _buildCurrentFoodCard(),
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // 3️⃣ 상태 신호 카드 (조건부)
+                  _buildStatusSignalCards(),
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // 4️⃣ 추천 카드 (조건부, 문제 발생 시만)
+                  if (_shouldShowRecommendation)
+                    _buildRecommendationCard(),
+                  
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // 5️⃣ 혜택 카드 (하단, 보조)
+                  _buildBenefitsSection(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+)
+```
+
+---
+
+## 8️⃣ 애니메이션 원칙 (헤이제노 스타일)
+
+### 핵심 원칙
+
+**빠르게 반응하고, 마무리는 부드럽게**
+
+### Duration
+
+- **짧은 액션**: 300ms
+- **기본**: 400ms
+- **긴 액션**: 500ms
+
+### Curve
+
+- **진입**: `Curves.easeOut`
+- **상태 완료**: `Curves.easeOutBack` or `scale + opacity`
+
+### 페이드인 애니메이션
+
+```dart
+TweenAnimationBuilder<double>(
+  tween: Tween<double>(begin: 0.0, end: 1.0),
+  duration: const Duration(milliseconds: 400),
+  curve: Curves.easeOut,
+  builder: (context, value, child) {
+    return Opacity(
+      opacity: value,
+      child: Transform.translate(
+        offset: Offset(0, 10 * (1 - value)),
+        child: child,
+      ),
+    );
+  },
+  child: YourWidget(),
+)
+```
+
+### 순차적 애니메이션
+
+```dart
+items.asMap().entries.map((entry) {
+  final index = entry.key;
+  return TweenAnimationBuilder<double>(
+    tween: Tween<double>(begin: 0.0, end: 1.0),
+    duration: Duration(milliseconds: (200 + (index * 50)).toInt()),
+    curve: Curves.easeOut,
+    builder: (context, value, child) {
+      return Opacity(
+        opacity: value,
+        child: Transform.scale(
+          scale: 0.8 + (0.2 * value),
+          child: child,
+        ),
+      );
+    },
+    child: ItemWidget(items[index]),
+  );
+}).toList()
+```
+
+### ❌ 금지 규칙
+
+- **Bounce 과다**
+- **iOS스럽지 않은 튀는 효과**
+
+---
+
+## 9️⃣ 컴포넌트 가이드
+
+### TopBar (상단 고정 바)
+
+**용도**: 메인 탭 화면의 상단 고정 바
+
+```dart
+const TopBar(
+  title: '헤이제노',
+  hasNewNotifications: false,
+  onNotificationTap: () {
+    // 알림 화면으로 이동
+  },
+)
+```
+
+**특징**:
+- 높이: 56px
+- 알림 아이콘 포함 (오른쪽)
+- 하단 경계선 포함
+- iOS 스타일
+
+**적용 화면**: 홈, 찜한 사료, 혜택, 더보기
+
+---
+
+### FigmaAppBar (서브 페이지용)
+
+**용도**: 서브 페이지의 상단 바 (뒤로가기 버튼 포함)
+
+```dart
+const FigmaAppBar(
+  title: '상품 상세',
+  onBack: () => Navigator.pop(context),
+)
+```
+
+---
+
+### 버튼
+
+#### CupertinoButton (Primary Blue - 결정/이동)
+
+```dart
+CupertinoButton(
+  color: AppColors.primaryBlue,  // 결정/이동용
+  borderRadius: BorderRadius.circular(AppRadius.md),
+  padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+  onPressed: () {},
+  child: Text('비교해보기', style: AppTypography.button.copyWith(
+    color: Colors.white,
+  )),
+)
+```
+
+#### OutlinedButton (테두리 버튼)
+
+```dart
+OutlinedButton(
+  onPressed: () {},
+  style: OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    ),
+    side: const BorderSide(
+      color: AppColors.primaryBlue,  // 결정/이동용
+      width: 1.5,
+    ),
+  ),
+  child: Text('비교해보기', style: AppTypography.button.copyWith(
+    color: AppColors.primaryBlue,
+  )),
+)
+```
+
+---
+
+## 🔟 타이포그래피
+
+### 텍스트 스타일
+
+| 스타일 | 크기 | 굵기 | 용도 | 예시 |
+|--------|------|------|------|------|
+| `h1` | 42px (모바일: 34px) | 900 | 메인 히어로 타이틀 | "헤이제노" |
+| `h2` | 26px | 900 | 섹션 제목 | "오늘의 추천" |
+| `h3` | 18px | 900 | 카드 제목 | "현재 급여 사료" |
+| `body` | 16px | 400 | 본문 텍스트 | 일반 설명 |
+| `body2` | 16px | 400 | 보조 본문 | 회색 텍스트 |
+| `small` | 14px | 400 | 작은 텍스트 | 캡션, 부가 정보 |
+| `caption` | 13px | 700 | 배지/칩 | "최저가" |
+| `button` | 16px | 800 | 버튼 텍스트 | "등록하기" |
+
+### 사용 예시
+
+```dart
+// 제목
+Text('헤이제노', style: AppTypography.h2)
+
+// 본문
+Text('설명 텍스트', style: AppTypography.body)
+
+// 보조 텍스트
+Text('부가 정보', style: AppTypography.small.copyWith(
+  color: AppColors.textSecondary,
+))
+
+// 버튼
+Text('등록하기', style: AppTypography.button)
+```
+
+---
+
+## ✅ 최종 체크리스트
+
+새로운 화면/컴포넌트를 만들 때 확인:
+
+- [ ] **PrimaryBlue / PetGreen 역할 구분했는가**
+  - 결정/이동 → PrimaryBlue
+  - 상태/안심 → PetGreen
   
-  .brand {
-    font-size: 16px;
-  }
+- [ ] **이모지 1섹션 1개 지켰는가**
+  - 섹션당 최대 1개
+  - 본문 중간 사용 금지
   
-  .brand img {
-    height: 32px;
-  }
+- [ ] **AppSpacing만 사용했는가**
+  - 하드코딩 간격 없음
+  - SizedBox(height: 20) 금지
   
-  .navCta {
-    padding: 9px 10px;
-    font-size: 12px;
-  }
+- [ ] **AppRadius 일관성 유지했는가**
+  - 카드: md (12)
+  - 버튼: md (12)
+  - 배지: sm (8)
   
-  .badge {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
+- [ ] **Shadow 제거했는가**
+  - 홈 카드에 Shadow 사용 금지
+  - Border로 구분
   
-  h1 {
-    font-size: 34px;
-  }
-}
-```
-
-### 태블릿 스타일 (`max-width: 900px`)
-
-```css
-@media (max-width: 900px) {
-  .hero {
-    grid-template-columns: 1fr;
-  }
+- [ ] **홈에서 "추천"이 과하지 않은가**
+  - 현재 급여 사료가 메인
+  - 추천은 조건부만
   
-  .stepGrid {
-    grid-template-columns: 1fr;
-  }
+- [ ] **애니메이션 Duration/Curve 적절한가**
+  - 300-500ms
+  - Curves.easeOut
   
-  .grid2 {
-    grid-template-columns: 1fr;
-  }
-  
-  .aiGrid {
-    grid-template-columns: 1fr;
-  }
-}
-```
-
-### 모바일 최소 너비 (`max-width: 420px`)
-
-```css
-@media (max-width: 420px) {
-  h1 {
-    font-size: 34px;
-  }
-}
-```
+- [ ] **iOS 스타일 적용했는가**
+  - CupertinoScrollbar + BouncingScrollPhysics
+  - CupertinoButton 사용
 
 ---
 
-## 9. 애니메이션 & 트랜지션
+## 📚 참고 파일
 
-### 트랜지션
-
-#### 버튼 트랜지션
-```css
-transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
-```
-
-- **Transform**: `0.06s ease` - 빠른 피드백
-- **Background/Border**: `0.12s ease` - 부드러운 색상 변화
-
-#### 호버 효과
-```css
-.btn:hover {
-  transform: translateY(-1px);
-}
-```
-
-- 버튼이 살짝 위로 올라가는 효과
-- 시각적 피드백 제공
-
-### 애니메이션 사용 예
-
-- **비디오**: `autoplay muted loop playsinline` 속성 사용
-- **모달**: JavaScript로 `display: flex/none` 토글
+- `frontend/lib/app/theme/app_colors.dart` - 색상 정의
+- `frontend/lib/app/theme/app_typography.dart` - 타이포그래피 정의
+- `frontend/lib/app/theme/app_spacing.dart` - 간격 정의
+- `frontend/lib/app/theme/app_radius.dart` - 반경 정의
+- `frontend/lib/app/theme/app_shadows.dart` - 그림자 정의 (거의 사용 안 함)
+- `frontend/lib/ui/widgets/top_bar.dart` - 상단 바 컴포넌트
+- `frontend/lib/ui/widgets/card_container.dart` - 카드 컴포넌트
 
 ---
 
-## 10. 구현 예제
-
-### 완전한 HTML 템플릿
-
-```html
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>프로젝트 이름</title>
-  
-  <style>
-    :root {
-      --bg: #f7f8fb;
-      --card: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --line: #e5e7eb;
-      --primary: #2563eb;
-      --primary2: #1d4ed8;
-      --radius: 18px;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --chip: #eef2ff;
-      --ai: #7c3aed;
-      --ai2: #6d28d9;
-      --aiChip: #f3e8ff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .wrap {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 28px 18px 80px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: var(--shadow);
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: 42px;
-      letter-spacing: -1px;
-    }
-
-    .lead {
-      color: var(--muted);
-      font-size: 17px;
-      margin: 0 0 18px;
-    }
-
-    .btn {
-      padding: 12px 16px;
-      border-radius: 14px;
-      font-weight: 800;
-      border: 1px solid var(--line);
-      background: #fff;
-      transition: transform 0.06s ease, background 0.12s ease, border-color 0.12s ease;
-      cursor: pointer;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .btn.primary {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    .btn.primary:hover {
-      background: var(--primary2);
-      border-color: var(--primary2);
-    }
-
-    @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 520px) {
-      h1 {
-        font-size: 34px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="card">
-      <h1>프로젝트 제목</h1>
-      <p class="lead">프로젝트 설명</p>
-      <button class="btn primary">시작하기</button>
-    </div>
-  </div>
-</body>
-</html>
-```
-
-### CSS 변수만 사용하기
-
-```css
-/* 다른 프로젝트에 적용할 때는 이 변수들만 복사하면 됩니다 */
-:root {
-  --bg: #f7f8fb;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --line: #e5e7eb;
-  --primary: #2563eb;
-  --primary2: #1d4ed8;
-  --radius: 18px;
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  --chip: #eef2ff;
-  --ai: #7c3aed;
-  --ai2: #6d28d9;
-  --aiChip: #f3e8ff;
-}
-```
-
----
-
-## 📝 사용 가이드라인
-
-### 색상 사용
-
-1. **Primary 색상**은 주요 액션(버튼, 링크)에만 사용
-2. **Muted 색상**은 보조 텍스트, 설명에 사용
-3. **AI 색상**은 AI 관련 기능에만 사용하여 구분
-
-### 간격 사용
-
-1. **14px**는 가장 자주 사용되는 간격 (그리드, 요소 간)
-2. **28px**는 섹션, 카드 패딩에 사용
-3. **10px**는 작은 요소 간 간격 (버튼, 칩)
-
-### 컴포넌트 사용
-
-1. **Card**는 모든 주요 콘텐츠를 감싸는 컨테이너
-2. **Button**은 항상 `.btnRow` 내에서 사용
-3. **Chip**은 `.chips` 컨테이너 내에서 사용
-
-### 반응형 고려사항
-
-1. 모든 그리드는 모바일에서 1열로 변경
-2. 폰트 크기는 모바일에서 약간 작아짐
-3. 패딩은 모바일에서 약간 줄어듦
-
----
-
-## 🎨 디자인 철학
-
-1. **명확성**: 정보의 계층 구조가 명확함
-2. **일관성**: 모든 페이지에서 동일한 디자인 토큰 사용
-3. **접근성**: 충분한 대비와 가독성 확보
-4. **부드러움**: 둥근 모서리와 부드러운 그림자로 친근한 느낌
-5. **효율성**: 최소한의 스타일로 최대의 효과
-
----
-
-## 📚 참고 자료
-
-- 실제 구현: `ssamdaeshin-landing/index.html`
-- 개인정보처리방침: `ssamdaeshin-landing/privacy/index.html`
-- 이용약관: `ssamdaeshin-landing/terms/terms.html`
-
----
-
-**마지막 업데이트**: 2025년 1월
+**버전**: v1.0 (Final)  
+**마지막 업데이트**: 2024년

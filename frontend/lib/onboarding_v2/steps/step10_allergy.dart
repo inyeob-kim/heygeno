@@ -3,8 +3,9 @@ import '../onboarding_shell.dart';
 import '../widgets/pill_chip.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 
-/// Step 10: Food Allergies - matches React Step10FoodAllergies
+/// Step 10: Food Allergies - DESIGN_GUIDE v1.0 준수
 class Step10Allergy extends StatelessWidget {
   final List<String> value;
   final String otherAllergy;
@@ -63,6 +64,16 @@ class Step10Allergy extends StatelessWidget {
     }
   }
 
+  bool get isValid {
+    // "없어요"가 선택되어 있거나, 다른 항목이 하나라도 선택되어 있으면 유효
+    // "기타"를 선택했을 때는 otherAllergy 텍스트도 확인
+    if (value.isEmpty) return false;
+    if (value.contains('기타') && (otherAllergy.trim().isEmpty)) {
+      return false; // "기타" 선택했는데 텍스트가 없으면 유효하지 않음
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return OnboardingShell(
@@ -70,32 +81,49 @@ class Step10Allergy extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🍗',
-      title: '피해야 하는 재료가 있나요? 🍗',
+      title: '피해야 하는 재료가 있나요?',
       ctaText: '다음',
+      ctaDisabled: !isValid,
       onCTAClick: onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: allergyOptions.map((option) {
-              return PillChip(
-                label: option,
-                selected: value.contains(option),
-                onTap: () => handleToggle(option),
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: allergyOptions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final option = entry.value;
+              return TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                duration: Duration(milliseconds: 200 + (index * 30)),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value.clamp(0.0, 1.0),
+                    child: Transform.scale(
+                      scale: 0.9 + (0.1 * value.clamp(0.0, 1.0)),
+                      child: PillChip(
+                        label: option,
+                        selected: this.value.contains(option),
+                        onTap: () => handleToggle(option),
+                      ),
+                    ),
+                  );
+                },
+                child: const SizedBox.shrink(),
               );
             }).toList(),
           ),
           if (value.contains('기타')) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               '기타 재료를 입력해주세요',
               style: AppTypography.small.copyWith(
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             TossTextInput(
               value: otherAllergy,
               onChanged: (val) => onUpdate({'otherAllergy': val}),

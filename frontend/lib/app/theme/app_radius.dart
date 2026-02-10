@@ -1,42 +1,49 @@
 /// 앱 Border Radius 정의 (DESIGN_GUIDE.md 기반)
 class AppRadius {
-  // 기본 Radius: 18px
-  static const double base = 18.0;
-  static const double small = 12.0;
-  static const double medium = 16.0;
-  static const double large = 18.0; // --radius: 18px
-  static const double xlarge = 24.0;
+  AppRadius._(); // 인스턴스 생성 방지
+  
+  // DESIGN_GUIDE v1.0 규칙
+  static const double sm = 8;   // 배지 / Chip
+  static const double md = 12;  // 카드 / 버튼 (기본)
+  static const double lg = 16;  // 바텀시트
+  static const double xl = 20;  // 큰 바텀시트
+  
+  // Legacy (호환성)
+  static const double small = sm;
+  static const double medium = md;
+  static const double large = lg;
+  static const double xlarge = xl;
   
   // Bottom Sheet
-  static const double bottomSheet = 18.0;
+  static const double bottomSheet = lg;
   
-  // Button: 14px (일반), 12px (모달)
-  static const double button = 14.0;
-  static const double buttonModal = 12.0;
+  // Button
+  static const double button = md;
+  static const double buttonModal = md;
   static const double buttonPill = 999.0; // 완전한 둥근 모서리
   
-  // Card: 18px
-  static const double card = 18.0;
+  // Card
+  static const double card = md;
+  
+  // Chip/Badge
+  static const double chip = sm;
+  static const double badge = sm;
   
   // FAB
   static const double fab = 28.0;
   
-  // Chip/Badge: 999px (완전한 둥근 모서리)
-  static const double chip = 999.0;
-  static const double badge = 999.0;
+  // Panel
+  static const double panel = lg;
   
-  // Panel: 16px
-  static const double panel = 16.0;
+  // Callout
+  static const double callout = lg;
   
-  // Callout: 16px or 18px
-  static const double callout = 18.0;
-  
-  // Media: 14px
+  // Media
   static const double media = 14.0;
   
-  // Step Num: 10px
+  // Step Num
   static const double stepNum = 10.0;
   
-  // Code: 8px
+  // Code
   static const double code = 8.0;
 }

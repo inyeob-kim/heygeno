@@ -33,7 +33,45 @@ class ProductRepository {
     }
   }
 
-  /// 추천 상품 목록 조회
+  /// 최근 추천 히스토리 조회 (저장된 히스토리에서 조회)
+  Future<RecommendationResponseDto> getRecommendationHistory(String petId, {int limit = 10}) async {
+    final startTime = DateTime.now();
+    print('[ProductRepository] 📚 히스토리 API 호출 시작: GET ${Endpoints.productRecommendationHistory}?pet_id=$petId&limit=$limit');
+    
+    try {
+      final response = await _apiClient.get(
+        Endpoints.productRecommendationHistory,
+        queryParameters: {'pet_id': petId, 'limit': limit},
+      );
+
+      final duration = DateTime.now().difference(startTime);
+      print('[ProductRepository] ✅ 히스토리 API 응답 수신: statusCode=${response.statusCode}, 소요시간=${duration.inMilliseconds}ms');
+      
+      final data = response.data as Map<String, dynamic>;
+      final itemsCount = (data['items'] as List?)?.length ?? 0;
+      print('[ProductRepository] 📦 히스토리 응답 데이터: pet_id=${data['pet_id']}, items=$itemsCount개');
+      
+      final result = RecommendationResponseDto.fromJson(data);
+      print('[ProductRepository] ✅ 히스토리 DTO 변환 완료: ${result.items.length}개 추천 상품');
+      
+      return result;
+    } on DioException catch (e) {
+      final duration = DateTime.now().difference(startTime);
+      print('[ProductRepository] ❌ 히스토리 DioException 발생: type=${e.type}, message=${e.message}, 소요시간=${duration.inMilliseconds}ms');
+      if (e.response != null) {
+        print('[ProductRepository] ❌ 히스토리 응답 상세: statusCode=${e.response?.statusCode}, data=${e.response?.data}');
+      }
+      _handleDioException(e);
+      rethrow;
+    } catch (e, stackTrace) {
+      final duration = DateTime.now().difference(startTime);
+      print('[ProductRepository] ❌ 히스토리 예외 발생: error=$e, 소요시간=${duration.inMilliseconds}ms');
+      print('[ProductRepository] ❌ 히스토리 StackTrace: $stackTrace');
+      throw ServerException('추천 히스토리를 불러오는데 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// 추천 상품 목록 조회 (실시간 계산)
   Future<RecommendationResponseDto> getRecommendations(String petId) async {
     final startTime = DateTime.now();
     print('[ProductRepository] 🌐 API 호출 시작: GET ${Endpoints.productRecommendations}?pet_id=$petId');

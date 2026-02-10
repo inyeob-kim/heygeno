@@ -1,69 +1,34 @@
-/// 앱 Spacing 정의 (DESIGN_GUIDE.md 기반)
+/// Spacing 토큰 시스템
+/// 
+/// 이 프로젝트의 모든 간격은 다음 규칙을 따릅니다:
+/// 
+/// - xs(4): 미세 간격 (거의 사용 안 함)
+/// - sm(8): 아이콘-텍스트, 작은 요소 간 간격
+/// - md(12): 섹션 내부 그룹 간격
+/// - lg(16): 카드 내부 주요 구분, 페이지 horizontal padding
+/// - xl(24): 카드 간, 페이지 섹션 간 간격
+/// 
+/// 사용 예시:
+/// ```dart
+/// SizedBox(height: AppSpacing.md)  // 섹션 내부 그룹
+/// SizedBox(width: AppSpacing.sm)   // 아이콘-텍스트 간격
+/// EdgeInsets.symmetric(horizontal: AppSpacing.lg)  // 페이지 padding
+/// ```
 class AppSpacing {
-  static const double xs = 4.0;
-  static const double sm = 8.0;
-  static const double md = 14.0; // 가장 자주 사용되는 간격 (그리드, 요소 간)
-  static const double lg = 18.0;
-  static const double xl = 28.0; // 섹션, 카드 패딩
-  static const double xxl = 32.0; // 섹션 간격
-  
-  // 페이지 패딩
-  static const double pagePaddingTop = 28.0;
-  static const double pagePaddingHorizontal = 18.0;
-  static const double pagePaddingBottom = 80.0;
-  
-  // Nav 패딩
-  static const double navPaddingVertical = 14.0;
-  static const double navPaddingHorizontal = 18.0;
-  static const double navPaddingVerticalMobile = 12.0;
-  static const double navPaddingHorizontalMobile = 14.0;
-  
-  // 카드 패딩
-  static const double cardPadding = 28.0;
-  static const double itemPadding = 16.0;
-  static const double panelPadding = 18.0; // 모달
-  static const double calloutPadding = 18.0;
-  
-  // 버튼 패딩
-  static const double buttonPaddingVertical = 12.0;
-  static const double buttonPaddingHorizontal = 16.0;
-  static const double navCtaPaddingVertical = 10.0;
-  static const double navCtaPaddingHorizontal = 12.0;
-  static const double navCtaPaddingVerticalMobile = 9.0;
-  static const double navCtaPaddingHorizontalMobile = 10.0;
-  static const double modalButtonPaddingVertical = 10.0;
-  static const double modalButtonPaddingHorizontal = 12.0;
-  
-  // 칩/배지 패딩
-  static const double badgePaddingVertical = 6.0;
-  static const double badgePaddingHorizontal = 12.0;
-  static const double badgePaddingHorizontalMobile = 10.0;
-  static const double chipPaddingVertical = 8.0;
-  static const double chipPaddingHorizontal = 10.0;
-  static const double aiBadgePaddingVertical = 6.0;
-  static const double aiBadgePaddingHorizontal = 12.0;
-  static const double aiKickerPaddingVertical = 7.0;
-  static const double aiKickerPaddingHorizontal = 10.0;
-  
-  // 마진
-  static const double sectionMarginTop = 32.0;
-  static const double sectionMarginTopTerms = 18.0;
-  static const double heroMarginTop = 28.0;
-  static const double cardMarginTop = 14.0;
-  static const double itemMargin = 0.0;
-  static const double listItemMargin = 8.0;
-  static const double listItemMarginTerms = 6.0;
-  
-  // Gap (Flexbox/Grid)
-  static const double navInnerGap = 12.0;
-  static const double navRightGap = 10.0;
-  static const double buttonRowGap = 10.0;
-  static const double gridGap = 14.0;
-  static const double stepGap = 14.0;
-  static const double chipsGap = 8.0;
-  static const double footerLinksGap = 10.0;
-  
-  // Legacy (호환성)
-  static const double pagePadding = 20.0;
-  static const double sectionGap = 24.0;
+  AppSpacing._(); // 인스턴스 생성 방지
+
+  // micro
+  static const double xs = 4;
+
+  // element gap (icon-text, label-value)
+  static const double sm = 8;
+
+  // group gap (section 내부)
+  static const double md = 12;
+
+  // section gap (card 내부 주요 구분)
+  static const double lg = 16;
+
+  // page gap (카드 간)
+  static const double xl = 24;
 }

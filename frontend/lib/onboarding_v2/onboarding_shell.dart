@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/app_spacing.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/primary_cta_button.dart';
 
-/// Onboarding shell layout matching React OnboardingLayout
-class OnboardingShell extends StatelessWidget {
+/// Onboarding shell layout - DESIGN_GUIDE v1.0 준수
+class OnboardingShell extends StatefulWidget {
   final int currentStep;
   final int totalSteps;
   final VoidCallback? onBack;
@@ -36,131 +38,189 @@ class OnboardingShell extends StatelessWidget {
   });
 
   @override
+  State<OnboardingShell> createState() => _OnboardingShellState();
+}
+
+class _OnboardingShellState extends State<OnboardingShell>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-          child: Column(
-            children: [
-              // Progress Bar
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: ProgressBar(
-                  current: currentStep,
-                  total: totalSteps,
-                ),
+        child: Column(
+          children: [
+            // Progress Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                0,
               ),
+              child: ProgressBar(
+                current: widget.currentStep,
+                total: widget.totalSteps,
+              ),
+            ),
 
-              // Back Button
-              if (onBack != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12, left: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        size: 20,
-                        color: AppColors.textPrimary,
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(40, 40),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
+            // Back Button
+            if (widget.onBack != null)
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.md,
+                  left: AppSpacing.lg,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    minSize: 0,
+                    onPressed: widget.onBack,
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 20,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
+              ),
 
-              // Scrollable Content
-              Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (ScrollNotification notification) {
-                    // 스크롤 시작 시 포커스 해제
-                    if (notification is ScrollStartNotification) {
-                      FocusScope.of(context).unfocus();
-                    }
-                    return false;
-                  },
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      onBack != null ? 24 : 32,
-                      16,
-                      16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Leading Widget (e.g., Logo)
-                        if (leadingWidget != null) ...[
-                          Center(child: leadingWidget!),
-                          const SizedBox(height: 24),
-                        ],
+            // Scrollable Content
+            Expanded(
+              child: CupertinoScrollbar(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    widget.onBack != null ? AppSpacing.xl : AppSpacing.xl * 1.5,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Leading Widget (e.g., Logo)
+                          if (widget.leadingWidget != null) ...[
+                            Center(child: widget.leadingWidget!),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
 
-                        // Emoji (only show if not empty)
-                        if (emoji.isNotEmpty) ...[
+                          // Emoji (only show if not empty) - 섹션 헤더로 사용
+                          if (widget.emoji.isNotEmpty) ...[
+                            Text(
+                              widget.emoji,
+                              style: const TextStyle(fontSize: 64),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+
+                          // Title
                           Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 80),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // Title
-                        Text(
-                          title,
-                          style: AppTypography.title.copyWith(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        // Subtitle
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            subtitle!,
-                            style: AppTypography.small.copyWith(
-                              fontSize: 15,
+                            widget.title,
+                            style: AppTypography.h2.copyWith(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
                             ),
                           ),
+
+                          // Subtitle
+                          if (widget.subtitle != null) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              widget.subtitle!,
+                              style: AppTypography.body.copyWith(
+                                fontSize: 15,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: AppSpacing.xl * 1.5),
+
+                          // Content
+                          widget.child,
                         ],
-
-                        const SizedBox(height: 32),
-
-                        // Content
-                        child,
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
+            ),
 
-              // Bottom CTA
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    PrimaryCTAButton(
-                      text: ctaText,
-                      onPressed: ctaDisabled ? null : onCTAClick,
-                      disabled: ctaDisabled,
-                    ),
-                    if (ctaSecondary != null) ...[
-                      const SizedBox(height: 12),
-                      PrimaryCTAButton(
-                        text: ctaSecondary!.text,
-                        onPressed: ctaSecondary!.onClick,
-                        isSecondary: true,
-                      ),
-                    ],
-                  ],
+            // Bottom CTA
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.divider,
+                    width: 0.5,
+                  ),
                 ),
               ),
-            ],
+              child: Column(
+                children: [
+                  PrimaryCTAButton(
+                    text: widget.ctaText,
+                    onPressed: widget.ctaDisabled ? null : widget.onCTAClick,
+                    disabled: widget.ctaDisabled,
+                  ),
+                  if (widget.ctaSecondary != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    PrimaryCTAButton(
+                      text: widget.ctaSecondary!.text,
+                      onPressed: widget.ctaSecondary!.onClick,
+                      isSecondary: true,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
