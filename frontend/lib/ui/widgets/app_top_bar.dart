@@ -42,9 +42,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             Expanded(
               child: Text(
                 title,
-                style: AppTypography.h3.copyWith(
+                style: AppTypography.body.copyWith(
                   color: AppColors.textPrimary, // #0F172A
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
