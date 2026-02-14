@@ -128,7 +128,7 @@ class RecommendationExplanationService:
             List[Dict]: 각 청크는 {'content': str, 'source': str, 'metadata': dict} 형태
         """
         if not CHROMA_AVAILABLE:
-            logger.debug("[RAG] ChromaDB가 설치되지 않아 RAG 검색을 스킵합니다.")
+            logger.warning("[RAG] ⚠️ ChromaDB가 설치되지 않아 RAG 검색을 스킵합니다.")
             return []
         
         try:
@@ -136,8 +136,11 @@ class RecommendationExplanationService:
             project_root = Path(__file__).parent.parent.parent
             vector_store_path = project_root / "data" / "vector_store"
             
+            logger.info(f"[RAG] 🔍 Vector Store 경로 확인: {vector_store_path}")
+            logger.info(f"[RAG] 🔍 Vector Store 존재 여부: {vector_store_path.exists()}")
+            
             if not vector_store_path.exists():
-                logger.debug(f"[RAG] Vector Store가 없습니다: {vector_store_path}")
+                logger.warning(f"[RAG] ⚠️ Vector Store가 없습니다: {vector_store_path}")
                 return []
             
             # Chroma 클라이언트 초기화
@@ -145,9 +148,11 @@ class RecommendationExplanationService:
             
             # 컬렉션 가져오기 (없으면 빈 리스트 반환)
             try:
+                logger.info("[RAG] 🔍 컬렉션 'pet_food_rag' 조회 시도...")
                 collection = client.get_collection(name="pet_food_rag")
+                logger.info(f"[RAG] ✅ 컬렉션 조회 성공: {collection.name}, 문서 수: {collection.count()}")
             except Exception as e:
-                logger.debug(f"[RAG] 컬렉션을 찾을 수 없습니다: {str(e)}")
+                logger.warning(f"[RAG] ⚠️ 컬렉션을 찾을 수 없습니다: {str(e)}")
                 return []
             
             # 쿼리 텍스트 생성
@@ -163,7 +168,7 @@ class RecommendationExplanationService:
             
             query_text = " ".join(query_parts) if query_parts else product_name or "반려동물 사료"
             
-            logger.debug(f"[RAG] 쿼리: {query_text}")
+            logger.info(f"[RAG] 🔍 검색 쿼리: {query_text}")
             
             # 쿼리 임베딩 생성
             openai_client = get_openai_client()
@@ -174,11 +179,13 @@ class RecommendationExplanationService:
             query_embedding = query_response.data[0].embedding
             
             # Vector Store에서 유사한 문서 검색
+            logger.info(f"[RAG] 🔍 Vector Store 검색 시작: top_k={top_k}")
             results = collection.query(
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 include=["documents", "metadatas", "distances"]
             )
+            logger.info(f"[RAG] 🔍 검색 결과: ids={len(results.get('ids', [[]])[0]) if results.get('ids') else 0}개")
             
             # 결과 변환
             chunks = []
@@ -204,7 +211,14 @@ class RecommendationExplanationService:
                     logger.info(f"  📄 출처 (Source): {chunk.get('source', 'Unknown')}")
                     logger.info(f"  📁 파일 (File): {chunk.get('file', 'Unknown')}")
                     logger.info(f"  📏 유사도 거리 (Distance): {chunk.get('distance', 0.0):.4f}")
-                    logger.info(f"  📝 내용 (Content): {chunk.get('content', '')[:200]}...")  # 처음 200자만
+                    content = chunk.get('content', '')
+                    logger.info(f"  📝 내용 길이: {len(content)}자")
+                    logger.info(f"  📝 내용 (Content) - 전체:")
+                    logger.info(f"  {'-' * 76}")
+                    # 전체 내용을 여러 줄로 출력 (긴 텍스트도 모두 출력)
+                    for line in content.split('\n'):
+                        logger.info(f"  {line}")
+                    logger.info(f"  {'-' * 76}")
                     logger.info(f"  🏷️  메타데이터: {chunk.get('metadata', {})}")
                 logger.info("=" * 80)
             else:
@@ -438,14 +452,22 @@ class RecommendationExplanationService:
             # RAG 반환값 전체 로그 출력
             if retrieved_chunks:
                 logger.info("\n" + "=" * 80)
-                logger.info("[RAG] 📊 전문가 설명 생성에서 받은 RAG 결과 요약:")
+                logger.info("[RAG] 📊 전문가 설명 생성에서 받은 RAG 결과 전체:")
                 logger.info("=" * 80)
                 for idx, chunk in enumerate(retrieved_chunks, 1):
                     logger.info(f"\n[청크 {idx}/{len(retrieved_chunks)}]")
                     logger.info(f"  출처: {chunk.get('source', 'Unknown')}")
                     logger.info(f"  파일: {chunk.get('file', 'Unknown')}")
                     logger.info(f"  거리: {chunk.get('distance', 0.0):.4f}")
-                    logger.info(f"  내용 미리보기: {chunk.get('content', '')[:150]}...")
+                    content = chunk.get('content', '')
+                    logger.info(f"  내용 길이: {len(content)}자")
+                    logger.info(f"  내용 (Content) - 전체:")
+                    logger.info(f"  {'-' * 76}")
+                    # 전체 내용을 여러 줄로 출력
+                    for line in content.split('\n'):
+                        logger.info(f"  {line}")
+                    logger.info(f"  {'-' * 76}")
+                    logger.info(f"  메타데이터: {chunk.get('metadata', {})}")
                 logger.info("=" * 80 + "\n")
             
             # RAG 컨텍스트 생성
@@ -454,11 +476,18 @@ class RecommendationExplanationService:
                 rag_context = "\n참고 자료 (전문 문서):\n"
                 for idx, chunk in enumerate(retrieved_chunks[:5], 1):
                     source = chunk.get("source", "Unknown")
-                    content = chunk.get("content", "")[:500]
+                    content = chunk.get("content", "")[:500]  # 프롬프트에는 500자만 사용
                     distance = chunk.get("distance", 0.0)
                     rag_context += f"{idx}. [{source}] (유사도: {1-distance:.2f})\n{content}\n\n"
+                
+                # RAG 컨텍스트 전체 로그 출력
+                logger.info("[RAG] 📄 LLM에 전달될 RAG 컨텍스트:")
+                logger.info("=" * 80)
+                logger.info(rag_context)
+                logger.info("=" * 80)
             else:
                 rag_context = "\n참고 자료: 없음\n"
+                logger.info("[RAG] ⚠️ RAG 컨텍스트 없음 (retrieved_chunks가 비어있음)")
             
             # 기술적 이유를 문자열로 변환
             reasons_text = "\n".join([f"- {reason}" for reason in technical_reasons])
@@ -525,6 +554,14 @@ class RecommendationExplanationService:
                 rag_context=rag_context
             )
             
+            # 생성된 프롬프트 전체 로그 출력
+            logger.info("[Explanation Service] 📝 생성된 프롬프트 전체:")
+            logger.info("=" * 80)
+            logger.info(f"System Prompt:\n{SYSTEM_PROMPT_EXPERT}")
+            logger.info("-" * 80)
+            logger.info(f"User Prompt:\n{prompt}")
+            logger.info("=" * 80)
+            
             client = get_openai_client()
             
             logger.info(f"[Explanation Service] 🎓 전문가 설명 생성 시작: {pet_name} - {brand_name} {product_name}")
@@ -540,6 +577,13 @@ class RecommendationExplanationService:
             )
             
             explanation = response.choices[0].message.content.strip()
+            
+            # LLM 응답 전체 로그 출력
+            logger.info("[Explanation Service] 🤖 LLM 응답 전체:")
+            logger.info("=" * 80)
+            logger.info(explanation)
+            logger.info("=" * 80)
+            logger.info(f"응답 길이: {len(explanation)}자")
             
             # Confidence Score 계산
             confidence_score = RecommendationExplanationService._calculate_confidence_score(

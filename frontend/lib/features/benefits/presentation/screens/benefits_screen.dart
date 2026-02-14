@@ -69,7 +69,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '혜택'),
+            AppTopBar(title: '혜택', showBackButton: false),
             Expanded(
               child: CupertinoScrollbar(
                 controller: _scrollController,
@@ -228,20 +228,8 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             ),
                             const SizedBox(height: 16),
                             // Mission Cards (경계선 없이)
-                            ...missions.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final mission = entry.value;
-                              return Column(
-                                children: [
-                                  _buildMissionCard(context, mission),
-                                  if (index < missions.length - 1)
-                                    Divider(
-                                      height: 1,
-                                      thickness: 1,
-                                      color: AppColors.border,
-                                    ),
-                                ],
-                              );
+                            ...missions.map((mission) {
+                              return _buildMissionCard(context, mission);
                             }),
                           ],
                         ),

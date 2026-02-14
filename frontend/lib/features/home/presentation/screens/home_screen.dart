@@ -209,8 +209,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // 상단 고정 탭 (알림 아이콘 포함)
             AppTopBar(
               title: state.userNickname != null 
-                  ? '안녕하세요, ${state.userNickname}님!'
-                  : '헤이제노',
+              ? '안녕하세요, ${state.userNickname}님!'
+              : '헤이제노',
+              showBackButton: false,
               actions: [
                 // 임시: 캐시 제거 버튼
                 IconButton(

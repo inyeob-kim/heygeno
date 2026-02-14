@@ -130,7 +130,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '더보기'),
+            AppTopBar(title: '더보기', showBackButton: false),
             Expanded(
               child: CupertinoScrollbar(
                 controller: _scrollController,

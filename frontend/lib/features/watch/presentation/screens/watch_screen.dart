@@ -47,7 +47,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '찜한 사료'),
+            AppTopBar(title: '찜한 사료', showBackButton: false),
             Expanded(
               child: _buildBody(state),
             ),
@@ -96,7 +96,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
     // 빈 상태 - "+" 카드 표시
     if (state.trackingProducts.isEmpty) {
       return CupertinoScrollbar(
+        controller: _scrollController,
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -130,7 +132,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
     // sortedProducts가 비어있는 경우 추가 체크 - "+" 카드 표시
     if (sortedProducts.isEmpty) {
       return CupertinoScrollbar(
+        controller: _scrollController,
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -160,7 +164,9 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
     }
 
     return CupertinoScrollbar(
+      controller: _scrollController,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

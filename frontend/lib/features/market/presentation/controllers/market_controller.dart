@@ -63,6 +63,7 @@ class MarketState {
 class MarketController extends StateNotifier<MarketState> {
   final ProductRepository _productRepository;
   final Ref _ref;
+  List<ProductDto> _originalProducts = []; // 원본 상품 목록 저장
 
   MarketController(ProductRepository productRepository, Ref ref)
       : _productRepository = productRepository,
@@ -77,6 +78,8 @@ class MarketController extends StateNotifier<MarketState> {
     
     try {
       final products = await _productRepository.getProducts();
+      _originalProducts = products; // 원본 상품 목록 저장
+      
       // WatchController에서 찜한 상품 ID 목록 가져오기
       final watchState = _ref.read(watchControllerProvider);
       final trackedIds = watchState.trackedProductIds;
@@ -103,15 +106,21 @@ class MarketController extends StateNotifier<MarketState> {
     
     try {
       final products = await _productRepository.getProducts();
+      _originalProducts = products; // 원본 상품 목록 업데이트
+      
       // WatchController에서 찜한 상품 ID 목록 가져오기
       final watchState = _ref.read(watchControllerProvider);
       final trackedIds = watchState.trackedProductIds;
       
+      // 현재 검색어가 있으면 필터링 적용
+      final currentQuery = state.searchQuery ?? '';
+      final filteredProducts = _filterProducts(currentQuery);
+      
       state = state.copyWith(
         isRefreshing: false,
-        allProducts: products,
-        hotDealProducts: products.take(5).toList(),
-        popularProducts: products.take(5).toList(),
+        allProducts: filteredProducts,
+        hotDealProducts: filteredProducts.take(5).toList(),
+        popularProducts: filteredProducts.take(5).toList(),
         trackedProductIds: trackedIds,
       );
     } catch (e) {
@@ -142,8 +151,40 @@ class MarketController extends StateNotifier<MarketState> {
 
   /// 검색 쿼리 설정
   void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
-    // TODO: 백엔드에 검색 API 추가 시 구현
+    final trimmedQuery = query.trim();
+    final filteredProducts = _filterProducts(trimmedQuery);
+    final isEmpty = trimmedQuery.isEmpty;
+    
+    state = state.copyWith(
+      searchQuery: isEmpty ? null : trimmedQuery,
+      allProducts: filteredProducts,
+      // 검색어가 없으면 원본 목록에서 핫딜/인기 상품 가져오기
+      hotDealProducts: isEmpty 
+          ? _originalProducts.take(5).toList()
+          : filteredProducts.take(5).toList(),
+      popularProducts: isEmpty
+          ? _originalProducts.take(5).toList()
+          : filteredProducts.take(5).toList(),
+    );
+  }
+  
+  /// 상품 필터링 (브랜드명, 제품명으로 검색)
+  List<ProductDto> _filterProducts(String query) {
+    if (query.isEmpty || _originalProducts.isEmpty) {
+      // 검색어가 없거나 원본 목록이 비어있으면 원본 상품 목록 반환
+      return List.from(_originalProducts);
+    }
+    
+    final lowerQuery = query.toLowerCase().trim();
+    if (lowerQuery.isEmpty) {
+      return List.from(_originalProducts);
+    }
+    
+    return _originalProducts.where((product) {
+      final brandMatch = product.brandName.toLowerCase().contains(lowerQuery);
+      final productMatch = product.productName.toLowerCase().contains(lowerQuery);
+      return brandMatch || productMatch;
+    }).toList();
   }
 
   List<CategoryChipData> _generateCategories() {

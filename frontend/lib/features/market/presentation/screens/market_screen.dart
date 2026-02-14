@@ -23,6 +23,9 @@ class MarketScreen extends ConsumerStatefulWidget {
 
 class _MarketScreenState extends ConsumerState<MarketScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isTopBarVisible = true;
+  double _lastScrollOffset = 0;
 
   @override
   void initState() {
@@ -31,11 +34,50 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(marketControllerProvider.notifier).refresh();
     });
+    
+    // 스크롤 리스너 추가
+    _scrollController.addListener(_onScroll);
+    
+    // 검색어 변경 리스너 추가
+    _searchController.addListener(_onSearchChanged);
+  }
+  
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    ref.read(marketControllerProvider.notifier).setSearchQuery(query);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    
+    final currentOffset = _scrollController.offset;
+    
+    // 스크롤 방향 감지
+    if (currentOffset > _lastScrollOffset && currentOffset > 50) {
+      // 아래로 스크롤 (50px 이상)
+      if (_isTopBarVisible) {
+        setState(() {
+          _isTopBarVisible = false;
+        });
+      }
+    } else if (currentOffset < _lastScrollOffset || currentOffset <= 0) {
+      // 위로 스크롤 또는 맨 위
+      if (!_isTopBarVisible) {
+        setState(() {
+          _isTopBarVisible = true;
+        });
+      }
+    }
+    
+    _lastScrollOffset = currentOffset;
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -56,25 +98,24 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
-        child: SafeArea(
-          child: Column(
-            children: [
-              // TopBar
-              AppTopBar(title: '사료마켓'),
-              // Search Bar
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 28, 18, 16), // DESIGN_GUIDE v2.2: 페이지 Wrap Padding
-                child: const FigmaSearchBar(placeholder: '사료 브랜드나 제품명을 검색하세요'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // TopBar
+            AnimatedSlide(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              offset: _isTopBarVisible ? Offset.zero : const Offset(0, -1),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isTopBarVisible ? 1.0 : 0.0,
+                child: AppTopBar(title: '사료마켓', showBackButton: false),
               ),
-              Expanded(
-                child: _buildBody(state, currentPetId),
-              ),
-            ],
-          ),
+            ),
+            Expanded(
+              child: _buildBody(state, currentPetId),
+            ),
+          ],
         ),
       ),
     );
@@ -97,9 +138,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
-        if (notification is ScrollStartNotification) {
-          FocusScope.of(context).unfocus();
-        }
+        // 검색바 입력 중에는 포커스 해제하지 않음
         return false;
       },
       child: RefreshIndicator(
@@ -112,6 +151,14 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Search Bar (스크롤 가능한 영역 안으로 이동)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 28, 18, 16), // DESIGN_GUIDE v2.2: 페이지 Wrap Padding
+                  child: FigmaSearchBar(
+                    placeholder: '사료 브랜드나 제품명을 검색하세요',
+                    controller: _searchController,
+                  ),
+                ),
                 // Hot Deals Section
                 if (state.hotDealProducts.isNotEmpty) ...[
                   Padding(
