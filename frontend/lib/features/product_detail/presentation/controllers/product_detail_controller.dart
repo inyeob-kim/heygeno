@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../data/repositories/product_repository.dart';
-import '../../../../data/repositories/tracking_repository.dart';
 import '../../../../data/models/product_dto.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
+import '../../../../domain/services/tracking_service.dart';
 import '../widgets/ingredient_analysis_section.dart';
 
 class ProductDetailState {
@@ -79,11 +79,11 @@ class ProductDetailState {
 
 class ProductDetailController extends StateNotifier<ProductDetailState> {
   final ProductRepository _productRepository;
-  final TrackingRepository _trackingRepository;
+  final TrackingService _trackingService;
 
   ProductDetailController(
     this._productRepository,
-    this._trackingRepository,
+    this._trackingService,
   ) : super(ProductDetailState());
 
   Future<void> loadProduct(String productId) async {
@@ -101,6 +101,9 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
       
       // 성분 분석 데이터 로드 (임시 데이터)
       await loadIngredientAnalysis(productId);
+      
+      // 찜 상태 확인
+      await _checkFavoriteStatus(productId);
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
@@ -109,6 +112,18 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
         isLoading: false,
         error: failure.message,
       );
+    }
+  }
+  
+  /// 찜 상태 확인
+  Future<void> _checkFavoriteStatus(String productId) async {
+    try {
+      final isTracked = await _trackingService.checkTrackingStatus(productId);
+      state = state.copyWith(isFavorite: isTracked);
+    } catch (e) {
+      print('[ProductDetailController] 찜 상태 확인 실패: $e');
+      // 에러가 발생해도 기본값(false)로 설정
+      state = state.copyWith(isFavorite: false);
     }
   }
 
@@ -132,10 +147,43 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
 
   /// 관심 사료 추가/제거 토글
   Future<void> toggleFavorite() async {
-    // TODO: 실제 API 호출로 관심 사료 추가/제거
-    state = state.copyWith(
-      isFavorite: !state.isFavorite,
-    );
+    if (state.product == null) {
+      print('[ProductDetailController] toggleFavorite: product가 null');
+      return;
+    }
+    
+    print('[ProductDetailController] toggleFavorite 시작: productId=${state.product!.id}');
+    
+    // Optimistic update: 즉시 UI 업데이트
+    final previousFavoriteState = state.isFavorite;
+    state = state.copyWith(isFavorite: !state.isFavorite, error: null);
+    
+    try {
+      final productId = state.product!.id;
+      final newFavoriteState = await _trackingService.toggleTracking(
+        productId: productId,
+        currentIsTracked: previousFavoriteState,
+      );
+      
+      // 서비스에서 반환된 상태로 업데이트
+      state = state.copyWith(
+        isFavorite: newFavoriteState,
+        error: null,
+      );
+      
+      print('[ProductDetailController] toggleFavorite 완료: isFavorite=$newFavoriteState');
+    } catch (e, stackTrace) {
+      print('[ProductDetailController] toggleFavorite 에러: $e');
+      print('[ProductDetailController] Stack trace: $stackTrace');
+      // 에러 발생 시 이전 상태로 되돌리기
+      final failure = e is Exception
+          ? handleException(e)
+          : ServerFailure('찜하기 기능을 사용하는데 실패했습니다: ${e.toString()}');
+      state = state.copyWith(
+        isFavorite: previousFavoriteState,
+        error: failure.message,
+      );
+    }
   }
 
   /// 성분 분석 데이터 로드 (임시 데이터)
@@ -178,10 +226,15 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
     state = state.copyWith(isTrackingLoading: true, error: null);
 
     try {
-      await _trackingRepository.createTracking(
-        productId: productId,
-        petId: petId,
-      );
+      // TrackingService를 사용하여 찜하기
+      final isTracked = await _trackingService.checkTrackingStatus(productId);
+      if (!isTracked) {
+        await _trackingService.toggleTracking(
+          productId: productId,
+          currentIsTracked: false,
+        );
+      }
+      
       state = state.copyWith(
         isTrackingLoading: false,
         trackingCreated: true,
@@ -198,11 +251,13 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
   }
 }
 
+/// 제품 상세 Provider (Family + AutoDispose)
+/// 화면 이탈 시 자동 해제되어 메모리 최적화
 final productDetailControllerProvider =
-    StateNotifierProvider.family<ProductDetailController, ProductDetailState, String>(
+    StateNotifierProvider.autoDispose.family<ProductDetailController, ProductDetailState, String>(
   (ref, productId) {
     final productRepository = ref.watch(productRepositoryProvider);
-    final trackingRepository = ref.watch(trackingRepositoryProvider);
-    return ProductDetailController(productRepository, trackingRepository);
+    final trackingService = ref.watch(trackingServiceProvider);
+    return ProductDetailController(productRepository, trackingService);
   },
 );

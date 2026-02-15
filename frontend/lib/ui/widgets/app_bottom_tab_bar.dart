@@ -35,10 +35,10 @@ class AppBottomTabBar extends StatelessWidget {
             children: [
               _TabItem(
                 icon: Icon(
-                  Icons.home,
-                  size: 24,
+                  currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
+                  size: 26,
                   color: currentIndex == 0 
-                      ? AppColors.primary 
+                      ? AppColors.textPrimary 
                       : AppColors.textSecondary,
                 ),
                 label: '홈',
@@ -47,10 +47,10 @@ class AppBottomTabBar extends StatelessWidget {
               ),
               _TabItem(
                 icon: Icon(
-                  Icons.favorite,
-                  size: 24,
+                  currentIndex == 1 ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  size: 26,
                   color: currentIndex == 1 
-                      ? AppColors.primary 
+                      ? AppColors.textPrimary 
                       : AppColors.textSecondary,
                 ),
                 label: '관심',
@@ -59,10 +59,10 @@ class AppBottomTabBar extends StatelessWidget {
               ),
               _TabItem(
                 icon: Icon(
-                  Icons.shopping_bag,
-                  size: 24,
+                  currentIndex == 2 ? Icons.shopping_bag_rounded : Icons.shopping_bag_outlined,
+                  size: 26,
                   color: currentIndex == 2 
-                      ? AppColors.primary 
+                      ? AppColors.textPrimary 
                       : AppColors.textSecondary,
                 ),
                 label: '마켓',
@@ -71,10 +71,10 @@ class AppBottomTabBar extends StatelessWidget {
               ),
               _TabItem(
                 icon: Icon(
-                  Icons.card_giftcard,
-                  size: 24,
+                  currentIndex == 3 ? Icons.local_offer_rounded : Icons.local_offer_outlined,
+                  size: 26,
                   color: currentIndex == 3 
-                      ? AppColors.primary 
+                      ? AppColors.textPrimary 
                       : AppColors.textSecondary,
                 ),
                 label: '혜택',
@@ -83,10 +83,10 @@ class AppBottomTabBar extends StatelessWidget {
               ),
               _TabItem(
                 icon: Icon(
-                  Icons.more_horiz,
-                  size: 24,
+                  currentIndex == 4 ? Icons.more_horiz_rounded : Icons.more_horiz_outlined,
+                  size: 26,
                   color: currentIndex == 4 
-                      ? AppColors.primary 
+                      ? AppColors.textPrimary 
                       : AppColors.textSecondary,
                 ),
                 label: '더보기',
@@ -117,6 +117,15 @@ class _TabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 아이콘 색상 강제 적용 (테마 색상 무시)
+    final iconWithColor = icon is Icon
+        ? Icon(
+            (icon as Icon).icon,
+            size: (icon as Icon).size,
+            color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
+          )
+        : icon;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -126,13 +135,13 @@ class _TabItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            icon, // AnimatedScale 제거 (배경/버블 효과 금지)
+            iconWithColor,
             const SizedBox(height: 2),
             Text(
               label,
               style: AppTypography.small.copyWith(
                 fontSize: 11,
-                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
               ),
               maxLines: 1,

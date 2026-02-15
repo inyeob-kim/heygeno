@@ -52,20 +52,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
           // 액션 버튼들
           ...(actions ??
           [
-            // 알림 아이콘
+            // 알림 아이콘 (iOS 스타일 - 심플)
             IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              color: AppColors.textPrimary, // 다크 차콜
+              icon: const Icon(Icons.notifications_none),
+              color: AppColors.textSecondary,
+              iconSize: 26,
               onPressed: onNotificationTap ?? () {
                 // TODO: 알림 화면 연결
-              },
-            ),
-            // 설정 아이콘
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              color: AppColors.textPrimary, // 다크 차콜
-              onPressed: onSettingsTap ?? () {
-                // TODO: 설정 화면 연결
               },
             ),
             const SizedBox(width: 8),

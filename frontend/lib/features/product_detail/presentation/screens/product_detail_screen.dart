@@ -12,6 +12,7 @@ import '../../../../../ui/widgets/figma_app_bar.dart';
 import '../../../../../ui/widgets/app_buttons.dart';
 import '../../../../../ui/widgets/price_delta.dart';
 import '../controllers/product_detail_controller.dart';
+import '../../../watch/presentation/controllers/watch_controller.dart';
 
 /// 실제 API 데이터를 사용하는 Product Detail Screen
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -39,6 +40,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productDetailControllerProvider(widget.productId));
+    
+    // 에러 메시지 표시
+    ref.listen<String?>(productDetailControllerProvider(widget.productId).select((s) => s.error), (previous, next) {
+      if (next != null && next.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
 
     // 로딩 상태
     if (state.isLoading) {
@@ -118,9 +132,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: () => ref
-                                    .read(productDetailControllerProvider(widget.productId).notifier)
-                                    .toggleFavorite(),
+                                onTap: () async {
+                                  await ref
+                                      .read(productDetailControllerProvider(widget.productId).notifier)
+                                      .toggleFavorite();
+                                  // WatchController 갱신
+                                  ref.read(watchControllerProvider.notifier).loadTrackingProducts();
+                                },
                                 borderRadius: BorderRadius.circular(16), // rounded-2xl
                                 splashColor: Colors.transparent,
                                 highlightColor: Colors.transparent,
@@ -584,9 +602,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => ref
-                      .read(productDetailControllerProvider(widget.productId).notifier)
-                      .toggleFavorite(),
+                  onTap: () async {
+                    await ref
+                        .read(productDetailControllerProvider(widget.productId).notifier)
+                        .toggleFavorite();
+                    // WatchController 갱신
+                    ref.read(watchControllerProvider.notifier).loadTrackingProducts();
+                  },
                   borderRadius: BorderRadius.circular(12), // rounded-xl
                   splashColor: Colors.transparent,
                   highlightColor: Colors.transparent,

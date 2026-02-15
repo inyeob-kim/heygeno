@@ -2,6 +2,7 @@
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.tracking import Tracking, TrackingStatus
@@ -42,22 +43,42 @@ class TrackingService:
         tracking_data: TrackingCreate,
         db: AsyncSession
     ) -> Tracking:
-        """가격 추적 생성"""
-        # 중복 체크
+        """가격 추적 생성 (기존 tracking이 있으면 재활성화)"""
+        # 기존 tracking 확인 (DELETED 포함)
         existing = await db.execute(
             select(Tracking).where(
                 Tracking.user_id == user_id,
                 Tracking.pet_id == tracking_data.pet_id,
-                Tracking.product_id == tracking_data.product_id,
-                Tracking.status != TrackingStatus.DELETED
+                Tracking.product_id == tracking_data.product_id
             )
         )
-        if existing.scalar_one_or_none() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tracking already exists"
-            )
+        existing_tracking = existing.scalar_one_or_none()
         
+        if existing_tracking is not None:
+            # 기존 tracking이 ACTIVE 또는 PAUSED 상태면 에러 반환
+            if existing_tracking.status in [TrackingStatus.ACTIVE, TrackingStatus.PAUSED]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Tracking already exists"
+                )
+            # DELETED 상태면 재활성화
+            existing_tracking.status = TrackingStatus.ACTIVE
+            await db.commit()
+            await db.refresh(existing_tracking)
+            
+            # 미션 진행도 업데이트 (트리거)
+            try:
+                from app.services.mission_service import MissionService
+                from app.models.campaign import CampaignTrigger
+                await MissionService.update_progress(
+                    db, user_id, CampaignTrigger.TRACKING_CREATED
+                )
+            except Exception:
+                pass
+            
+            return existing_tracking
+        
+        # 새 tracking 생성
         tracking = Tracking(
             user_id=user_id,
             pet_id=tracking_data.pet_id,
@@ -66,8 +87,37 @@ class TrackingService:
         )
         
         db.add(tracking)
-        await db.commit()
-        await db.refresh(tracking)
+        try:
+            await db.commit()
+            await db.refresh(tracking)
+        except IntegrityError:
+            # 동시 요청으로 인한 중복 생성 시도 시 기존 tracking 조회
+            await db.rollback()
+            existing = await db.execute(
+                select(Tracking).where(
+                    Tracking.user_id == user_id,
+                    Tracking.pet_id == tracking_data.pet_id,
+                    Tracking.product_id == tracking_data.product_id
+                )
+            )
+            existing_tracking = existing.scalar_one_or_none()
+            if existing_tracking:
+                # 기존 tracking이 ACTIVE/PAUSED면 에러, DELETED면 재활성화
+                if existing_tracking.status == TrackingStatus.DELETED:
+                    existing_tracking.status = TrackingStatus.ACTIVE
+                    await db.commit()
+                    await db.refresh(existing_tracking)
+                    tracking = existing_tracking
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Tracking already exists"
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create tracking"
+                )
         
         # 미션 진행도 업데이트 (트리거)
         try:
@@ -76,14 +126,17 @@ class TrackingService:
             await MissionService.update_progress(
                 db, user_id, CampaignTrigger.TRACKING_CREATED
             )
-        except Exception as e:
+        except Exception:
             # 미션 업데이트 실패해도 추적 생성은 성공 처리
             pass
         
         # 첫 추적인지 확인
         count_result = await db.execute(
             select(func.count(Tracking.id))
-            .where(Tracking.user_id == user_id)
+            .where(
+                Tracking.user_id == user_id,
+                Tracking.status != TrackingStatus.DELETED
+            )
         )
         if count_result.scalar() == 1:
             # 첫 추적 미션 진행도 업데이트

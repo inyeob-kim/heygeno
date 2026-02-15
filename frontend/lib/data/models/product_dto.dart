@@ -13,6 +13,7 @@ class ProductDto {
   final String? sizeLabel;
   @JsonKey(name: 'is_active')
   final bool isActive;
+  final String? species; // 'DOG' | 'CAT'
 
   ProductDto({
     required this.id,
@@ -20,6 +21,7 @@ class ProductDto {
     required this.productName,
     this.sizeLabel,
     required this.isActive,
+    this.species,
   });
 
   factory ProductDto.fromJson(Map<String, dynamic> json) => _$ProductDtoFromJson(json);

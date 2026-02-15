@@ -12,6 +12,7 @@ ProductDto _$ProductDtoFromJson(Map<String, dynamic> json) => ProductDto(
   productName: json['product_name'] as String,
   sizeLabel: json['size_label'] as String?,
   isActive: json['is_active'] as bool,
+  species: json['species'] as String?,
 );
 
 Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
@@ -21,4 +22,5 @@ Map<String, dynamic> _$ProductDtoToJson(ProductDto instance) =>
       'product_name': instance.productName,
       'size_label': instance.sizeLabel,
       'is_active': instance.isActive,
+      'species': instance.species,
     };

@@ -23,6 +23,8 @@ RecommendationItemDto _$RecommendationItemDtoFromJson(
   matchReasons: (json['match_reasons'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  technicalExplanation: json['technical_explanation'] as String?,
+  expertExplanation: json['expert_explanation'] as String?,
   explanation: json['explanation'] as String?,
   ingredientCount: (json['ingredient_count'] as num?)?.toInt(),
   mainIngredients: (json['main_ingredients'] as List<dynamic>?)
@@ -60,6 +62,8 @@ Map<String, dynamic> _$RecommendationItemDtoToJson(
   'safety_score': instance.safetyScore,
   'fitness_score': instance.fitnessScore,
   'match_reasons': instance.matchReasons,
+  'technical_explanation': instance.technicalExplanation,
+  'expert_explanation': instance.expertExplanation,
   'explanation': instance.explanation,
   'ingredient_count': instance.ingredientCount,
   'main_ingredients': instance.mainIngredients,

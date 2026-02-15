@@ -877,7 +877,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
                     // 건강 고민 섹션
                     if (petSummary.healthConcerns.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
                       Container(
                         height: 1,
                         color: AppColors.divider.withOpacity(0.3),
@@ -1440,13 +1440,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 프로필 업데이트 안내 (조건부)
           if (isProfileUpdated) ...[
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                   "✨ $petName 프로필이 업데이트됐어요!",
-                  style: AppTypography.body.copyWith(
+                            style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                              color: AppColors.textPrimary,
                     fontSize: 16,
                     height: 1.4,
                   ),
@@ -1466,43 +1466,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: AppSpacing.md),
             ] else if (!isProfileUpdated) ...[
               // 프로필 업데이트가 아닐 때만 안내 문구 표시
-              Text(
+                          Text(
                 "알레르기, 나이, 건강 고민만 알려주세요!\n바로 맞춤 사료 추천해드릴게요.",
-                style: AppTypography.body.copyWith(
+                            style: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
-                ),
-              ),
+                      ),
+                    ),
               const SizedBox(height: AppSpacing.xl),
             ],
             
             // 액션 버튼
-            SizedBox(
-              width: double.infinity,
+              SizedBox(
+                width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // 추천 애니메이션 화면으로 이동
-                  final petSummary = state.petSummary;
-                  if (petSummary != null) {
-                    context.push(
-                      RoutePaths.recommendationAnimation,
-                      extra: petSummary,
-                    );
-                  }
-                },
+                  onPressed: () {
+                    // 추천 애니메이션 화면으로 이동
+                    final petSummary = state.petSummary;
+                    if (petSummary != null) {
+                      context.push(
+                        RoutePaths.recommendationAnimation,
+                        extra: petSummary,
+                      );
+                    }
+                  },
                 icon: Icon(
                   state.recommendationActionText == "지금 추천받기" 
                       ? Icons.auto_awesome 
                       : Icons.refresh,
                   color: Colors.white,
-                ),
+                  ),
                 label: Text(
                   state.recommendationActionText,
-                  style: AppTypography.button.copyWith(
+                        style: AppTypography.button.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                          color: Colors.white,
+                        ),
                   ),
-                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   minimumSize: const Size(double.infinity, 52),
@@ -1561,8 +1561,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onTap: () {
         // 상품 상세 화면으로 이동 (TODO: route 추가 필요)
         // context.push('/products/${item.product.id}');
-      },
-      borderRadius: BorderRadius.circular(AppRadius.md),
+              },
+              borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
@@ -1600,12 +1600,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Text(
                     item.product.productName,
                     style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                  ),
+                ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     PriceFormatter.formatWithCurrency(item.currentPrice),
@@ -1613,9 +1613,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                    ),
-                  ),
-                ],
+            ),
+          ),
+        ],
               ),
             ),
           ],

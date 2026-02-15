@@ -135,6 +135,66 @@ class PetService {
     }
   }
 
+  /// 프로필 변경 감지 (핵심 비교 항목)
+  /// 
+  /// [oldPet] 이전 펫 프로필
+  /// [newPet] 새로운 펫 프로필
+  /// 
+  /// 반환값: 프로필이 변경되었는지 여부
+  bool hasProfileChanged(PetSummaryDto oldPet, PetSummaryDto newPet) {
+    // 체중 비교 (0.1kg 이상 차이)
+    if ((oldPet.weightKg - newPet.weightKg).abs() > 0.1) {
+      return true;
+    }
+    
+    // 중성화 여부
+    if (oldPet.isNeutered != newPet.isNeutered) {
+      return true;
+    }
+    
+    // 나이 단계 비교 (6개월 단위 변화 감지)
+    final oldAgeMonths = oldPet.ageMonths;
+    final newAgeMonths = newPet.ageMonths;
+    if (oldAgeMonths != null && newAgeMonths != null) {
+      final oldAgeStage = oldAgeMonths ~/ 6;
+      final newAgeStage = newAgeMonths ~/ 6;
+      if (oldAgeStage != newAgeStage) {
+        return true;
+      }
+    }
+    
+    // 품종 코드
+    if (oldPet.breedCode != newPet.breedCode) {
+      return true;
+    }
+    
+    // 건강 고민 리스트 비교
+    if (!_listEquals(oldPet.healthConcerns, newPet.healthConcerns)) {
+      return true;
+    }
+    
+    // 음식 알레르기 리스트 비교
+    if (!_listEquals(oldPet.foodAllergies, newPet.foodAllergies)) {
+      return true;
+    }
+    
+    // 기타 알레르기 텍스트 비교
+    if (oldPet.otherAllergies?.trim() != newPet.otherAllergies?.trim()) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// 리스트 비교 헬퍼
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   /// 로컬 캐시에서 PetSummary 조회
   Future<PetSummaryDto?> _getCachedPetSummary() async {
     try {

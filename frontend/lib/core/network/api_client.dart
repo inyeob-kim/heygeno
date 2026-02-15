@@ -63,20 +63,19 @@ class ApiClient {
     Options? options,
   }) async {
     try {
-      // trailing slash 제거하여 리다이렉션 방지
-      final cleanPath = path.endsWith('/') ? path.substring(0, path.length - 1) : path;
-      
-      // 리다이렉션을 수동으로 처리하기 위해 먼저 시도
+      // 리다이렉션을 수동으로 처리
       try {
         return await _dio.get<T>(
-          cleanPath,
+          path,
           queryParameters: queryParameters,
           options: options,
         );
       } on DioException catch (e) {
-        // 307 리다이렉션인 경우 trailing slash 추가하여 재시도
+        // 307/308 리다이렉션인 경우 trailing slash 추가/제거하여 재시도
         if (e.response?.statusCode == 307 || e.response?.statusCode == 308) {
-          final redirectPath = '$cleanPath/';
+          final redirectPath = path.endsWith('/') 
+              ? path.substring(0, path.length - 1) 
+              : '$path/';
           return await _dio.get<T>(
             redirectPath,
             queryParameters: queryParameters,
@@ -97,21 +96,20 @@ class ApiClient {
     Options? options,
   }) async {
     try {
-      // trailing slash 제거하여 리다이렉션 방지
-      final cleanPath = path.endsWith('/') ? path.substring(0, path.length - 1) : path;
-      
-      // 리다이렉션을 수동으로 처리하기 위해 먼저 시도
+      // 리다이렉션을 수동으로 처리
       try {
         return await _dio.post<T>(
-          cleanPath,
+          path,
           data: data,
           queryParameters: queryParameters,
           options: options,
         );
       } on DioException catch (e) {
-        // 307 리다이렉션인 경우 trailing slash 추가하여 재시도
+        // 307/308 리다이렉션인 경우 trailing slash 추가/제거하여 재시도
         if (e.response?.statusCode == 307 || e.response?.statusCode == 308) {
-          final redirectPath = '$cleanPath/';
+          final redirectPath = path.endsWith('/') 
+              ? path.substring(0, path.length - 1) 
+              : '$path/';
           return await _dio.post<T>(
             redirectPath,
             data: data,

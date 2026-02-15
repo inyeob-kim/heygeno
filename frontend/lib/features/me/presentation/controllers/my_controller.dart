@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/services/pet_service.dart';
-import '../../../../data/repositories/product_repository.dart';
+import '../../../../domain/services/recommendation_service.dart';
 import '../../../../data/models/pet_summary_dto.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
@@ -65,9 +65,9 @@ class MyState {
 /// 단일 책임: 사용자 프로필 및 최근 추천 데이터 관리
 class MyController extends StateNotifier<MyState> {
   final PetService _petService;
-  final ProductRepository _productRepository;
+  final RecommendationService _recommendationService;
 
-  MyController(this._petService, this._productRepository)
+  MyController(this._petService, this._recommendationService)
       : super(MyState()) {
     _initialize();
   }
@@ -140,8 +140,8 @@ class MyController extends StateNotifier<MyState> {
   Future<void> _loadRecommendations(String petId) async {
     try {
       // 히스토리에서 최근 추천 조회 (빠름)
-      final recommendations = await _productRepository.getRecommendationHistory(
-        petId,
+      final recommendations = await _recommendationService.getRecommendationHistory(
+        petId: petId,
         limit: 3,
       );
       final recentRecommendations = recommendations.items
@@ -175,6 +175,6 @@ class MyController extends StateNotifier<MyState> {
 final myControllerProvider =
     StateNotifierProvider<MyController, MyState>((ref) {
   final petService = ref.watch(petServiceProvider);
-  final productRepository = ref.watch(productRepositoryProvider);
-  return MyController(petService, productRepository);
+  final recommendationService = ref.watch(recommendationServiceProvider);
+  return MyController(petService, recommendationService);
 });

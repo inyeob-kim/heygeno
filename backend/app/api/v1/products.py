@@ -1,15 +1,21 @@
 """상품 API 라우터 - 라우팅만 담당"""
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from sqlalchemy import select
+from typing import List, Optional
 import logging
 import time
 
 from app.db.session import get_db
 from app.schemas.product import ProductRead, RecommendationResponse
+from app.schemas.section import (
+    SectionRequest, SectionResponse, BatchSectionRequest, BatchSectionResponse
+)
 from app.services.product_service import ProductService
+from app.services.section_service import SectionService
 from app.models.offer import ProductOffer
+from app.models.section import SectionType, ProductCategory
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,9 +23,87 @@ router = APIRouter()
 
 @router.get("/", response_model=list[ProductRead])
 async def get_products(db: AsyncSession = Depends(get_db)):
-    """상품 목록 조회"""
+    """상품 목록 조회 (레거시 - 하위 호환성 유지)"""
     products = await ProductService.get_active_products(db)
     return [ProductRead.model_validate(p) for p in products]
+
+
+@router.get("/sections/{section_type}", response_model=SectionResponse)
+async def get_section(
+    section_type: SectionType,
+    category: ProductCategory = Query(ProductCategory.ALL, description="카테고리 필터"),
+    limit: Optional[int] = Query(None, ge=1, le=50, description="조회할 상품 수"),
+    offset: Optional[int] = Query(0, ge=0, description="페이지네이션 오프셋"),
+    time_range: Optional[str] = Query(None, description="인기 섹션용: 24h, 7d, 30d"),
+    days: Optional[int] = Query(None, description="신상품 섹션용: 신상품 기준 일수"),
+    min_reviews: Optional[int] = Query(None, description="리뷰 베스트 섹션용: 최소 리뷰 수"),
+    user_id: Optional[UUID] = Query(None, description="개인화 섹션용: 사용자 ID"),
+    pet_id: Optional[UUID] = Query(None, description="개인화 섹션용: 펫 ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """섹션별 상품 조회"""
+    start_time = time.time()
+    logger.info(
+        f"[Products API] 📥 섹션 조회 요청: type={section_type.value}, "
+        f"category={category.value}, limit={limit}, offset={offset}"
+    )
+    
+    try:
+        request = SectionRequest(
+            type=section_type,
+            category=category,
+            limit=limit,
+            offset=offset,
+            time_range=time_range,
+            days=days,
+            min_reviews=min_reviews,
+            user_id=user_id,
+            pet_id=pet_id
+        )
+        
+        result = await SectionService.get_section_products(db, request)
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.info(
+            f"[Products API] ✅ 섹션 응답 반환: type={section_type.value}, "
+            f"products={len(result.products)}개, cached={result.cached}, 소요시간={duration_ms}ms"
+        )
+        return result
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.error(
+            f"[Products API] ❌ 섹션 처리 실패: type={section_type.value}, "
+            f"error={str(e)}, 소요시간={duration_ms}ms",
+            exc_info=True
+        )
+        raise
+
+
+@router.post("/sections/batch", response_model=BatchSectionResponse)
+async def get_batch_sections(
+    request: BatchSectionRequest = Body(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """배치 섹션 조회 (여러 섹션을 한 번에 조회)"""
+    start_time = time.time()
+    logger.info(
+        f"[Products API] 📥 배치 섹션 조회 요청: sections={len(request.sections)}개"
+    )
+    
+    try:
+        results = await SectionService.get_batch_sections(db, request.sections)
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.info(
+            f"[Products API] ✅ 배치 섹션 응답 반환: sections={len(results)}개, "
+            f"소요시간={duration_ms}ms"
+        )
+        return BatchSectionResponse(sections=results)
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.error(
+            f"[Products API] ❌ 배치 섹션 처리 실패: error={str(e)}, 소요시간={duration_ms}ms",
+            exc_info=True
+        )
+        raise
 
 
 @router.get("/recommendations", response_model=RecommendationResponse)

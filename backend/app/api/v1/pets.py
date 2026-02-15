@@ -141,7 +141,7 @@ async def create_pet(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
+    )
     
     pet = await PetService.create_pet(user.id, pet_data, db)
     return PetRead.model_validate(pet)

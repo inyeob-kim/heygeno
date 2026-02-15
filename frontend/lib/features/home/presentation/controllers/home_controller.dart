@@ -1,13 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
-import 'package:collection/collection.dart';
 
-import '../../../../data/repositories/product_repository.dart';
-import '../../../../data/repositories/user_repository.dart';
 import '../../../../data/models/recommendation_dto.dart';
 import '../../../../data/models/recommendation_extensions.dart';
 import '../../../../data/models/pet_summary_dto.dart';
 import '../../../../domain/services/pet_service.dart';
+import '../../../../domain/services/recommendation_service.dart';
+import '../../../../domain/services/user_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
@@ -97,15 +96,15 @@ class HomeState {
 }
 
 class HomeController extends StateNotifier<HomeState> {
-  final ProductRepository _productRepository;
+  final RecommendationService _recommendationService;
   final PetService _petService;
-  final UserRepository _userRepository;
+  final UserService _userService;
   final Ref _ref;
 
   HomeController(
-    this._productRepository,
+    this._recommendationService,
     this._petService,
-    this._userRepository,
+    this._userService,
     this._ref,
   ) : super(HomeState(stateType: HomeStateType.loading));
 
@@ -119,7 +118,7 @@ class HomeController extends StateNotifier<HomeState> {
       String? nickname;
       try {
         print('[HomeController] 사용자 정보 로드 시작');
-        final user = await _userRepository.getCurrentUser();
+        final user = await _userService.getCurrentUser();
         nickname = user.nickname;
         print('[HomeController] 사용자 정보 로드 성공: ${user.nickname}');
       } catch (e) {
@@ -157,7 +156,7 @@ class HomeController extends StateNotifier<HomeState> {
       
       // 4. Pet ID를 provider에 저장
       _ref.read(currentPetIdProvider.notifier).state = petSummary.petId;
-      
+
       // 5. B 상태: pet 존재 (추천은 버튼 클릭 시 로드)
       // 펫 전환 시 기존 추천 결과 초기화
       state = state.copyWith(
@@ -202,8 +201,8 @@ class HomeController extends StateNotifier<HomeState> {
       
       // 프로필 변경 감지 (같은 펫의 프로필이 변경된 경우)
       bool isProfileUpdated = false;
-      if (oldPetSummary != null && newPetSummary != null && !isPetChanged) {
-        isProfileUpdated = _hasProfileChanged(oldPetSummary, newPetSummary);
+      if (oldPetSummary != null && !isPetChanged) {
+        isProfileUpdated = _petService.hasProfileChanged(oldPetSummary, newPetSummary);
         print('[HomeController] 프로필 변경 감지: $isProfileUpdated');
         if (isProfileUpdated) {
           print('[HomeController] 📋 변경된 항목 확인:');
@@ -212,13 +211,13 @@ class HomeController extends StateNotifier<HomeState> {
           print('  - 건강고민: ${oldPetSummary.healthConcerns} -> ${newPetSummary.healthConcerns}');
           print('  - 알레르기: ${oldPetSummary.foodAllergies} -> ${newPetSummary.foodAllergies}');
         }
-      } else if (oldPetSummary == null && newPetSummary != null) {
+      } else if (oldPetSummary == null) {
         // 첫 로드인 경우는 업데이트로 간주하지 않음
         print('[HomeController] 첫 로드: oldPetSummary가 null이므로 변경 감지 스킵');
       }
       
-      if (isPetChanged) {
-        print('[HomeController] 🔄 펫 전환 감지: ${oldPetSummary?.name} -> ${newPetSummary.name}');
+      if (isPetChanged && oldPetSummary != null) {
+        print('[HomeController] 🔄 펫 전환 감지: ${oldPetSummary.name} -> ${newPetSummary.name}');
       }
 
       // Pet ID 업데이트
@@ -242,51 +241,6 @@ class HomeController extends StateNotifier<HomeState> {
     }
   }
 
-  /// 프로필 변경 감지 (핵심 비교 항목)
-  bool _hasProfileChanged(PetSummaryDto oldPet, PetSummaryDto newPet) {
-    // 체중 비교 (0.1kg 이상 차이)
-    if ((oldPet.weightKg - newPet.weightKg).abs() > 0.1) {
-      return true;
-    }
-    
-    // 중성화 여부
-    if (oldPet.isNeutered != newPet.isNeutered) {
-      return true;
-    }
-    
-    // 나이 단계 비교 (6개월 단위 변화 감지)
-    final oldAgeMonths = oldPet.ageMonths;
-    final newAgeMonths = newPet.ageMonths;
-    if (oldAgeMonths != null && newAgeMonths != null) {
-      final oldAgeStage = oldAgeMonths ~/ 6;
-      final newAgeStage = newAgeMonths ~/ 6;
-      if (oldAgeStage != newAgeStage) {
-        return true;
-      }
-    }
-    
-    // 품종 코드
-    if (oldPet.breedCode != newPet.breedCode) {
-      return true;
-    }
-    
-    // 건강 고민 리스트 비교
-    if (!const ListEquality<String>().equals(oldPet.healthConcerns, newPet.healthConcerns)) {
-      return true;
-    }
-    
-    // 음식 알레르기 리스트 비교
-    if (!const ListEquality<String>().equals(oldPet.foodAllergies, newPet.foodAllergies)) {
-      return true;
-    }
-    
-    // 기타 알레르기 텍스트 비교
-    if (oldPet.otherAllergies?.trim() != newPet.otherAllergies?.trim()) {
-      return true;
-    }
-    
-    return false;
-  }
 
   /// 추천 데이터 로드
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 캐싱 정보 처리 추가
@@ -296,9 +250,12 @@ class HomeController extends StateNotifier<HomeState> {
     state = state.copyWith(isLoadingRecommendations: true); // 로딩 상태 시작
     
     try {
-      print('[HomeController] 📞 ProductRepository.getRecommendations() 호출: force=$force (force=true면 RAG 강제 실행)');
+      print('[HomeController] 📞 RecommendationService.getRecommendations() 호출: force=$force (force=true면 RAG 강제 실행)');
       // force=true면 캐시 무시하고 RAG 강제 실행
-      final recommendations = await _productRepository.getRecommendations(petId, forceRefresh: force);
+      final recommendations = await _recommendationService.getRecommendations(
+        petId: petId,
+        forceRefresh: force,
+      );
       final duration = DateTime.now().difference(startTime);
       print('[HomeController] ✅ 추천 데이터 로드 완료: ${recommendations.items.length}개 상품, isCached=${recommendations.isCached}, 소요시간=${duration.inMilliseconds}ms');
       print('[HomeController] 📊 추천 상품 요약:');
@@ -392,8 +349,8 @@ class HomeController extends StateNotifier<HomeState> {
 
 final homeControllerProvider =
     StateNotifierProvider<HomeController, HomeState>((ref) {
-  final productRepository = ref.watch(productRepositoryProvider);
+  final recommendationService = ref.watch(recommendationServiceProvider);
   final petService = ref.watch(petServiceProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return HomeController(productRepository, petService, userRepository, ref);
+  final userService = ref.watch(userServiceProvider);
+  return HomeController(recommendationService, petService, userService, ref);
 });

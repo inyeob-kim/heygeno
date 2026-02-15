@@ -13,7 +13,7 @@ import '../../features/pet_update/presentation/screens/pet_update_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/watch/presentation/screens/watch_screen.dart';
 import '../../features/benefits/presentation/screens/benefits_screen.dart';
-import '../../features/market/presentation/screens/market_screen.dart';
+import '../../features/market/presentation/screens/market_screen_v2.dart';
 import '../../features/me/presentation/screens/my_screen.dart';
 import '../../features/product_detail/presentation/screens/product_detail_screen.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_detail_screen.dart';
@@ -158,7 +158,7 @@ GoRouter _createRouter(Ref ref) {
               GoRoute(
                 path: RoutePaths.market,
                 name: RoutePaths.market,
-                builder: (context, state) => const MarketScreen(),
+                builder: (context, state) => const MarketScreenV2(),
               ),
             ],
           ),

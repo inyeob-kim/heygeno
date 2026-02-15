@@ -1,28 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
-import '../../../../data/repositories/mission_repository.dart';
-
-/// 미션 데이터 모델
-class MissionData {
-  final int id;
-  final String title;
-  final String description;
-  final int reward;
-  final bool completed;
-  final int current;
-  final int total;
-
-  MissionData({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.reward,
-    required this.completed,
-    required this.current,
-    required this.total,
-  });
-}
+import '../../../../domain/services/campaign_service.dart';
 
 /// 혜택 화면 상태
 class BenefitsState {
@@ -69,9 +48,9 @@ class BenefitsState {
 /// 혜택 화면 컨트롤러
 /// 단일 책임: 포인트 및 미션 데이터 관리
 class BenefitsController extends StateNotifier<BenefitsState> {
-  final MissionRepository _missionRepository;
+  final CampaignService _campaignService;
 
-  BenefitsController(this._missionRepository) : super(BenefitsState()) {
+  BenefitsController(this._campaignService) : super(BenefitsState()) {
     _initialize();
   }
 
@@ -82,25 +61,12 @@ class BenefitsController extends StateNotifier<BenefitsState> {
     try {
       // 미션 목록과 포인트 잔액을 동시에 로드
       final results = await Future.wait([
-        _missionRepository.getMissions(),
-        _missionRepository.getPointBalance(),
+        _campaignService.getMissions(),
+        _campaignService.getPointBalance(),
       ]);
 
-      final missionDtos = results[0] as List<MissionDto>; // MissionDto는 mission_repository.dart에 정의됨
+      final missions = results[0] as List<MissionData>;
       final balance = results[1] as int;
-
-      // MissionDto를 MissionData로 변환
-      final missions = missionDtos.map((dto) {
-        return MissionData(
-          id: int.tryParse(dto.id) ?? 0,
-          title: dto.title,
-          description: dto.description,
-          reward: dto.rewardPoints,
-          completed: dto.completed,
-          current: dto.currentValue,
-          total: dto.targetValue,
-        );
-      }).toList();
 
       state = state.copyWith(
         isLoading: false,
@@ -121,7 +87,7 @@ class BenefitsController extends StateNotifier<BenefitsState> {
   /// 미션 보상 받기
   Future<void> claimReward(String campaignId) async {
     try {
-      await _missionRepository.claimReward(campaignId);
+      await _campaignService.claimReward(campaignId);
       // 보상 받기 성공 시 데이터 새로고침
       await _initialize();
     } catch (e) {
@@ -140,6 +106,6 @@ class BenefitsController extends StateNotifier<BenefitsState> {
 
 final benefitsControllerProvider =
     StateNotifierProvider<BenefitsController, BenefitsState>((ref) {
-  final missionRepository = ref.watch(missionRepositoryProvider);
-  return BenefitsController(missionRepository);
+  final campaignService = ref.watch(campaignServiceProvider);
+  return BenefitsController(campaignService);
 });

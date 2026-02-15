@@ -32,6 +32,8 @@ class FigmaSectionHeader extends StatelessWidget {
                     title,
                     style: AppTypography.h2.copyWith(
                       color: const Color(0xFF111827),
+                      fontWeight: FontWeight.w800, // 폰트 굵기 800
+                      fontSize: 20, // 글씨 크기 더 줄임 (22px -> 20px)
                     ),
                   ),
                   if (showInfo) ...[

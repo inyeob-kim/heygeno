@@ -20,14 +20,44 @@ class TrackingRepository {
       
       if (response.data is List) {
         return (response.data as List)
-            .map((json) => TrackingDto.fromJson(json as Map<String, dynamic>))
+            .map((item) {
+              // 각 항목이 Map인지 확인
+              if (item is! Map<String, dynamic>) {
+                print('[TrackingRepository] getTrackings: 예상하지 못한 항목 타입: ${item.runtimeType}');
+                return null;
+              }
+              
+              // UUID 필드를 문자열로 변환
+              final jsonData = Map<String, dynamic>.from(item);
+              if (jsonData['id'] != null) {
+                jsonData['id'] = jsonData['id'].toString();
+              }
+              if (jsonData['pet_id'] != null) {
+                jsonData['pet_id'] = jsonData['pet_id'].toString();
+              }
+              if (jsonData['product_id'] != null) {
+                jsonData['product_id'] = jsonData['product_id'].toString();
+              }
+              
+              try {
+                return TrackingDto.fromJson(jsonData);
+              } catch (e, stackTrace) {
+                print('[TrackingRepository] getTrackings: TrackingDto 파싱 에러: $e');
+                print('[TrackingRepository] getTrackings: Stack trace: $stackTrace');
+                print('[TrackingRepository] getTrackings: 문제가 된 데이터: $jsonData');
+                return null;
+              }
+            })
+            .whereType<TrackingDto>() // null 제거
             .toList();
       }
       return [];
     } on DioException catch (e) {
       _handleDioException(e);
       rethrow;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[TrackingRepository] getTrackings 에러: $e');
+      print('[TrackingRepository] getTrackings Stack trace: $stackTrace');
       throw ServerException('추적 목록을 불러오는데 실패했습니다: ${e.toString()}');
     }
   }
@@ -48,11 +78,34 @@ class TrackingRepository {
         },
       );
 
-      return TrackingDto.fromJson(response.data as Map<String, dynamic>);
+      // 응답 데이터 타입 확인 및 변환
+      final responseData = response.data;
+      print('[TrackingRepository] createTracking 응답 데이터 타입: ${responseData.runtimeType}');
+      print('[TrackingRepository] createTracking 응답 데이터: $responseData');
+      
+      if (responseData is! Map<String, dynamic>) {
+        throw ServerException('예상하지 못한 응답 형식입니다: ${responseData.runtimeType}');
+      }
+      
+      // UUID 필드를 문자열로 변환
+      final jsonData = Map<String, dynamic>.from(responseData);
+      if (jsonData['id'] != null) {
+        jsonData['id'] = jsonData['id'].toString();
+      }
+      if (jsonData['pet_id'] != null) {
+        jsonData['pet_id'] = jsonData['pet_id'].toString();
+      }
+      if (jsonData['product_id'] != null) {
+        jsonData['product_id'] = jsonData['product_id'].toString();
+      }
+      
+      return TrackingDto.fromJson(jsonData);
     } on DioException catch (e) {
       _handleDioException(e);
       rethrow;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[TrackingRepository] createTracking 에러: $e');
+      print('[TrackingRepository] Stack trace: $stackTrace');
       throw ServerException('추적을 생성하는데 실패했습니다: ${e.toString()}');
     }
   }
@@ -60,12 +113,46 @@ class TrackingRepository {
   /// 추적 삭제
   Future<void> deleteTracking(String trackingId) async {
     try {
-      await _apiClient.delete(Endpoints.tracking(trackingId));
+      print('[TrackingRepository] deleteTracking 시작: trackingId=$trackingId');
+      final response = await _apiClient.delete(Endpoints.tracking(trackingId));
+      print('[TrackingRepository] deleteTracking 완료: statusCode=${response.statusCode}');
     } on DioException catch (e) {
+      print('[TrackingRepository] deleteTracking DioException: ${e.message}');
+      print('[TrackingRepository] deleteTracking statusCode: ${e.response?.statusCode}');
+      print('[TrackingRepository] deleteTracking response: ${e.response?.data}');
       _handleDioException(e);
       rethrow;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[TrackingRepository] deleteTracking 에러: $e');
+      print('[TrackingRepository] Stack trace: $stackTrace');
       throw ServerException('추적을 삭제하는데 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// product_id와 pet_id로 tracking 찾기
+  Future<TrackingDto?> findTrackingByProductAndPet({
+    required String productId,
+    required String petId,
+  }) async {
+    try {
+      final trackings = await getTrackings();
+      print('[TrackingRepository] findTrackingByProductAndPet: 전체 tracking 개수=${trackings.length}, 찾는 productId=$productId, petId=$petId');
+      
+      final matching = trackings.where(
+        (tracking) => tracking.productId == productId && tracking.petId == petId,
+      ).toList();
+      
+      if (matching.isEmpty) {
+        print('[TrackingRepository] findTrackingByProductAndPet: 매칭되는 tracking 없음');
+        return null;
+      }
+      
+      print('[TrackingRepository] findTrackingByProductAndPet: 매칭되는 tracking 찾음: ${matching.first.id}');
+      return matching.first;
+    } catch (e, stackTrace) {
+      print('[TrackingRepository] findTrackingByProductAndPet 에러: $e');
+      print('[TrackingRepository] Stack trace: $stackTrace');
+      return null;
     }
   }
 
@@ -81,6 +168,12 @@ class TrackingRepository {
       
       if (statusCode == 404) {
         throw NotFoundException(message);
+      } else if (statusCode == 400) {
+        // 400 Bad Request - 중복 생성 등의 클라이언트 오류
+        if (message.contains('already exists') || message.contains('Tracking already exists')) {
+          throw ServerException('이미 찜한 상품입니다.');
+        }
+        throw ServerException(message);
       } else {
         throw ServerException(message);
       }

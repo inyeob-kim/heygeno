@@ -18,9 +18,13 @@ class Endpoints {
   static const String productRecommendationCache = '$products/recommendations/cache';
   static String productOffers(String id) => '$products/$id/offers';
   
+  // Sections
+  static String section(String sectionType) => '$products/sections/$sectionType';
+  static const String batchSections = '$products/sections/batch';
+  
   // Trackings
-  static const String trackings = '/trackings';
-  static String tracking(String id) => '$trackings/$id';
+  static const String trackings = '/trackings/';
+  static String tracking(String id) => '$trackings$id';
   
   // Alerts
   static const String alerts = '/alerts';

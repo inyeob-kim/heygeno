@@ -36,7 +36,6 @@ class MyScreen extends ConsumerStatefulWidget {
 
 class _MyScreenState extends ConsumerState<MyScreen> {
   final ScrollController _scrollController = ScrollController();
-  final Set<String> _dismissedUpdateCards = {}; // dismiss된 업데이트 카드 petId 저장
 
   @override
   void dispose() {
@@ -298,20 +297,6 @@ class _MyScreenState extends ConsumerState<MyScreen> {
 
   /// 펫 프로필 카드 섹션 (가로 스크롤)
   Widget _buildPetProfilesSection(List<PetSummaryDto> pets) {
-    // 업데이트가 필요한 펫 찾기 (60일 이상)
-    final petsNeedingUpdate = pets.where((pet) => 
-      PetUpdateHelper.needsUpdate(pet.updatedAt, pet.createdAt)
-    ).toList();
-    
-    // 가장 오래된 펫 찾기 (120일 이상)
-    final oldestPet = petsNeedingUpdate.isNotEmpty
-        ? petsNeedingUpdate.reduce((a, b) {
-            final daysA = PetUpdateHelper.getDaysSinceUpdate(a.updatedAt, a.createdAt);
-            final daysB = PetUpdateHelper.getDaysSinceUpdate(b.updatedAt, b.createdAt);
-            return daysA > daysB ? a : b;
-          })
-        : null;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,14 +317,6 @@ class _MyScreenState extends ConsumerState<MyScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        // 조건부 업데이트 카드 (120일 이상인 펫이 있고, dismiss되지 않은 경우)
-        if (oldestPet != null && 
-            PetUpdateHelper.getDaysSinceUpdate(oldestPet.updatedAt, oldestPet.createdAt) >= 120 &&
-            !_dismissedUpdateCards.contains(oldestPet.petId))
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _buildUpdatePromptCard(oldestPet),
-          ),
         SizedBox(
           height: 120,
           child: ListView.builder(
@@ -677,7 +654,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '전환하면 홈 화면의 추천이 변경됩니다.',
+              '홈 화면이 ${targetPet.name}의 정보로 표시됩니다.',
               style: AppTypography.small.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -755,147 +732,17 @@ class _MyScreenState extends ConsumerState<MyScreen> {
         context.push(RoutePaths.petUpdate(pet.petId));
       },
       child: Container(
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.primary.withOpacity(0.1),
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Icon(
-          Icons.edit_note,
-          size: 18,
+          Icons.edit_rounded,
+          size: 16,
           color: AppColors.primary,
         ),
-      ),
-    );
-  }
-
-  /// 업데이트 유도 카드 (조건부, dismiss 가능)
-  Widget _buildUpdatePromptCard(PetSummaryDto pet) {
-    final days = PetUpdateHelper.getDaysSinceUpdate(pet.updatedAt, pet.createdAt);
-    final months = days ~/ 30;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED), // Amber 50
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFF59E0B).withOpacity(0.3), // Amber 500
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${pet.name} 정보가 ${months}개월째 그대로예요!',
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '체중이나 건강 고민 바뀐 거 있나요?',
-                      style: AppTypography.small.copyWith(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '지금 업데이트하고 새 추천 받아보세요 🐶',
-                      style: AppTypography.small.copyWith(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                color: AppColors.textSecondary,
-                onPressed: () {
-                  // TODO: dismiss 처리 (SharedPreferences에 저장, 30일 숨김)
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // 카드 dismiss (30일 숨김)
-                    setState(() {
-                      _dismissedUpdateCards.add(pet.petId);
-                    });
-                    // TODO: SharedPreferences에 저장하여 30일 동안 숨김
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    side: BorderSide(color: AppColors.primary),
-                  ),
-                  child: Text(
-                    '나중에',
-                    style: AppTypography.button.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // 펫 프로필 업데이트 화면으로 이동
-                    context.push(RoutePaths.petUpdate(pet.petId));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    '업데이트 하기',
-                    style: AppTypography.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
