@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
+import '../../../../../app/router/route_paths.dart';
+import '../../../../../domain/services/pet_service.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
@@ -87,14 +90,10 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16), // rounded-2xl
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 1,
-                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
+                              blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -190,14 +189,10 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16), // rounded-2xl
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 1,
-                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
+                              blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -264,7 +259,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 이모지 + 아이콘 컨테이너
+            // 이모지 + 아이콘 컨테이너 (동그라미)
             Container(
               width: 48,
               height: 48,
@@ -286,13 +281,13 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                           missionColor['main']!.withOpacity(0.8),
                         ],
                       ),
-                borderRadius: BorderRadius.circular(12), // rounded-xl
+                shape: BoxShape.circle, // 완전한 동그라미
                 boxShadow: [
                   BoxShadow(
                     color: mission.completed
                         ? AppColors.status.withOpacity(0.3)
                         : missionColor['main']!.withOpacity(0.3),
-                    blurRadius: 6,
+                    blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
@@ -301,12 +296,12 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                 child: mission.completed
                     ? const Icon(
                         Icons.check_circle,
-                        size: 24,
+                        size: 26,
                         color: Colors.white,
                       )
                     : Icon(
                         icon,
-                        size: 24,
+                        size: 26,
                         color: Colors.white,
                       ),
               ),
@@ -412,20 +407,20 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     );
   }
 
-  /// 미션 제목에 따라 아이콘 반환
+  /// 미션 제목에 따라 아이콘 반환 (귀엽고 트렌디한 스타일)
   IconData _getMissionIcon(String title) {
     if (title.contains('찜') || title.contains('추천')) {
-      return Icons.bookmark_outlined; // 북마크 아이콘
+      return Icons.favorite; // 하트 아이콘 (찜)
     } else if (title.contains('알림') || title.contains('가격')) {
-      return Icons.notifications_outlined; // 알림 아이콘
+      return Icons.notifications_active; // 활성 알림 아이콘
     } else if (title.contains('프로필') || title.contains('업데이트')) {
-      return Icons.person_outline; // 프로필 아이콘
+      return Icons.account_circle; // 원형 프로필 아이콘
     } else if (title.contains('구매') || title.contains('제품')) {
-      return Icons.shopping_bag_outlined; // 쇼핑백 아이콘
+      return Icons.shopping_cart; // 장바구니 아이콘
     } else if (title.contains('리뷰') || title.contains('작성')) {
-      return Icons.rate_review_outlined; // 리뷰 아이콘
+      return Icons.rate_review; // 별점 리뷰 아이콘
     }
-    return Icons.flag_outlined; // 기본 아이콘
+    return Icons.emoji_events; // 트로피 아이콘 (기본)
   }
 
   /// 미션 제목에 따라 색상 반환 (main, light)
@@ -471,24 +466,24 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
 }
 
 /// 미션 상세 바텀 시트
-class _MissionBottomSheet extends StatelessWidget {
+class _MissionBottomSheet extends ConsumerWidget {
   final MissionData mission;
 
   const _MissionBottomSheet({required this.mission});
 
   IconData _getMissionIcon(String title) {
     if (title.contains('찜') || title.contains('추천')) {
-      return Icons.bookmark_outlined; // 북마크 아이콘
+      return Icons.favorite; // 하트 아이콘 (찜)
     } else if (title.contains('알림') || title.contains('가격')) {
-      return Icons.notifications_outlined; // 알림 아이콘
+      return Icons.notifications_active; // 활성 알림 아이콘
     } else if (title.contains('프로필') || title.contains('업데이트')) {
-      return Icons.person_outline; // 프로필 아이콘
+      return Icons.account_circle; // 원형 프로필 아이콘
     } else if (title.contains('구매') || title.contains('제품')) {
-      return Icons.shopping_bag_outlined; // 쇼핑백 아이콘
+      return Icons.shopping_cart; // 장바구니 아이콘
     } else if (title.contains('리뷰') || title.contains('작성')) {
-      return Icons.rate_review_outlined; // 리뷰 아이콘
+      return Icons.rate_review; // 별점 리뷰 아이콘
     }
-    return Icons.flag_outlined; // 기본 아이콘
+    return Icons.emoji_events; // 트로피 아이콘 (기본)
   }
 
   Map<String, Color> _getMissionColor(String title) {
@@ -525,7 +520,7 @@ class _MissionBottomSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final missionColor = _getMissionColor(mission.title);
     
     return DraggableScrollableSheet(
@@ -588,13 +583,13 @@ class _MissionBottomSheet extends StatelessWidget {
                                               missionColor['main']!.withOpacity(0.8),
                                             ],
                                           ),
-                                    borderRadius: BorderRadius.circular(16), // rounded-2xl
+                                    shape: BoxShape.circle, // 완전한 동그라미
                                     boxShadow: [
                                       BoxShadow(
                                         color: mission.completed
                                             ? AppColors.status.withOpacity(0.3)
                                             : missionColor['main']!.withOpacity(0.3),
-                                        blurRadius: 8,
+                                        blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
@@ -603,12 +598,12 @@ class _MissionBottomSheet extends StatelessWidget {
                                     child: mission.completed
                                         ? const Icon(
                                             Icons.check_circle,
-                                            size: 32,
+                                            size: 34,
                                             color: Colors.white,
                                           )
                                         : Icon(
                                             _getMissionIcon(mission.title),
-                                            size: 32,
+                                            size: 34,
                                             color: Colors.white,
                                           ),
                                   ),
@@ -749,9 +744,39 @@ class _MissionBottomSheet extends StatelessWidget {
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             Navigator.pop(context);
-                            // TODO: 미션 시작 로직 구현
+                            
+                            // 펫 프로필 업데이트 미션인 경우
+                            if (mission.title.contains('프로필 업데이트') || 
+                                mission.title.contains('업데이트')) {
+                              try {
+                                // Primary pet 가져오기
+                                final petService = ref.read(petServiceProvider);
+                                final primaryPet = await petService.getPrimaryPetSummary();
+                                
+                                if (primaryPet != null && context.mounted) {
+                                  context.push(RoutePaths.petUpdate(primaryPet.petId));
+                                } else if (context.mounted) {
+                                  // Primary pet이 없으면 모든 펫 목록에서 선택
+                                  final pets = await petService.getAllPetSummaries();
+                                  if (pets.isNotEmpty && context.mounted) {
+                                    // 첫 번째 펫으로 이동 (나중에 펫 선택 화면 추가 가능)
+                                    context.push(RoutePaths.petUpdate(pets.first.petId));
+                                  }
+                                }
+                              } catch (e) {
+                                // 에러 처리
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('펫 정보를 불러오는데 실패했습니다'),
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                            // TODO: 다른 미션 타입별 로직 구현
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary, // Primary Blue #2563EB

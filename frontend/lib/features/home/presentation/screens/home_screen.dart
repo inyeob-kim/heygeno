@@ -22,6 +22,7 @@ import '../../../../../core/constants/pet_constants.dart';
 import '../widgets/icon_text_row.dart';
 import '../widgets/status_signal_card.dart';
 import '../../../../../data/models/pet_summary_extensions.dart';
+import '../../../../../data/models/recommendation_dto.dart';
 import '../../../../../ui/widgets/pet_info_row.dart';
 import '../../../../../ui/widgets/health_concern_chips.dart';
 import '../../../../../ui/widgets/allergy_list.dart';
@@ -44,6 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isScrolledToBottom = false;
   bool _isRecommendationExpanded = false; // 추천 결과 펼침 여부
   bool _hasAutoExpanded = false; // 자동 펼침 여부 (한 번만)
+  DateTime? _lastRefreshTime; // 마지막 새로고침 시간
 
   @override
   void initState() {
@@ -58,6 +60,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     // 스크롤 리스너 추가
     _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 다른 화면에서 돌아올 때 펫 프로필 새로고침 (너무 자주 호출되지 않도록 제한)
+    final now = DateTime.now();
+    if (_lastRefreshTime == null || 
+        now.difference(_lastRefreshTime!).inSeconds > 2) {
+      _lastRefreshTime = now;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final state = ref.read(homeControllerProvider);
+          // 펫이 있는 상태에서만 새로고침 (초기 로딩 중이 아닐 때)
+          if (state.hasPet) {
+            ref.read(homeControllerProvider.notifier).refreshPetSummary();
+          }
+        }
+      });
+    }
   }
 
 
@@ -202,15 +224,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // 위젯 트리 구조 통일: 모든 상태에서 동일한 Scaffold 구조 사용
     // _scrollController를 항상 사용하여 unmount/mount 시 안전성 확보
     return Scaffold(
-      backgroundColor: AppColors.background, // White (HeyGeno Landing)
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             // 상단 고정 탭 (알림 아이콘 포함)
             AppTopBar(
               title: state.userNickname != null 
-              ? '안녕하세요, ${state.userNickname}님!'
-              : '헤이제노',
+                  ? '안녕하세요, ${state.userNickname}님!'
+                  : '헤이제노',
               showBackButton: false,
               actions: [
                 // 임시: 캐시 제거 버튼
@@ -731,7 +753,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context, value, child) {
         return CardContainer(
           isHomeStyle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -853,9 +875,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-                    // 건강 고민 배지 (공통 위젯 사용)
-                    const SizedBox(height: AppSpacing.md),
-                    HealthConcernChips(healthConcerns: petSummary.healthConcerns),
+                    // 건강 고민 섹션
+                    if (petSummary.healthConcerns.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Container(
+                        height: 1,
+                        color: AppColors.divider.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          ...petSummary.healthConcerns.take(3).map<Widget>((concern) {
+                            final concernName = PetConstants.healthConcernNames[concern] ?? concern;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.divider,
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(
+                                  color: AppColors.border,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                concernName,
+                                style: AppTypography.badge.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ],
+                    // 알레르기 섹션
+                    if (petSummary.foodAllergies.isNotEmpty || petSummary.otherAllergies != null) ...[
+                      if (petSummary.healthConcerns.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          height: 1,
+                          color: AppColors.divider.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ] else ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          height: 1,
+                          color: AppColors.divider.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          // 음식 알레르기 chips
+                          if (petSummary.foodAllergies.isNotEmpty)
+                            ...petSummary.foodAllergies.take(3).map<Widget>((allergen) {
+                              final allergenName = PetConstants.allergenNames[allergen] ?? allergen;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.dangerRed.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  border: Border.all(
+                                    color: AppColors.dangerRed.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  allergenName,
+                                  style: AppTypography.badge.copyWith(
+                                    color: AppColors.dangerRed,
+                                  ),
+                                ),
+                              );
+                            }),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
             ),
@@ -1308,9 +1414,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     final recommendations = state.recommendations;
-    final hasRecommendations = recommendations != null && recommendations.items.isNotEmpty;
-    final hasRecent = state.hasRecentRecommendation;
-    final isEmptyResult = recommendations != null && recommendations.items.isEmpty && !state.isLoadingRecommendations;
+    // 현재 펫의 추천 결과인지 확인 (펫 ID가 일치하는 경우만 표시)
+    final isCurrentPetRecommendation = recommendations?.petId == petSummary.petId;
+    final hasRecommendations = isCurrentPetRecommendation && recommendations != null && recommendations.items.isNotEmpty;
+    final isEmptyResult = isCurrentPetRecommendation && recommendations != null && recommendations.items.isEmpty && !state.isLoadingRecommendations;
+    final isProfileUpdated = state.petProfileUpdated;
+    final petName = petSummary.name;
+    final topRecommendation = hasRecommendations ? recommendations!.items[0] : null;
     
     // DESIGN_GUIDE: CardContainer 사용, isHomeStyle: true, Shadow 없음
     return CardContainer(
@@ -1320,174 +1430,86 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           // DESIGN_GUIDE: 카드 타이틀은 h3 사용
           Text(
-            hasCurrentFood 
-                ? "현재 사료 vs 맞춤 추천 비교" 
-                : "우리 애에게 딱 맞는 사료 찾아보기",
+            "$petName에게 딱 맞는 사료 찾아보기",
             style: AppTypography.h3.copyWith(
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           
+          // 프로필 업데이트 안내 (조건부)
+          if (isProfileUpdated) ...[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "✨ $petName 프로필이 업데이트됐어요!",
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          
           // 빈 추천 결과 처리 (로딩 완료 후 결과가 없는 경우)
           if (isEmptyResult) ...[
             _buildEmptyRecommendationState(context, recommendations?.message),
-          ] else if (!hasCurrentFood) ...[
-          // UPDATED: Dynamic content based on current food registration status
-          // 현재 사료 미등록 시: 추천 받기 유도 UI
-            Text(
-              "알레르기, 나이, 건강 고민만 알려주세요!\n바로 맞춤 사료 추천해드릴게요.",
-              style: AppTypography.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            // 추천 결과 미리보기 (이미 로드된 경우)
-            if (hasRecommendations && recommendations.items.isNotEmpty) ...[
-              ...recommendations.items.take(2).map((item) => Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md), // 12px
-                  border: Border.all(
-                    color: AppColors.divider,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${item.product.brandName} ${item.product.productName}',
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            '${item.matchScore.toStringAsFixed(1)}점',
-                            style: AppTypography.body.copyWith(
-                              color: AppColors.status, // 상태 전용 (Green) - DESIGN_GUIDE v4.1
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+          ] else ...[
+            // 추천 결과 표시 (조건부)
+            if (hasRecommendations && topRecommendation != null) ...[
+              _buildRecommendedProductCard(context, topRecommendation),
               const SizedBox(height: AppSpacing.md),
-            ],
-            
-            // DESIGN_GUIDE: 결정/이동 버튼은 PrimaryBlue, CupertinoButton 사용
-              SizedBox(
-                width: double.infinity,
-                child: CupertinoButton(
-                  onPressed: () {
-                    // 추천 애니메이션 화면으로 이동
-                    final petSummary = state.petSummary;
-                    if (petSummary != null) {
-                      context.push(
-                        RoutePaths.recommendationAnimation,
-                        extra: petSummary,
-                      );
-                    }
-                  },
-                  color: AppColors.primary, // #2563EB
-                  borderRadius: BorderRadius.circular(AppRadius.md), // rounded-xl (12px)
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Text(
-                        "지금 추천받기",
-                        style: AppTypography.button.copyWith(
-                      fontSize: 16, // text-base sm:text-lg
-                      fontWeight: FontWeight.w600, // font-semibold
-                          color: Colors.white,
-                        ),
-                  ),
+            ] else if (!isProfileUpdated) ...[
+              // 프로필 업데이트가 아닐 때만 안내 문구 표시
+              Text(
+                "알레르기, 나이, 건강 고민만 알려주세요!\n바로 맞춤 사료 추천해드릴게요.",
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
-          ] else if (hasCurrentFood) ...[
-            // UPDATED: Dynamic content based on current food registration status
-            // 현재 사료 등록 시: 기존 미리보기 로직
-            if (hasRecommendations && recommendations.items.isNotEmpty) ...[
-              ...recommendations.items.take(2).map((item) => Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md), // 12px
-                  border: Border.all(
-                    color: AppColors.divider,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${item.product.brandName} ${item.product.productName}',
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            '${item.matchScore.toStringAsFixed(1)}점',
-                            style: AppTypography.body.copyWith(
-                              color: AppColors.status, // 상태 전용 (Green) - DESIGN_GUIDE v4.1
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.xl),
             ],
             
-            // DESIGN_GUIDE: 결정/이동 버튼은 PrimaryBlue, CupertinoButton 사용
+            // 액션 버튼
             SizedBox(
               width: double.infinity,
-              child: CupertinoButton(
+              child: ElevatedButton.icon(
                 onPressed: () {
-                  final shouldForce = !hasRecent || !hasRecommendations;
-                  _toggleRecommendation(forceRefresh: shouldForce);
+                  // 추천 애니메이션 화면으로 이동
+                  final petSummary = state.petSummary;
+                  if (petSummary != null) {
+                    context.push(
+                      RoutePaths.recommendationAnimation,
+                      extra: petSummary,
+                    );
+                  }
                 },
-                color: AppColors.primary, // #2563EB
-                borderRadius: BorderRadius.circular(AppRadius.md), // rounded-xl (12px)
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
+                icon: Icon(
+                  state.recommendationActionText == "지금 추천받기" 
+                      ? Icons.auto_awesome 
+                      : Icons.refresh,
+                  color: Colors.white,
                 ),
-                child: Text(
-                        hasRecommendations && hasRecent 
-                            ? "더 보기" 
-                            : "비교해보기",
-                        style: AppTypography.button.copyWith(
-                    fontSize: 16, // text-base sm:text-lg
-                    fontWeight: FontWeight.w600, // font-semibold
+                label: Text(
+                  state.recommendationActionText,
+                  style: AppTypography.button.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  elevation: 0,
                 ),
               ),
             ),
@@ -1525,31 +1547,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.xl),
-          SizedBox(
-            width: double.infinity,
-            child: CupertinoButton(
-              onPressed: () {
-                // 펫 정보 수정 화면으로 이동 (또는 다른 액션)
-                context.push(RoutePaths.petProfile);
-              },
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.md,
+        ],
+      ),
+    );
+  }
+
+  /// 추천 상품 미리보기 카드
+  Widget _buildRecommendedProductCard(
+    BuildContext context,
+    RecommendationItemDto item,
+  ) {
+    return InkWell(
+      onTap: () {
+        // 상품 상세 화면으로 이동 (TODO: route 추가 필요)
+        // context.push('/products/${item.product.id}');
+      },
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          children: [
+            // 이미지 플레이스홀더
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Text(
-                "펫 정보 확인하기",
-                style: AppTypography.button.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              child: const Icon(
+                Icons.image_not_supported,
+                color: AppColors.textSecondary,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.product.brandName,
+                    style: AppTypography.small.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs / 2),
+                  Text(
+                    item.product.productName,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    PriceFormatter.formatWithCurrency(item.currentPrice),
+                    style: AppTypography.h3.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1590,25 +1660,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.lg), // 버튼 위 여백
             SizedBox(
               width: double.infinity,
-              child: CupertinoButton(
+              child: ElevatedButton.icon(
                 onPressed: () {
                   print('[HomeScreen] 🔘 "지금 먹는 사료 등록하기" 버튼 클릭');
                   // 마켓 화면으로 이동 (사료 선택)
                   context.go('/market');
                 },
-                color: AppColors.primary, // #2563EB
-                borderRadius: BorderRadius.circular(AppRadius.md), // rounded-xl (12px)
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
+                icon: Icon(
+                  Icons.add_circle_outline,
+                  color: Colors.white,
                 ),
-                child: Text(
+                label: Text(
                   '지금 먹는 사료 등록하기',
                   style: AppTypography.button.copyWith(
-                    fontSize: 16, // text-base sm:text-lg
-                    fontWeight: FontWeight.w600, // font-semibold
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  elevation: 0,
                 ),
               ),
             ),

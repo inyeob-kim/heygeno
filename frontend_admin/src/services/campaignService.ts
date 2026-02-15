@@ -6,7 +6,7 @@ import { Campaign, Reward, Impression } from '../data/mockCampaigns';
  */
 export interface CreateCampaignData {
   key: string;
-  kind: 'EVENT' | 'NOTICE' | 'AD';
+  kind: 'EVENT' | 'NOTICE' | 'AD' | 'MISSION';
   placement: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER';
   template: string;
   priority: number;
@@ -31,7 +31,7 @@ export interface CreateCampaignData {
  */
 export interface GetCampaignsParams {
   key?: string;
-  kind?: 'EVENT' | 'NOTICE' | 'AD';
+  kind?: 'EVENT' | 'NOTICE' | 'AD' | 'MISSION';
   placement?: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER';
   template?: string;
   enabled?: boolean;

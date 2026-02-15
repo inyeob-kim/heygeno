@@ -73,6 +73,26 @@ class AlertService:
         await db.commit()
         await db.refresh(alert)
         
+        # 미션 진행도 업데이트 (트리거)
+        try:
+            from app.services.mission_service import MissionService
+            from app.models.campaign import CampaignTrigger
+            from app.models.tracking import Tracking
+            
+            # tracking에서 user_id 가져오기
+            tracking_result = await db.execute(
+                select(Tracking).where(Tracking.id == alert_data.tracking_id)
+            )
+            tracking = tracking_result.scalar_one_or_none()
+            
+            if tracking:
+                await MissionService.update_progress(
+                    db, tracking.user_id, CampaignTrigger.ALERT_CREATED
+                )
+        except Exception as e:
+            # 미션 업데이트 실패해도 알림 생성은 성공 처리
+            pass
+        
         return alert
     
     @staticmethod

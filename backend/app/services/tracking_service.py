@@ -1,7 +1,7 @@
 """가격 추적 관련 비즈니스 로직"""
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from fastapi import HTTPException, status
 
 from app.models.tracking import Tracking, TrackingStatus
@@ -68,6 +68,32 @@ class TrackingService:
         db.add(tracking)
         await db.commit()
         await db.refresh(tracking)
+        
+        # 미션 진행도 업데이트 (트리거)
+        try:
+            from app.services.mission_service import MissionService
+            from app.models.campaign import CampaignTrigger
+            await MissionService.update_progress(
+                db, user_id, CampaignTrigger.TRACKING_CREATED
+            )
+        except Exception as e:
+            # 미션 업데이트 실패해도 추적 생성은 성공 처리
+            pass
+        
+        # 첫 추적인지 확인
+        count_result = await db.execute(
+            select(func.count(Tracking.id))
+            .where(Tracking.user_id == user_id)
+        )
+        if count_result.scalar() == 1:
+            # 첫 추적 미션 진행도 업데이트
+            try:
+                from app.models.campaign import CampaignTrigger
+                await MissionService.update_progress(
+                    db, user_id, CampaignTrigger.FIRST_TRACKING_CREATED
+                )
+            except Exception:
+                pass
         
         return tracking
     

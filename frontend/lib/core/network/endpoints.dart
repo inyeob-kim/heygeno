@@ -2,6 +2,9 @@ class Endpoints {
   // Health
   static const String health = '/health';
   
+  // Users
+  static const String currentUser = '/users/me';
+  
   // Pets
   static const String pets = '/pets';
   static String pet(String id) => '$pets/$id';
@@ -28,4 +31,12 @@ class Endpoints {
   
   // Onboarding
   static const String onboardingComplete = '/onboarding/complete';
+  
+  // Missions
+  static const String missions = '/missions';
+  static String mission(String id) => '$missions/$id';
+  static String missionClaim(String campaignId) => '$missions/$campaignId/claim';
+  
+  // Points
+  static const String pointBalance = '/points/balance';
 }

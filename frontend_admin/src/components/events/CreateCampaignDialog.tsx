@@ -11,7 +11,7 @@ interface CreateCampaignDialogProps {
 export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialogProps) {
   const [formData, setFormData] = useState({
     key: '',
-    kind: 'EVENT' as 'EVENT' | 'NOTICE' | 'AD',
+    kind: 'EVENT' as 'EVENT' | 'NOTICE' | 'AD' | 'MISSION',
     placement: 'HOME_MODAL' as 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER',
     template: 'full_screen_modal',
     priority: 5,
@@ -20,6 +20,13 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
     endAt: '',
     contentTitle: '',
     contentDescription: '',
+    // 미션 전용 필드
+    targetValue: 1,
+    rewardPoints: 0,
+    missionType: 'PROGRESSIVE' as 'ONE_TIME' | 'DAILY' | 'WEEKLY' | 'PROGRESSIVE',
+    autoClaim: false,
+    trigger: 'ALERT_CREATED' as 'FIRST_TRACKING_CREATED' | 'ALERT_CREATED' | 'TRACKING_CREATED' | 'PROFILE_UPDATED',
+    progressIncrement: 1,
   });
 
   const handleCreate = () => {
@@ -33,7 +40,20 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
       return;
     }
 
-    onCreate({
+    const content: any = {
+      title: formData.contentTitle,
+      description: formData.contentDescription,
+    };
+    
+    // 미션인 경우 추가 필드
+    if (formData.kind === 'MISSION') {
+      content.target_value = formData.targetValue;
+      content.reward_points = formData.rewardPoints;
+      content.mission_type = formData.missionType;
+      content.auto_claim = formData.autoClaim;
+    }
+    
+    const campaignData: any = {
       key: formData.key,
       kind: formData.kind,
       placement: formData.placement,
@@ -42,11 +62,22 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
       isEnabled: formData.isEnabled,
       startAt: new Date(formData.startAt).toISOString(),
       endAt: new Date(formData.endAt).toISOString(),
-      content: {
-        title: formData.contentTitle,
-        description: formData.contentDescription,
-      },
-    });
+      content,
+    };
+    
+    // 미션인 경우 actions 추가
+    if (formData.kind === 'MISSION') {
+      campaignData.actions = [{
+        trigger: formData.trigger,
+        action_type: 'UPDATE_PROGRESS',
+        action: {
+          progress_increment: formData.progressIncrement,
+          auto_claim: formData.autoClaim,
+        },
+      }];
+    }
+    
+    onCreate(campaignData);
   };
 
   return (
@@ -92,6 +123,7 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
                 <option value="EVENT">EVENT</option>
                 <option value="NOTICE">NOTICE</option>
                 <option value="AD">AD</option>
+                <option value="MISSION">MISSION</option>
               </select>
             </div>
 
@@ -207,6 +239,104 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
               </div>
             </div>
           </div>
+          
+          {/* 미션 전용 필드 */}
+          {formData.kind === 'MISSION' && (
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">미션 설정</h3>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      목표 값 *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.targetValue}
+                      onChange={(e) => setFormData({ ...formData, targetValue: parseInt(e.target.value) || 1 })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      보상 포인트 *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.rewardPoints}
+                      onChange={(e) => setFormData({ ...formData, rewardPoints: parseInt(e.target.value) || 0 })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      미션 타입
+                    </label>
+                    <select
+                      value={formData.missionType}
+                      onChange={(e) => setFormData({ ...formData, missionType: e.target.value as any })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="ONE_TIME">ONE_TIME</option>
+                      <option value="DAILY">DAILY</option>
+                      <option value="WEEKLY">WEEKLY</option>
+                      <option value="PROGRESSIVE">PROGRESSIVE</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      트리거
+                    </label>
+                    <select
+                      value={formData.trigger}
+                      onChange={(e) => setFormData({ ...formData, trigger: e.target.value as any })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="FIRST_TRACKING_CREATED">FIRST_TRACKING_CREATED</option>
+                      <option value="TRACKING_CREATED">TRACKING_CREATED</option>
+                      <option value="ALERT_CREATED">ALERT_CREATED</option>
+                      <option value="PROFILE_UPDATED">PROFILE_UPDATED</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      진행도 증가량
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.progressIncrement}
+                      onChange={(e) => setFormData({ ...formData, progressIncrement: parseInt(e.target.value) || 1 })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer mt-8">
+                      <input
+                        type="checkbox"
+                        checked={formData.autoClaim}
+                        onChange={(e) => setFormData({ ...formData, autoClaim: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-semibold text-gray-700">완료 시 자동 지급</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

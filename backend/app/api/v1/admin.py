@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 import logging
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.db.session import get_db
 from app.schemas.product import ProductRead, ProductCreate, ProductUpdate
@@ -693,45 +693,57 @@ async def get_campaigns(
     db: AsyncSession = Depends(get_db)
 ):
     """캠페인 목록 조회 (필터링)"""
-    campaigns = await CampaignService.get_campaigns(
-        db=db,
-        key=key,
-        kind=kind,
-        placement=placement,
-        template=template,
-        enabled=enabled
-    )
-    
-    now = datetime.utcnow()
-    result = []
-    for campaign in campaigns:
-        campaign_dict = {
-            "id": campaign.id,
-            "key": campaign.key,
-            "kind": campaign.kind,
-            "placement": campaign.placement,
-            "template": campaign.template,
-            "priority": campaign.priority,
-            "is_enabled": campaign.is_enabled,
-            "start_at": campaign.start_at,
-            "end_at": campaign.end_at,
-            "content": campaign.content,
-            "rules": [rule.rule for rule in campaign.rules],
-            "actions": [
-                {
-                    "trigger": action.trigger,
-                    "action_type": action.action_type,
-                    "action": action.action
+    try:
+        campaigns = await CampaignService.get_campaigns(
+            db=db,
+            key=key,
+            kind=kind,
+            placement=placement,
+            template=template,
+            enabled=enabled
+        )
+        
+        now = datetime.now(timezone.utc)
+        result = []
+        for campaign in campaigns:
+            try:
+                # CampaignRead 스키마에 맞게 변환
+                campaign_dict = {
+                    "id": campaign.id,  # UUID 객체 그대로 (Pydantic이 자동 변환)
+                    "key": campaign.key,
+                    "kind": campaign.kind,
+                    "placement": campaign.placement,
+                    "template": campaign.template,
+                    "priority": campaign.priority,
+                    "is_enabled": campaign.is_enabled,
+                    "start_at": campaign.start_at,  # datetime 객체 그대로
+                    "end_at": campaign.end_at,  # datetime 객체 그대로
+                    "content": campaign.content or {},
+                    "rules": [rule.rule for rule in (campaign.rules or [])],
+                    "actions": [
+                        {
+                            "trigger": action.trigger,
+                            "action_type": action.action_type,
+                            "action": action.action
+                        }
+                        for action in (campaign.actions or [])
+                    ],
+                    "status": CampaignService._calculate_status(campaign, now),
+                    "created_at": campaign.created_at,  # datetime 객체 그대로
+                    "updated_at": campaign.updated_at  # datetime 객체 그대로
                 }
-                for action in campaign.actions
-            ],
-            "status": CampaignService._calculate_status(campaign, now),
-            "created_at": campaign.created_at,
-            "updated_at": campaign.updated_at
-        }
-        result.append(campaign_dict)
-    
-    return result
+                result.append(campaign_dict)
+            except Exception as e:
+                logger.error(f"캠페인 변환 실패: campaign_id={campaign.id}, error={str(e)}", exc_info=True)
+                continue
+        
+        return result
+    except Exception as e:
+        logger.error(f"캠페인 목록 조회 실패: error={str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"캠페인 목록 조회 중 오류가 발생했습니다: {str(e)}"
+        )
 
 
 @router.get("/campaigns/{campaign_id}", response_model=CampaignRead)

@@ -9,6 +9,7 @@ import '../../ui/widgets/bottom_nav_shell.dart';
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/onboarding/presentation/screens/initial_splash_screen.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart';
+import '../../features/pet_update/presentation/screens/pet_update_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/watch/presentation/screens/watch_screen.dart';
 import '../../features/benefits/presentation/screens/benefits_screen.dart';
@@ -79,6 +80,15 @@ GoRouter _createRouter(Ref ref) {
         path: RoutePaths.petProfile,
         name: RoutePaths.petProfile,
         builder: (context, state) => const PetProfileScreen(),
+      ),
+      // 펫 프로필 업데이트 화면
+      GoRoute(
+        path: '/pet-update/:petId',
+        name: 'pet-update',
+        builder: (context, state) {
+          final petId = state.pathParameters['petId']!;
+          return PetUpdateScreen(petId: petId);
+        },
       ),
       GoRoute(
         path: RoutePaths.recommendationAnimation,

@@ -7,6 +7,7 @@ class RoutePaths {
   static const String onboarding = '/onboarding';
   static const String onboardingV2 = '/onboarding_v2'; // Test route for new onboarding
   static const String petProfile = '/pet-profile';
+  static String petUpdate(String petId) => '/pet-update/$petId';
   
   // 메인 탭
   static const String home = '/home';

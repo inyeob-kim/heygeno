@@ -12,6 +12,7 @@ class CampaignKind(str, enum.Enum):
     EVENT = "EVENT"
     NOTICE = "NOTICE"
     AD = "AD"
+    MISSION = "MISSION"
 
 
 class CampaignPlacement(str, enum.Enum):
@@ -52,6 +53,7 @@ class Campaign(Base, TimestampMixin):
     actions = relationship("CampaignAction", back_populates="campaign", cascade="all, delete-orphan")
     impressions = relationship("UserCampaignImpression", back_populates="campaign", cascade="all, delete-orphan")
     rewards = relationship("UserCampaignReward", back_populates="campaign", cascade="all, delete-orphan")
+    mission_progress = relationship("UserMissionProgress", back_populates="campaign", cascade="all, delete-orphan")
 
 
 class CampaignRule(Base):
@@ -77,11 +79,15 @@ class CampaignTrigger(str, enum.Enum):
     FIRST_TRACKING_CREATED = "FIRST_TRACKING_CREATED"
     ALERT_CLICKED = "ALERT_CLICKED"
     REFERRAL_CONFIRMED = "REFERRAL_CONFIRMED"
+    ALERT_CREATED = "ALERT_CREATED"  # 미션용: 알림 생성 시
+    TRACKING_CREATED = "TRACKING_CREATED"  # 미션용: 추적 생성 시
+    PROFILE_UPDATED = "PROFILE_UPDATED"  # 미션용: 프로필 업데이트 시
 
 
 class CampaignActionType(str, enum.Enum):
     GRANT_POINTS = "GRANT_POINTS"
     SHOW_ONLY = "SHOW_ONLY"
+    UPDATE_PROGRESS = "UPDATE_PROGRESS"  # 미션용: 진행도 업데이트
 
 
 class CampaignAction(Base):
@@ -156,3 +162,35 @@ class UserCampaignReward(Base):
     # Relationships
     campaign = relationship("Campaign", back_populates="rewards")
     action = relationship("CampaignAction", back_populates="rewards")
+
+
+class MissionProgressStatus(str, enum.Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CLAIMED = "CLAIMED"
+
+
+class UserMissionProgress(Base):
+    """미션 진행도 추적"""
+    __tablename__ = "user_mission_progress"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False)
+    
+    current_value = Column(Integer, nullable=False, server_default='0')
+    target_value = Column(Integer, nullable=False)
+    status = Column(String(20), nullable=False, server_default='IN_PROGRESS')  # IN_PROGRESS | COMPLETED | CLAIMED
+    
+    started_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    claimed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'campaign_id', name='uq_user_mission_progress'),
+        Index('idx_user_mission_progress_user', 'user_id'),
+        Index('idx_user_mission_progress_user_status', 'user_id', 'status'),
+    )
+
+    # Relationships
+    campaign = relationship("Campaign", back_populates="mission_progress")

@@ -1,13 +1,14 @@
 """반려동물 API 라우터 - 라우팅만 담당"""
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from uuid import UUID
 from typing import Optional
+from datetime import datetime
 
 from app.db.session import get_db
 from app.api.deps import get_device_uid
-from app.schemas.pet import PetCreate, PetRead
+from app.schemas.pet import PetCreate, PetRead, PetUpdate
 from app.schemas.pet_summary import PetSummaryResponse
 from app.services.pet_service import PetService
 from app.services.user_service import UserService
@@ -33,12 +34,15 @@ async def get_pets(
     
     logger.info(f"[Pets API] / 요청: device_uid={device_uid}")
     
+    # device_uid로 user 찾기
     try:
-        # device_uid로 user 찾기 (없으면 생성하지 않고 None 반환)
         user = await UserService.get_user_by_device_uid(device_uid, db)
         if not user:
-            logger.warning(f"[Pets API] User를 찾을 수 없음: device_uid={device_uid}")
-            return []
+            logger.info(f"[Pets API] User 없음: device_uid={device_uid}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User 조회 중 오류가 발생했습니다: {str(e)}"
+            )
     except Exception as e:
         logger.error(f"[Pets API] User 조회 중 오류: {str(e)}", exc_info=True)
         raise HTTPException(
@@ -121,17 +125,25 @@ async def get_pets(
 @router.post("/", response_model=PetRead, status_code=201)
 async def create_pet(
     pet_data: PetCreate,
+    device_uid: Optional[str] = Depends(get_device_uid),
     db: AsyncSession = Depends(get_db),
-    # TODO: 실제 인증 구현 후 user: User = Depends(get_current_user)
 ):
     """반려동물 등록"""
-    # TODO: 실제 user_id 설정 구현 (현재는 Mock user 사용)
-    device_uid = "mock_device_uid"  # TODO: 실제 device_uid 추출
-    mock_user = await UserService.get_or_create_user_by_device_uid(
-        device_uid, "Mock User", db
-    )
+    if not device_uid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Device-UID header is required"
+        )
     
-    pet = await PetService.create_pet(mock_user.id, pet_data, db)
+    # device_uid로 사용자 조회
+    user = await UserService.get_user_by_device_uid(device_uid, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    pet = await PetService.create_pet(user.id, pet_data, db)
     return PetRead.model_validate(pet)
 
 
@@ -160,40 +172,35 @@ async def get_primary_pet(
             detail="Primary pet not found"
         )
     
-    logger.info(f"[Pets API] Primary pet 찾음: pet_id={pet.id}, name={pet.name}")
-    
     # Health concerns 조회
-    result = await db.execute(
+    health_result = await db.execute(
         select(PetHealthConcern.concern_code).where(
             PetHealthConcern.pet_id == pet.id
         )
     )
-    health_concerns = [row[0] for row in result.all()]
-    logger.info(f"[Pets API] Health concerns: {health_concerns}")
+    health_concerns = [row[0] for row in health_result.all()]
     
     # Food allergies 조회
-    result = await db.execute(
+    food_result = await db.execute(
         select(PetFoodAllergy.allergen_code).where(
             PetFoodAllergy.pet_id == pet.id
         )
     )
-    food_allergies = [row[0] for row in result.all()]
-    logger.info(f"[Pets API] Food allergies: {food_allergies}")
+    food_allergies = [row[0] for row in food_result.all()]
     
     # Other allergies 조회
-    result = await db.execute(
+    other_result = await db.execute(
         select(PetOtherAllergy.other_text).where(
             PetOtherAllergy.pet_id == pet.id
         )
     )
-    other_allergy_row = result.first()
+    other_allergy_row = other_result.first()
     other_allergies = other_allergy_row[0] if other_allergy_row else None
-    logger.info(f"[Pets API] Other allergies: {other_allergies}")
     
     return PetSummaryResponse(
         id=pet.id,
-        name=pet.name,
-        species=pet.species.value,
+        name=pet.name or '',
+        species=pet.species.value if pet.species else '',
         age_stage=pet.age_stage.value if pet.age_stage else None,
         approx_age_months=pet.approx_age_months,
         weight_kg=float(pet.weight_kg),
@@ -297,4 +304,210 @@ async def set_primary_pet(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Primary pet 설정 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
+@router.patch("/{pet_id}", response_model=PetSummaryResponse)
+async def update_pet(
+    pet_id: UUID,
+    pet_update: PetUpdate,
+    device_uid: Optional[str] = Depends(get_device_uid),
+    db: AsyncSession = Depends(get_db),
+):
+    """펫 프로필 업데이트 (변할 수 있는 정보만)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not device_uid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Device-UID header is required"
+        )
+    
+    logger.info(f"[Pets API] PATCH /{pet_id} 요청: device_uid={device_uid}, update_data={pet_update.model_dump()}")
+    
+    try:
+        # device_uid로 user 찾기
+        user = await UserService.get_user_by_device_uid(device_uid, db)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # 펫 조회 및 소유자 확인
+        pet = await PetService.get_pet_by_id(pet_id, db)
+        if pet.user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to modify this pet"
+            )
+        
+        # 체중 업데이트
+        if pet_update.weight_kg is not None:
+            pet.weight_kg = pet_update.weight_kg
+            logger.info(f"[Pets API] 체중 업데이트: {pet_update.weight_kg}kg")
+        
+        # 중성화 여부 업데이트
+        if pet_update.is_neutered is not None:
+            pet.is_neutered = pet_update.is_neutered
+            logger.info(f"[Pets API] 중성화 여부 업데이트: {pet_update.is_neutered}")
+        
+        # 건강 고민 업데이트
+        if pet_update.health_concerns is not None:
+            logger.info(f"[Pets API] ⚠️ 건강 고민 업데이트 시작: 요청={pet_update.health_concerns}, 타입={type(pet_update.health_concerns)}")
+            # 기존 건강 고민 삭제
+            await db.execute(
+                delete(PetHealthConcern).where(PetHealthConcern.pet_id == pet.id)
+            )
+            logger.info(f"[Pets API] ✅ 기존 건강 고민 삭제 완료")
+            # 새 건강 고민 추가
+            if pet_update.health_concerns:
+                from app.models.pet import HealthConcernCode
+                # DB에 있는 모든 건강 고민 코드 조회 (디버깅용)
+                all_codes_result = await db.execute(select(HealthConcernCode.code))
+                all_codes = {row[0] for row in all_codes_result.all()}
+                logger.info(f"[Pets API] 📋 DB에 있는 모든 건강 고민 코드: {all_codes}")
+                
+                # 유효한 코드만 필터링
+                valid_codes_result = await db.execute(
+                    select(HealthConcernCode.code).where(
+                        HealthConcernCode.code.in_(pet_update.health_concerns)
+                    )
+                )
+                valid_codes = {row[0] for row in valid_codes_result.all()}
+                
+                logger.info(f"[Pets API] 🔍 건강 고민 요청: {pet_update.health_concerns}, DB 유효 코드: {valid_codes}")
+                
+                if valid_codes:
+                    health_concerns = [
+                        PetHealthConcern(
+                            pet_id=pet.id,
+                            concern_code=code
+                        )
+                        for code in valid_codes
+                    ]
+                    db.add_all(health_concerns)
+                    logger.info(f"[Pets API] ✅ 건강 고민 저장 완료: {valid_codes}")
+                else:
+                    invalid_codes = set(pet_update.health_concerns) - all_codes
+                    logger.warning(f"[Pets API] ❌ 건강 고민 저장 실패: 요청한 코드 중 유효한 코드가 없음. 요청: {pet_update.health_concerns}, DB에 없는 코드: {invalid_codes}")
+            else:
+                logger.info(f"[Pets API] ⚠️ 건강 고민 빈 리스트: 기존 항목만 삭제됨")
+            logger.info(f"[Pets API] ✅ 건강 고민 업데이트 완료: 요청={pet_update.health_concerns}")
+        
+        # 음식 알레르기 업데이트
+        if pet_update.food_allergies is not None:
+            # 기존 알레르기 삭제
+            await db.execute(
+                delete(PetFoodAllergy).where(PetFoodAllergy.pet_id == pet.id)
+            )
+            # 새 알레르기 추가
+            if pet_update.food_allergies:
+                from app.models.pet import AllergenCode
+                # 유효한 코드만 필터링
+                valid_codes_result = await db.execute(
+                    select(AllergenCode.code).where(
+                        AllergenCode.code.in_(pet_update.food_allergies)
+                    )
+                )
+                valid_codes = {row[0] for row in valid_codes_result.all()}
+                
+                logger.info(f"[Pets API] 음식 알레르기 요청: {pet_update.food_allergies}, DB 유효 코드: {valid_codes}")
+                
+                if valid_codes:
+                    food_allergies = [
+                        PetFoodAllergy(
+                            pet_id=pet.id,
+                            allergen_code=code
+                        )
+                        for code in valid_codes
+                    ]
+                    db.add_all(food_allergies)
+                    logger.info(f"[Pets API] 음식 알레르기 저장 완료: {valid_codes}")
+                else:
+                    logger.warning(f"[Pets API] 음식 알레르기 저장 실패: 요청한 코드 중 유효한 코드가 없음. 요청: {pet_update.food_allergies}")
+            else:
+                logger.info(f"[Pets API] 음식 알레르기 빈 리스트: 기존 항목만 삭제됨")
+            logger.info(f"[Pets API] 음식 알레르기 업데이트 완료: 요청={pet_update.food_allergies}")
+        
+        # 기타 알레르기 업데이트
+        if pet_update.other_allergies is not None:
+            if pet_update.other_allergies.strip():
+                # UPSERT
+                other_result = await db.execute(
+                    select(PetOtherAllergy).where(PetOtherAllergy.pet_id == pet.id)
+                )
+                other_allergy = other_result.scalar_one_or_none()
+                
+                if other_allergy:
+                    other_allergy.other_text = pet_update.other_allergies
+                else:
+                    other_allergy = PetOtherAllergy(
+                        pet_id=pet.id,
+                        other_text=pet_update.other_allergies
+                    )
+                    db.add(other_allergy)
+            else:
+                # 텍스트가 없으면 삭제
+                await db.execute(
+                    delete(PetOtherAllergy).where(PetOtherAllergy.pet_id == pet.id)
+                )
+            logger.info(f"[Pets API] 기타 알레르기 업데이트: {pet_update.other_allergies}")
+        
+        pet.updated_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(pet)
+        
+        # Health concerns 조회
+        health_result = await db.execute(
+            select(PetHealthConcern.concern_code).where(
+                PetHealthConcern.pet_id == pet.id
+            )
+        )
+        health_concerns = [row[0] for row in health_result.all()]
+        
+        # Food allergies 조회
+        food_result = await db.execute(
+            select(PetFoodAllergy.allergen_code).where(
+                PetFoodAllergy.pet_id == pet.id
+            )
+        )
+        food_allergies = [row[0] for row in food_result.all()]
+        
+        # Other allergies 조회
+        other_result = await db.execute(
+            select(PetOtherAllergy.other_text).where(
+                PetOtherAllergy.pet_id == pet.id
+            )
+        )
+        other_allergy_row = other_result.first()
+        other_allergies = other_allergy_row[0] if other_allergy_row else None
+        
+        logger.info(f"[Pets API] 펫 업데이트 완료: pet_id={pet.id}")
+        
+        return PetSummaryResponse(
+            id=pet.id,
+            name=pet.name or '',
+            species=pet.species.value if pet.species else '',
+            age_stage=pet.age_stage.value if pet.age_stage else None,
+            approx_age_months=pet.approx_age_months,
+            weight_kg=float(pet.weight_kg) if pet.weight_kg is not None else 0.0,
+            health_concerns=health_concerns,
+            photo_url=pet.photo_url,
+            breed_code=pet.breed_code,
+            is_neutered=pet.is_neutered,
+            sex=pet.sex.value if pet.sex else None,
+            food_allergies=food_allergies,
+            other_allergies=other_allergies,
+            is_primary=pet.is_primary,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Pets API] 펫 업데이트 중 오류: {str(e)}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"펫 업데이트 중 오류가 발생했습니다: {str(e)}"
         )

@@ -99,9 +99,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // TopBar
+          child: Column(
+            children: [
+              // TopBar
             AnimatedSlide(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
@@ -111,11 +111,11 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 opacity: _isTopBarVisible ? 1.0 : 0.0,
                 child: AppTopBar(title: '사료마켓', showBackButton: false),
               ),
-            ),
-            Expanded(
-              child: _buildBody(state, currentPetId),
-            ),
-          ],
+              ),
+              Expanded(
+                child: _buildBody(state, currentPetId),
+              ),
+            ],
         ),
       ),
     );

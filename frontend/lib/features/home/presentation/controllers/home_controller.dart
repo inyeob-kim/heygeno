@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:collection/collection.dart';
 
 import '../../../../data/repositories/product_repository.dart';
+import '../../../../data/repositories/user_repository.dart';
 import '../../../../data/models/recommendation_dto.dart';
 import '../../../../data/models/recommendation_extensions.dart';
 import '../../../../data/models/pet_summary_dto.dart';
@@ -8,8 +11,6 @@ import '../../../../domain/services/pet_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
-import '../../../../core/storage/secure_storage.dart';
-import '../../../../core/storage/storage_keys.dart';
 
 /// 홈 화면 상태 타입 (A/B/C 분기)
 enum HomeStateType {
@@ -29,6 +30,9 @@ class HomeState {
   final DateTime? lastRecommendedAt;
   final bool hasRecentRecommendation;
   final String? userNickname; // 유저 닉네임
+  // 프로필 업데이트 감지
+  final bool petProfileUpdated; // 프로필 최근 업데이트 여부
+  final DateTime? petProfileUpdatedAt; // 업데이트 시각
 
   HomeState({
     HomeStateType? stateType,
@@ -39,6 +43,8 @@ class HomeState {
     this.lastRecommendedAt,
     this.hasRecentRecommendation = false,
     this.userNickname,
+    this.petProfileUpdated = false,
+    this.petProfileUpdatedAt,
   }) : stateType = stateType ?? HomeStateType.loading;
 
   bool get hasPet => stateType == HomeStateType.hasPet && petSummary != null;
@@ -49,15 +55,18 @@ class HomeState {
 
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 동적 버튼 텍스트
   String get recommendationActionText {
-    if (!hasRecommendations) return "지금 추천받기";
-    if (hasRecentRecommendation) return "최근 추천 보기";
-    if (lastRecommendedAt != null) {
-      final daysSince = DateTime.now().difference(lastRecommendedAt!).inDays;
-      if (daysSince <= 14) {
-        return "업데이트된 추천 확인하기";
-      }
+    // 프로필 업데이트된 경우
+    if (petProfileUpdated) {
+      return "다시 추천 받기";
     }
-    return "펫 상태 바뀌었나요? 다시 추천받기";
+    
+    // 추천이 있는 경우
+    if (hasRecommendations) {
+      return "다시 추천 받기";
+    }
+    
+    // 추천이 없는 경우
+    return "지금 추천받기";
   }
 
   HomeState copyWith({
@@ -69,6 +78,8 @@ class HomeState {
     DateTime? lastRecommendedAt,
     bool? hasRecentRecommendation,
     String? userNickname,
+    bool? petProfileUpdated,
+    DateTime? petProfileUpdatedAt,
   }) {
     return HomeState(
       stateType: stateType ?? this.stateType,
@@ -79,6 +90,8 @@ class HomeState {
       lastRecommendedAt: lastRecommendedAt ?? this.lastRecommendedAt,
       hasRecentRecommendation: hasRecentRecommendation ?? this.hasRecentRecommendation,
       userNickname: userNickname ?? this.userNickname,
+      petProfileUpdated: petProfileUpdated ?? this.petProfileUpdated,
+      petProfileUpdatedAt: petProfileUpdatedAt ?? this.petProfileUpdatedAt,
     );
   }
 }
@@ -86,10 +99,15 @@ class HomeState {
 class HomeController extends StateNotifier<HomeState> {
   final ProductRepository _productRepository;
   final PetService _petService;
+  final UserRepository _userRepository;
   final Ref _ref;
 
-  HomeController(this._productRepository, this._petService, this._ref)
-      : super(HomeState(stateType: HomeStateType.loading));
+  HomeController(
+    this._productRepository,
+    this._petService,
+    this._userRepository,
+    this._ref,
+  ) : super(HomeState(stateType: HomeStateType.loading));
 
   /// 홈 화면 초기화 (primary pet 조회만, 추천은 버튼 클릭 시 로드)
   Future<void> initialize() async {
@@ -97,37 +115,58 @@ class HomeController extends StateNotifier<HomeState> {
     print('[HomeController] initialize() 시작');
 
     try {
-      // 1. Primary Pet 조회
+      // 1. 먼저 사용자 정보 로드 (사용자가 있어야 pet을 불러올 수 있음)
+      String? nickname;
+      try {
+        print('[HomeController] 사용자 정보 로드 시작');
+        final user = await _userRepository.getCurrentUser();
+        nickname = user.nickname;
+        print('[HomeController] 사용자 정보 로드 성공: ${user.nickname}');
+      } catch (e) {
+        print('[HomeController] 사용자 정보 로드 실패: $e');
+        // 사용자가 없으면 에러 상태로 설정
+        state = state.copyWith(
+          stateType: HomeStateType.error,
+          error: '사용자 정보를 불러올 수 없습니다. 다시 시도해주세요.',
+        );
+        return;
+      }
+
+      // 2. 사용자가 확인되었으므로 해당 사용자의 Primary Pet 조회
       print('[HomeController] Primary Pet 조회 시작');
       final petSummary = await _petService.getPrimaryPetSummary();
       print('[HomeController] Primary Pet 조회 결과: ${petSummary != null ? "있음 (${petSummary.name})" : "없음"}');
 
       if (petSummary == null) {
-        // C 상태: pet 없음
+        // C 상태: pet 없음 (사용자는 있음)
         state = state.copyWith(
           stateType: HomeStateType.noPet,
           petSummary: null,
+          userNickname: nickname,
         );
         return;
       }
 
-      // 2. Pet ID를 provider에 저장
-      _ref.read(currentPetIdProvider.notifier).state = petSummary.petId;
-
-      // 3. 유저 닉네임 로드
-      String? nickname;
-      try {
-        nickname = await SecureStorage.read(StorageKeys.draftNickname);
-      } catch (e) {
-        print('[HomeController] 닉네임 로드 실패: $e');
+      // 3. 펫 전환 감지 (기존 펫과 다른 펫인 경우)
+      final currentPetId = _ref.read(currentPetIdProvider);
+      final isPetChanged = currentPetId != null && currentPetId != petSummary.petId;
+      
+      if (isPetChanged) {
+        print('[HomeController] 🔄 펫 전환 감지: $currentPetId -> ${petSummary.petId}');
       }
       
-      // 4. B 상태: pet 존재 (추천은 버튼 클릭 시 로드)
+      // 4. Pet ID를 provider에 저장
+      _ref.read(currentPetIdProvider.notifier).state = petSummary.petId;
+      
+      // 5. B 상태: pet 존재 (추천은 버튼 클릭 시 로드)
+      // 펫 전환 시 기존 추천 결과 초기화
       state = state.copyWith(
         stateType: HomeStateType.hasPet,
         petSummary: petSummary,
         isLoadingRecommendations: false,  // 초기에는 로딩하지 않음
-        recommendations: null,  // 초기에는 추천 없음
+        recommendations: isPetChanged ? null : state.recommendations,  // 펫 전환 시 추천 초기화
+        hasRecentRecommendation: isPetChanged ? false : state.hasRecentRecommendation,
+        lastRecommendedAt: isPetChanged ? null : state.lastRecommendedAt,
         userNickname: nickname,
       );
     } catch (e) {
@@ -139,6 +178,114 @@ class HomeController extends StateNotifier<HomeState> {
         error: failure.message,
       );
     }
+  }
+
+  /// 펫 프로필만 새로고침 (프로필 업데이트 후 호출)
+  Future<void> refreshPetSummary() async {
+    print('[HomeController] refreshPetSummary() 시작');
+    
+    try {
+      final oldPetSummary = state.petSummary;
+      final newPetSummary = await _petService.getPrimaryPetSummary();
+      print('[HomeController] 펫 프로필 새로고침 결과: ${newPetSummary != null ? "있음 (${newPetSummary.name})" : "없음"}');
+      
+      if (newPetSummary == null) {
+        state = state.copyWith(
+          stateType: HomeStateType.noPet,
+          petSummary: null,
+        );
+        return;
+      }
+
+      // 펫 ID 변경 감지 (다른 펫으로 전환된 경우)
+      final isPetChanged = oldPetSummary != null && oldPetSummary.petId != newPetSummary.petId;
+      
+      // 프로필 변경 감지 (같은 펫의 프로필이 변경된 경우)
+      bool isProfileUpdated = false;
+      if (oldPetSummary != null && newPetSummary != null && !isPetChanged) {
+        isProfileUpdated = _hasProfileChanged(oldPetSummary, newPetSummary);
+        print('[HomeController] 프로필 변경 감지: $isProfileUpdated');
+        if (isProfileUpdated) {
+          print('[HomeController] 📋 변경된 항목 확인:');
+          print('  - 체중: ${oldPetSummary.weightKg}kg -> ${newPetSummary.weightKg}kg');
+          print('  - 중성화: ${oldPetSummary.isNeutered} -> ${newPetSummary.isNeutered}');
+          print('  - 건강고민: ${oldPetSummary.healthConcerns} -> ${newPetSummary.healthConcerns}');
+          print('  - 알레르기: ${oldPetSummary.foodAllergies} -> ${newPetSummary.foodAllergies}');
+        }
+      } else if (oldPetSummary == null && newPetSummary != null) {
+        // 첫 로드인 경우는 업데이트로 간주하지 않음
+        print('[HomeController] 첫 로드: oldPetSummary가 null이므로 변경 감지 스킵');
+      }
+      
+      if (isPetChanged) {
+        print('[HomeController] 🔄 펫 전환 감지: ${oldPetSummary?.name} -> ${newPetSummary.name}');
+      }
+
+      // Pet ID 업데이트
+      _ref.read(currentPetIdProvider.notifier).state = newPetSummary.petId;
+      
+      // 펫 프로필 업데이트 및 추천 결과 초기화
+      // (펫 전환 또는 프로필 변경 시 기존 추천은 부정확할 수 있음)
+      state = state.copyWith(
+        petSummary: newPetSummary,
+        petProfileUpdated: isProfileUpdated,
+        petProfileUpdatedAt: isProfileUpdated ? DateTime.now() : state.petProfileUpdatedAt,
+        // 펫 전환 또는 프로필 변경 시 기존 추천 무효화 (중요!)
+        recommendations: (isPetChanged || isProfileUpdated) ? null : state.recommendations,
+        hasRecentRecommendation: (isPetChanged || isProfileUpdated) ? false : state.hasRecentRecommendation,
+        lastRecommendedAt: (isPetChanged || isProfileUpdated) ? null : state.lastRecommendedAt,
+      );
+      print('[HomeController] 펫 프로필 새로고침 완료 (isProfileUpdated=$isProfileUpdated)');
+    } catch (e) {
+      debugPrint('refreshPetSummary error: $e');
+      // 에러가 발생해도 기존 상태 유지
+    }
+  }
+
+  /// 프로필 변경 감지 (핵심 비교 항목)
+  bool _hasProfileChanged(PetSummaryDto oldPet, PetSummaryDto newPet) {
+    // 체중 비교 (0.1kg 이상 차이)
+    if ((oldPet.weightKg - newPet.weightKg).abs() > 0.1) {
+      return true;
+    }
+    
+    // 중성화 여부
+    if (oldPet.isNeutered != newPet.isNeutered) {
+      return true;
+    }
+    
+    // 나이 단계 비교 (6개월 단위 변화 감지)
+    final oldAgeMonths = oldPet.ageMonths;
+    final newAgeMonths = newPet.ageMonths;
+    if (oldAgeMonths != null && newAgeMonths != null) {
+      final oldAgeStage = oldAgeMonths ~/ 6;
+      final newAgeStage = newAgeMonths ~/ 6;
+      if (oldAgeStage != newAgeStage) {
+        return true;
+      }
+    }
+    
+    // 품종 코드
+    if (oldPet.breedCode != newPet.breedCode) {
+      return true;
+    }
+    
+    // 건강 고민 리스트 비교
+    if (!const ListEquality<String>().equals(oldPet.healthConcerns, newPet.healthConcerns)) {
+      return true;
+    }
+    
+    // 음식 알레르기 리스트 비교
+    if (!const ListEquality<String>().equals(oldPet.foodAllergies, newPet.foodAllergies)) {
+      return true;
+    }
+    
+    // 기타 알레르기 텍스트 비교
+    if (oldPet.otherAllergies?.trim() != newPet.otherAllergies?.trim()) {
+      return true;
+    }
+    
+    return false;
   }
 
   /// 추천 데이터 로드
@@ -167,6 +314,7 @@ class HomeController extends StateNotifier<HomeState> {
         isLoadingRecommendations: false,
         lastRecommendedAt: recommendations.lastRecommendedAt,
         hasRecentRecommendation: recommendations.hasRecentRecommendation,
+        petProfileUpdated: false, // ★ 추천 성공 시 플래그 초기화
       );
       print('[HomeController] ✅ 상태 업데이트 완료: isLoadingRecommendations=false, hasRecentRecommendation=${recommendations.hasRecentRecommendation}, lastRecommendedAt=${recommendations.lastRecommendedAt}');
     } catch (e, stackTrace) {
@@ -228,6 +376,7 @@ class HomeController extends StateNotifier<HomeState> {
       isLoadingRecommendations: false,
       lastRecommendedAt: recommendations.lastRecommendedAt,
       hasRecentRecommendation: recommendations.hasRecentRecommendation,
+      petProfileUpdated: false, // ★ 추천 성공 시 플래그 초기화
     );
   }
   
@@ -245,5 +394,6 @@ final homeControllerProvider =
     StateNotifierProvider<HomeController, HomeState>((ref) {
   final productRepository = ref.watch(productRepositoryProvider);
   final petService = ref.watch(petServiceProvider);
-  return HomeController(productRepository, petService, ref);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return HomeController(productRepository, petService, userRepository, ref);
 });

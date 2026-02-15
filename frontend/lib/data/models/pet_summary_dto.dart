@@ -14,6 +14,8 @@ class PetSummaryDto {
   final List<String> foodAllergies; // 음식 알레르기 코드 리스트
   final String? otherAllergies; // 기타 알레르기 텍스트
   final bool? isPrimary; // 주 반려동물 여부
+  final DateTime? createdAt; // 생성일
+  final DateTime? updatedAt; // 마지막 업데이트일
 
   PetSummaryDto({
     required this.petId,
@@ -30,6 +32,8 @@ class PetSummaryDto {
     List<String>? foodAllergies,
     this.otherAllergies,
     this.isPrimary,
+    this.createdAt,
+    this.updatedAt,
   }) : healthConcerns = healthConcerns ?? [],
        foodAllergies = foodAllergies ?? [];
 
@@ -60,6 +64,12 @@ class PetSummaryDto {
           [],
       otherAllergies: json['other_allergies'] as String?,
       isPrimary: (json['is_primary'] as bool?) ?? false,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
-import '../../app/theme/app_shadows.dart';
 
 /// 카드 컨테이너 위젯 (HeyGeno Landing Style)
 /// 
@@ -17,8 +16,8 @@ class CardContainer extends StatefulWidget {
   final EdgeInsetsGeometry? padding;
   final Color? backgroundColor;
   final VoidCallback? onTap;
-  final bool showBorder;
-  final bool showShadow;
+  final bool showBorder; // 기본값: false (펫 분석 프로필 스타일)
+  final bool showShadow; // 기본값: true
   final Color? borderColor;
   final double? borderWidth;
   @deprecated // v4.1: 더 이상 사용되지 않음, 호환성을 위해 유지
@@ -30,7 +29,7 @@ class CardContainer extends StatefulWidget {
     this.padding,
     this.backgroundColor,
     this.onTap,
-    this.showBorder = true,
+    this.showBorder = false, // 펫 분석 프로필 스타일: border 없음
     this.showShadow = true,
     this.borderColor,
     this.borderWidth,
@@ -55,14 +54,19 @@ class _CardContainerState extends State<CardContainer> {
     // HeyGeno Landing: borderRadius는 AppRadius.lg (16px) - rounded-2xl
     final effectiveBorderRadius = BorderRadius.circular(AppRadius.lg);
     
-    // HeyGeno Landing: border는 border-2 (2px)
-    final effectiveBorderWidth = widget.borderWidth ?? 2.0;
-    final effectiveBorderColor = widget.borderColor ?? 
-        (_isHovered ? AppColors.border : const Color(0xFFF3F4F6)); // border-gray-100 hover:border-gray-200
+    // 펫 분석 프로필 스타일: border 제거 (기본값)
+    final effectiveBorderWidth = widget.borderWidth ?? 0.0;
+    final effectiveBorderColor = widget.borderColor ?? Colors.transparent;
     
-    // HeyGeno Landing: shadow-sm hover:shadow-md
+    // 펫 분석 프로필 스타일: soft shadow 하나만 (blur 10)
     final effectiveShadow = widget.showShadow 
-        ? (_isHovered ? AppShadows.cardHover : AppShadows.card)
+        ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ]
         : null;
     
     final content = MouseRegion(

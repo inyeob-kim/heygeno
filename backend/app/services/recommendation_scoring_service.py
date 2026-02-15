@@ -4,7 +4,7 @@ import logging
 from typing import Optional, List, Dict, Tuple
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from app.schemas.pet_summary import PetSummaryResponse
 from app.models.product import Product, ProductIngredientProfile, ProductNutritionFacts

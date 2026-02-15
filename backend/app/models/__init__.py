@@ -24,9 +24,9 @@ from app.models.outbound_click import OutboundClick, ClickSource
 from app.models.recommendation import RecommendationRun, RecommendationItem, RecStrategy
 from app.models.campaign import (
     Campaign, CampaignRule, CampaignAction, 
-    UserCampaignImpression, UserCampaignReward,
+    UserCampaignImpression, UserCampaignReward, UserMissionProgress,
     CampaignKind, CampaignPlacement, CampaignTemplate,
-    CampaignTrigger, CampaignActionType, RewardStatus
+    CampaignTrigger, CampaignActionType, RewardStatus, MissionProgressStatus
 )
 from app.models.point import PointWallet, PointLedger
 from app.models.referral import ReferralCode, Referral, ReferralStatus
@@ -54,9 +54,9 @@ __all__ = [
     "OutboundClick", "ClickSource",
     "RecommendationRun", "RecommendationItem", "RecStrategy",
     "Campaign", "CampaignRule", "CampaignAction",
-    "UserCampaignImpression", "UserCampaignReward",
+    "UserCampaignImpression", "UserCampaignReward", "UserMissionProgress",
     "CampaignKind", "CampaignPlacement", "CampaignTemplate",
-    "CampaignTrigger", "CampaignActionType", "RewardStatus",
+    "CampaignTrigger", "CampaignActionType", "RewardStatus", "MissionProgressStatus",
     "PointWallet", "PointLedger",
     "ReferralCode", "Referral", "ReferralStatus",
     "UserRecoPrefs",

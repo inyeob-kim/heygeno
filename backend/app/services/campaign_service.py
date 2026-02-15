@@ -24,11 +24,26 @@ class CampaignService:
     @staticmethod
     def _calculate_status(campaign: Campaign, now: datetime) -> str:
         """파생 상태 계산"""
+        from datetime import timezone
+        
         if not campaign.is_enabled:
             return "DISABLED"
-        if now < campaign.start_at:
+        
+        # timezone-aware datetime으로 통일
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        if campaign.start_at.tzinfo is None:
+            start_at = campaign.start_at.replace(tzinfo=timezone.utc)
+        else:
+            start_at = campaign.start_at
+        if campaign.end_at.tzinfo is None:
+            end_at = campaign.end_at.replace(tzinfo=timezone.utc)
+        else:
+            end_at = campaign.end_at
+        
+        if now < start_at:
             return "SCHEDULED"
-        if now > campaign.end_at:
+        if now > end_at:
             return "EXPIRED"
         return "ACTIVE_NOW"
     
@@ -282,7 +297,7 @@ class CampaignService:
     ) -> Dict[str, Any]:
         """시뮬레이션 (실제 지급 X, rule 평가만)"""
         # 활성 캠페인 조회
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         result = await db.execute(
             select(Campaign)
             .options(

@@ -42,29 +42,34 @@ class PetConstants {
     }
   }
 
-  /// 건강 관심사 이름 매핑
+  /// 건강 관심사 이름 매핑 (DB와 동기화)
   static const Map<String, String> healthConcernNames = {
-    'OBESITY': '비만',
-    'SKIN': '피부',
-    'DIGESTIVE': '소화',
-    'JOINT': '관절',
-    'DENTAL': '치아',
-    'URINARY': '요로',
-    'HEART': '심장',
     'ALLERGY': '알레르기',
+    'DIGESTIVE': '장/소화',
+    'DENTAL': '치아/구강',
+    'OBESITY': '비만',
+    'RESPIRATORY': '호흡기',
+    'SKIN': '피부/털',
+    'JOINT': '관절',
+    'EYE': '눈/눈물',
+    'KIDNEY': '신장/요로',
+    'HEART': '심장',
+    'SENIOR': '노령',
   };
 
-  /// 알레르겐 이름 매핑
+  /// 알레르겐 이름 매핑 (DB와 동기화)
   static const Map<String, String> allergenNames = {
-    'CHICKEN': '닭고기',
     'BEEF': '소고기',
+    'CHICKEN': '닭고기',
     'PORK': '돼지고기',
+    'DUCK': '오리고기',
+    'LAMB': '양고기',
     'FISH': '생선',
     'EGG': '계란',
     'DAIRY': '유제품',
-    'WHEAT': '밀',
-    'SOY': '대두',
+    'WHEAT': '밀/글루텐',
     'CORN': '옥수수',
+    'SOY': '콩',
   };
 }
 

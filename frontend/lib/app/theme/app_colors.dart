@@ -29,15 +29,15 @@ class AppColors {
   static const Color dropLight = Color(0xFFFEE2E2); // 연한 레드 배경
 
   // ============================================
-  // ⚪ Premium Neutral - HeyGeno Landing Style
+  // ⚪ Premium Neutral - 펫 분석 프로필 스타일
   // ============================================
-  static const Color background = Color(0xFFFFFFFF); // White (HeyGeno Landing)
+  static const Color background = Color(0xFFF8FAFC); // 분석 프로필 배경
   static const Color surface = Color(0xFFFFFFFF); // White (카드 배경)
   static const Color surfaceLight = Color(0xFFEFF6FF); // Light Blue (HeyGeno Landing - 섹션 배경)
   
-  // 텍스트 - HeyGeno Landing Style
-  static const Color textPrimary = Color(0xFF0F172A); // Slate 900 (HeyGeno Landing)
-  static const Color textSecondary = Color(0xFF475569); // Slate 600 (HeyGeno Landing)
+  // 텍스트 - 펫 분석 프로필 스타일
+  static const Color textPrimary = Color(0xFF111827); // 분석 프로필 텍스트
+  static const Color textSecondary = Color(0xFF6B7280); // 분석 프로필 보조 텍스트
   static const Color textMuted = Color(0xFF717182); // HeyGeno Landing
   
   // 경계선

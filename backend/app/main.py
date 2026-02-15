@@ -49,12 +49,20 @@ app = FastAPI(
 # UUID도 자동으로 문자열로 직렬화됩니다.
 
 # CORS 설정
+# allow_origins=["*"]와 allow_credentials=True를 함께 사용할 수 없으므로
+# 개발 환경에서는 명시적으로 localhost:3000을 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite 기본 포트
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
