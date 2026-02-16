@@ -29,9 +29,8 @@ class HomeState {
   final DateTime? lastRecommendedAt;
   final bool hasRecentRecommendation;
   final String? userNickname; // 유저 닉네임
-  // 프로필 업데이트 감지
-  final bool petProfileUpdated; // 프로필 최근 업데이트 여부
-  final DateTime? petProfileUpdatedAt; // 업데이트 시각
+  // 프로필 업데이트 감지 (revision 기반)
+  final int profileRevision; // 프로필 변경 버전 (증가할수록 최신)
 
   HomeState({
     HomeStateType? stateType,
@@ -42,8 +41,7 @@ class HomeState {
     this.lastRecommendedAt,
     this.hasRecentRecommendation = false,
     this.userNickname,
-    this.petProfileUpdated = false,
-    this.petProfileUpdatedAt,
+    this.profileRevision = 0,
   }) : stateType = stateType ?? HomeStateType.loading;
 
   bool get hasPet => stateType == HomeStateType.hasPet && petSummary != null;
@@ -54,11 +52,6 @@ class HomeState {
 
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 동적 버튼 텍스트
   String get recommendationActionText {
-    // 프로필 업데이트된 경우
-    if (petProfileUpdated) {
-      return "다시 추천 받기";
-    }
-    
     // 추천이 있는 경우
     if (hasRecommendations) {
       return "다시 추천 받기";
@@ -77,8 +70,7 @@ class HomeState {
     DateTime? lastRecommendedAt,
     bool? hasRecentRecommendation,
     String? userNickname,
-    bool? petProfileUpdated,
-    DateTime? petProfileUpdatedAt,
+    int? profileRevision,
   }) {
     return HomeState(
       stateType: stateType ?? this.stateType,
@@ -89,8 +81,7 @@ class HomeState {
       lastRecommendedAt: lastRecommendedAt ?? this.lastRecommendedAt,
       hasRecentRecommendation: hasRecentRecommendation ?? this.hasRecentRecommendation,
       userNickname: userNickname ?? this.userNickname,
-      petProfileUpdated: petProfileUpdated ?? this.petProfileUpdated,
-      petProfileUpdatedAt: petProfileUpdatedAt ?? this.petProfileUpdatedAt,
+      profileRevision: profileRevision ?? this.profileRevision,
     );
   }
 }
@@ -181,14 +172,23 @@ class HomeController extends StateNotifier<HomeState> {
 
   /// 펫 프로필만 새로고침 (프로필 업데이트 후 호출)
   Future<void> refreshPetSummary() async {
-    print('[HomeController] refreshPetSummary() 시작');
+    print('[HomeController] 🔄 refreshPetSummary() 시작');
+    final oldPetId = state.petSummary?.petId;
+    print('[HomeController]   - 기존 petId: $oldPetId');
+    print('[HomeController]   - 기존 petName: ${state.petSummary?.name}');
     
     try {
       final oldPetSummary = state.petSummary;
       final newPetSummary = await _petService.getPrimaryPetSummary();
-      print('[HomeController] 펫 프로필 새로고침 결과: ${newPetSummary != null ? "있음 (${newPetSummary.name})" : "없음"}');
+      final newPetId = newPetSummary?.petId;
+      
+      print('[HomeController] 📡 API 호출 완료');
+      print('[HomeController]   - 새 petId: $newPetId');
+      print('[HomeController]   - 새 petName: ${newPetSummary?.name}');
+      print('[HomeController]   - petId 변경 여부: ${oldPetId != newPetId}');
       
       if (newPetSummary == null) {
+        print('[HomeController] ⚠️ 펫 프로필이 없음 - noPet 상태로 변경');
         state = state.copyWith(
           stateType: HomeStateType.noPet,
           petSummary: null,
@@ -200,20 +200,16 @@ class HomeController extends StateNotifier<HomeState> {
       final isPetChanged = oldPetSummary != null && oldPetSummary.petId != newPetSummary.petId;
       
       // 프로필 변경 감지 (같은 펫의 프로필이 변경된 경우)
-      bool isProfileUpdated = false;
+      bool isProfileChanged = false;
       if (oldPetSummary != null && !isPetChanged) {
-        isProfileUpdated = _petService.hasProfileChanged(oldPetSummary, newPetSummary);
-        print('[HomeController] 프로필 변경 감지: $isProfileUpdated');
-        if (isProfileUpdated) {
-          print('[HomeController] 📋 변경된 항목 확인:');
+        isProfileChanged = _petService.hasProfileChanged(oldPetSummary, newPetSummary);
+        if (isProfileChanged) {
+          print('[HomeController] 📋 프로필 변경 감지:');
           print('  - 체중: ${oldPetSummary.weightKg}kg -> ${newPetSummary.weightKg}kg');
           print('  - 중성화: ${oldPetSummary.isNeutered} -> ${newPetSummary.isNeutered}');
           print('  - 건강고민: ${oldPetSummary.healthConcerns} -> ${newPetSummary.healthConcerns}');
           print('  - 알레르기: ${oldPetSummary.foodAllergies} -> ${newPetSummary.foodAllergies}');
         }
-      } else if (oldPetSummary == null) {
-        // 첫 로드인 경우는 업데이트로 간주하지 않음
-        print('[HomeController] 첫 로드: oldPetSummary가 null이므로 변경 감지 스킵');
       }
       
       if (isPetChanged && oldPetSummary != null) {
@@ -221,20 +217,35 @@ class HomeController extends StateNotifier<HomeState> {
       }
 
       // Pet ID 업데이트
+      print('[HomeController] 🔄 currentPetIdProvider 업데이트: ${newPetSummary.petId}');
       _ref.read(currentPetIdProvider.notifier).state = newPetSummary.petId;
+      
+      // profileRevision 증가 (펫 전환 또는 프로필 변경 시)
+      final shouldIncrementRevision = isPetChanged || isProfileChanged;
+      final newRevision = shouldIncrementRevision ? state.profileRevision + 1 : state.profileRevision;
       
       // 펫 프로필 업데이트 및 추천 결과 초기화
       // (펫 전환 또는 프로필 변경 시 기존 추천은 부정확할 수 있음)
+      print('[HomeController] 📝 HomeState 업데이트 시작');
+      print('[HomeController]   - isPetChanged: $isPetChanged');
+      print('[HomeController]   - isProfileChanged: $isProfileChanged');
+      print('[HomeController]   - oldPetId: $oldPetId');
+      print('[HomeController]   - newPetId: ${newPetSummary.petId}');
+      print('[HomeController]   - profileRevision: ${state.profileRevision} -> $newRevision');
+      
       state = state.copyWith(
         petSummary: newPetSummary,
-        petProfileUpdated: isProfileUpdated,
-        petProfileUpdatedAt: isProfileUpdated ? DateTime.now() : state.petProfileUpdatedAt,
+        profileRevision: newRevision,
         // 펫 전환 또는 프로필 변경 시 기존 추천 무효화 (중요!)
-        recommendations: (isPetChanged || isProfileUpdated) ? null : state.recommendations,
-        hasRecentRecommendation: (isPetChanged || isProfileUpdated) ? false : state.hasRecentRecommendation,
-        lastRecommendedAt: (isPetChanged || isProfileUpdated) ? null : state.lastRecommendedAt,
+        recommendations: shouldIncrementRevision ? null : state.recommendations,
+        hasRecentRecommendation: shouldIncrementRevision ? false : state.hasRecentRecommendation,
+        lastRecommendedAt: shouldIncrementRevision ? null : state.lastRecommendedAt,
       );
-      print('[HomeController] 펫 프로필 새로고침 완료 (isProfileUpdated=$isProfileUpdated)');
+      
+      print('[HomeController] ✅ 펫 프로필 새로고침 완료');
+      print('[HomeController]   - 최종 petId: ${state.petSummary?.petId}');
+      print('[HomeController]   - 최종 petName: ${state.petSummary?.name}');
+      print('[HomeController]   - profileRevision: ${state.profileRevision}');
     } catch (e) {
       debugPrint('refreshPetSummary error: $e');
       // 에러가 발생해도 기존 상태 유지
@@ -271,7 +282,6 @@ class HomeController extends StateNotifier<HomeState> {
         isLoadingRecommendations: false,
         lastRecommendedAt: recommendations.lastRecommendedAt,
         hasRecentRecommendation: recommendations.hasRecentRecommendation,
-        petProfileUpdated: false, // ★ 추천 성공 시 플래그 초기화
       );
       print('[HomeController] ✅ 상태 업데이트 완료: isLoadingRecommendations=false, hasRecentRecommendation=${recommendations.hasRecentRecommendation}, lastRecommendedAt=${recommendations.lastRecommendedAt}');
     } catch (e, stackTrace) {
@@ -333,7 +343,6 @@ class HomeController extends StateNotifier<HomeState> {
       isLoadingRecommendations: false,
       lastRecommendedAt: recommendations.lastRecommendedAt,
       hasRecentRecommendation: recommendations.hasRecentRecommendation,
-      petProfileUpdated: false, // ★ 추천 성공 시 플래그 초기화
     );
   }
   

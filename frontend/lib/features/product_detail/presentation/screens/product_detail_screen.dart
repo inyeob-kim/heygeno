@@ -39,6 +39,8 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
+  int? _lastHandledRevision;  // 마지막으로 처리한 profileRevision
+  
   @override
   void initState() {
     super.initState();
@@ -47,19 +49,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       final controller = ref.read(productDetailControllerProvider(widget.productId).notifier);
       controller.loadProduct(widget.productId);
       
-      // 맞춤 점수 로드 (petId가 있을 때만)
+      // ✅ 화면 진입 시 놓친 업데이트 복구
       final homeState = ref.read(homeControllerProvider);
-      final petId = homeState.petSummary?.petId;
-      if (petId != null) {
-        controller.loadMatchScore(widget.productId, petId);
-      }
+      _maybeRecalculate(homeState);
     });
+  }
+  
+  /// 맞춤 점수 재계산 (revision 기반)
+  void _maybeRecalculate(HomeState state) {
+    final petId = state.petSummary?.petId;
+    if (petId == null) {
+      print('[ProductDetailScreen] ⚠️ petId가 null이어서 맞춤 점수 재계산 스킵');
+      return;
+    }
+
+    final revision = state.profileRevision;
+
+    // 이미 처리한 revision이면 무시
+    if (_lastHandledRevision == revision) {
+      print('[ProductDetailScreen] ℹ️ 이미 처리한 revision ($revision) - 스킵');
+      return;
+    }
+
+    _lastHandledRevision = revision;
+
+    print('[ProductDetailScreen] ✅ 맞춤 점수 재계산 시작');
+    print('[ProductDetailScreen]   - productId: ${widget.productId}');
+    print('[ProductDetailScreen]   - petId: $petId');
+    print('[ProductDetailScreen]   - revision: $revision');
+
+    final controller = ref.read(
+      productDetailControllerProvider(widget.productId).notifier
+    );
+    controller.loadMatchScore(widget.productId, petId);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productDetailControllerProvider(widget.productId));
     final homeState = ref.watch(homeControllerProvider);
+    
+    // ✅ 화면 열린 상태에서 업데이트 감지
+    ref.listen<HomeState>(
+      homeControllerProvider,
+      (previousState, currentState) {
+        _maybeRecalculate(currentState);
+      },
+    );
     
     // 에러 메시지 표시
     ref.listen<String?>(productDetailControllerProvider(widget.productId).select((s) => s.error), (previous, next) {

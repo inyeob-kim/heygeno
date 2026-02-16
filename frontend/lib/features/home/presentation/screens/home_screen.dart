@@ -1444,7 +1444,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isCurrentPetRecommendation = recommendations?.petId == petSummary.petId;
     final hasRecommendations = isCurrentPetRecommendation && recommendations != null && recommendations.items.isNotEmpty;
     final isEmptyResult = isCurrentPetRecommendation && recommendations != null && recommendations.items.isEmpty && !state.isLoadingRecommendations;
-    final isProfileUpdated = state.petProfileUpdated;
     final petName = petSummary.name;
     final topRecommendation = hasRecommendations ? recommendations!.items[0] : null;
     
@@ -1463,25 +1462,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           
-          // 프로필 업데이트 안내 (조건부)
-          if (isProfileUpdated) ...[
-            Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                  "✨ $petName 프로필이 업데이트됐어요!",
-                            style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                    fontSize: 16,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          
           // 빈 추천 결과 처리 (로딩 완료 후 결과가 없는 경우)
           if (isEmptyResult) ...[
             _buildEmptyRecommendationState(context, recommendations?.message),
@@ -1490,14 +1470,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (hasRecommendations && topRecommendation != null) ...[
               _buildRecommendedProductCard(context, topRecommendation),
               const SizedBox(height: AppSpacing.md),
-            ] else if (!isProfileUpdated) ...[
-              // 프로필 업데이트가 아닐 때만 안내 문구 표시
-                          Text(
+            ] else ...[
+              // 안내 문구 표시
+              Text(
                 "알레르기, 나이, 건강 고민만 알려주세요!\n바로 맞춤 사료 추천해드릴게요.",
-                            style: AppTypography.body.copyWith(
+                style: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
-                      ),
-                    ),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
             ],
             

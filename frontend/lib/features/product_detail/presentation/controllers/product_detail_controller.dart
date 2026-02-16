@@ -101,24 +101,23 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // 1. 기본 제품 정보는 먼저 로드 (UI에 필수)
       final product = await _productRepository.getProduct(productId);
       state = state.copyWith(
-        isLoading: false,
+        isLoading: false,  // 기본 정보 로드 완료 시 로딩 해제
         product: product,
       );
       
-      // 최신 가격 불러오기 (껍데기만)
-      await loadLatestPrice(productId);
+      // 2. 나머지 작업들은 병렬로 실행
+      // 각 작업의 에러를 독립적으로 처리하여 하나가 실패해도 나머지는 계속 진행
+      await Future.wait([
+        loadLatestPrice(productId),
+        loadIngredientAnalysis(productId),
+        _checkFavoriteStatus(productId),
+      ], eagerError: false);  // eagerError: false = 하나 실패해도 나머지 계속
       
-      // 성분 분석 데이터 로드 (임시 데이터)
-      await loadIngredientAnalysis(productId);
-      
-      // 찜 상태 확인
-      await _checkFavoriteStatus(productId);
-      
-      // 맞춤 점수 로드 (petId가 있을 때만)
-      // petId는 loadMatchScore에서 HomeController를 통해 가져옴
     } catch (e) {
+      // 제품 기본 정보 로드 실패 시에만 에러 처리
       final failure = e is Exception
           ? handleException(e)
           : ServerFailure('알 수 없는 오류가 발생했습니다: ${e.toString()}');
@@ -145,18 +144,25 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
   Future<void> loadLatestPrice(String productId) async {
     state = state.copyWith(isLoadingLatestPrice: true);
     
-    // TODO: 실제 API 호출로 최신 가격 및 평균 가격 불러오기
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // 임시 데이터
-    state = state.copyWith(
-      isLoadingLatestPrice: false,
-      currentPrice: 29000, // TODO: 실제 최신 가격
-      averagePrice: 50000, // TODO: 실제 평균 가격 (14일)
-      minPrice: 28000, // TODO: 실제 최저가
-      maxPrice: 52000, // TODO: 실제 최고가
-      purchaseUrl: 'https://www.coupang.com/vp/products/123456', // TODO: 실제 구매 링크
-    );
+    try {
+      // TODO: 실제 API 호출로 최신 가격 및 평균 가격 불러오기
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // 임시 데이터
+      state = state.copyWith(
+        isLoadingLatestPrice: false,
+        currentPrice: 29000, // TODO: 실제 최신 가격
+        averagePrice: 50000, // TODO: 실제 평균 가격 (14일)
+        minPrice: 28000, // TODO: 실제 최저가
+        maxPrice: 52000, // TODO: 실제 최고가
+        purchaseUrl: 'https://www.coupang.com/vp/products/123456', // TODO: 실제 구매 링크
+      );
+    } catch (e) {
+      // 에러 발생 시 로딩만 해제하고 기본값 유지
+      print('[ProductDetailController] 가격 정보 로드 실패: $e');
+      state = state.copyWith(isLoadingLatestPrice: false);
+      // 가격 정보는 null로 유지 (UI에서 처리)
+    }
   }
 
   /// 관심 사료 추가/제거 토글
@@ -202,38 +208,43 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
 
   /// 성분 분석 데이터 로드 (임시 데이터)
   Future<void> loadIngredientAnalysis(String productId) async {
-    // TODO: 실제 API 호출로 성분 분석 데이터 불러오기
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // 임시 데이터 (나중에 실제 API 응답으로 대체)
-    final analysisData = IngredientAnalysisData(
-      mainIngredients: [
-        '닭고기',
-        '옥수수',
-        '쌀',
-        '동물성 지방',
-        '비트펄프',
-        '계란',
-        '어분',
-        '소맥분',
-      ],
-      nutritionFacts: {
-        '조단백질': 28.0,
-        '조지방': 15.0,
-        '조섬유': 3.5,
-        '수분': 10.0,
-        '칼슘': 1.2,
-        '인': 1.0,
-      },
-      allergens: [
-        '닭고기',
-        '계란',
-        '옥수수',
-      ],
-      description: '고품질 단백질과 필수 영양소가 균형있게 함유된 사료입니다. 알레르기 유발 성분이 포함되어 있으니 주의하세요.',
-    );
-    
-    state = state.copyWith(ingredientAnalysis: analysisData);
+    try {
+      // TODO: 실제 API 호출로 성분 분석 데이터 불러오기
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // 임시 데이터 (나중에 실제 API 응답으로 대체)
+      final analysisData = IngredientAnalysisData(
+        mainIngredients: [
+          '닭고기',
+          '옥수수',
+          '쌀',
+          '동물성 지방',
+          '비트펄프',
+          '계란',
+          '어분',
+          '소맥분',
+        ],
+        nutritionFacts: {
+          '조단백질': 28.0,
+          '조지방': 15.0,
+          '조섬유': 3.5,
+          '수분': 10.0,
+          '칼슘': 1.2,
+          '인': 1.0,
+        },
+        allergens: [
+          '닭고기',
+          '계란',
+          '옥수수',
+        ],
+        description: '고품질 단백질과 필수 영양소가 균형있게 함유된 사료입니다. 알레르기 유발 성분이 포함되어 있으니 주의하세요.',
+      );
+      
+      state = state.copyWith(ingredientAnalysis: analysisData);
+    } catch (e) {
+      print('[ProductDetailController] 성분 분석 로드 실패: $e');
+      // 에러 발생해도 기본값(null) 유지
+    }
   }
 
   Future<void> createTracking(String productId, String petId) async {
@@ -266,20 +277,34 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
 
   /// 맞춤 점수 로드
   Future<void> loadMatchScore(String productId, String petId) async {
+    print('[ProductDetailController] 🎯 loadMatchScore 시작');
+    print('[ProductDetailController]   - productId: $productId');
+    print('[ProductDetailController]   - petId: $petId');
+    
     state = state.copyWith(isLoadingMatchScore: true, error: null);
 
     try {
+      print('[ProductDetailController] 📡 API 호출 시작: getProductMatchScore');
       final matchScore = await _productRepository.getProductMatchScore(
         productId: productId,
         petId: petId,
       );
       
+      print('[ProductDetailController] ✅ API 호출 성공');
+      print('[ProductDetailController]   - matchScore: ${matchScore.matchScore}');
+      print('[ProductDetailController]   - safetyScore: ${matchScore.safetyScore}');
+      print('[ProductDetailController]   - fitnessScore: ${matchScore.fitnessScore}');
+      
       state = state.copyWith(
         isLoadingMatchScore: false,
         matchScore: matchScore,
       );
-    } catch (e) {
-      print('[ProductDetailController] 맞춤 점수 로드 실패: $e');
+      
+      print('[ProductDetailController] ✅ loadMatchScore 완료 - 상태 업데이트됨');
+    } catch (e, stackTrace) {
+      print('[ProductDetailController] ❌ 맞춤 점수 로드 실패');
+      print('[ProductDetailController]   - 에러: $e');
+      print('[ProductDetailController]   - StackTrace: $stackTrace');
       // 에러가 발생해도 기본값(null)로 설정 (점수 섹션 숨김)
       state = state.copyWith(
         isLoadingMatchScore: false,
