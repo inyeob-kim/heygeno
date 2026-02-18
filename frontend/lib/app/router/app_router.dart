@@ -21,6 +21,7 @@ import '../../features/me/presentation/screens/privacy_settings_screen.dart';
 import '../../features/me/presentation/screens/help_screen.dart';
 import '../../features/me/presentation/screens/contact_screen.dart';
 import '../../features/me/presentation/screens/app_info_screen.dart';
+import '../../features/me/presentation/screens/recommendation_history_screen.dart';
 import '../../features/home/presentation/screens/recommendation_animation_screen.dart';
 import '../../features/home/presentation/screens/recommendation_detail_screen.dart';
 import '../../onboarding_v2/onboarding_flow.dart';
@@ -198,6 +199,10 @@ GoRouter _createRouter(Ref ref) {
                   GoRoute(
                     path: 'app-info',
                     builder: (context, state) => const AppInfoScreen(),
+                  ),
+                  GoRoute(
+                    path: 'recommendation-history',
+                    builder: (context, state) => const RecommendationHistoryScreen(),
                   ),
                 ],
               ),

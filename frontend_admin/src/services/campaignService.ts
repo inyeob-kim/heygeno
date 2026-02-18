@@ -7,7 +7,7 @@ import { Campaign, Reward, Impression } from '../data/mockCampaigns';
 export interface CreateCampaignData {
   key: string;
   kind: 'EVENT' | 'NOTICE' | 'AD' | 'MISSION';
-  placement: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER';
+  placement: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER' | 'BENEFITS_PAGE';
   template: string;
   priority: number;
   is_enabled: boolean;

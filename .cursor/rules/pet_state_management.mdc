@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+## 프로젝트 규칙: Flutter + Riverpod 상태 관리
+- 상태는 Riverpod로 중앙 관리
+- 전역 컨텍스트 변경(펫 전환 등)은 ActivePetContext로 단일화
+- 파생 데이터는 반드시 derived key (productId + petId + revision) 사용
+- 수동 refetch/listen 최소화, provider 의존성으로 자동 갱신 유도
+- family provider 적극 활용

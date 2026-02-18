@@ -19,12 +19,14 @@ class CampaignPlacement(str, enum.Enum):
     HOME_MODAL = "HOME_MODAL"
     HOME_BANNER = "HOME_BANNER"
     NOTICE_CENTER = "NOTICE_CENTER"
+    BENEFITS_PAGE = "BENEFITS_PAGE"
 
 
 class CampaignTemplate(str, enum.Enum):
     IMAGE_TOP = "image_top"
     NO_IMAGE = "no_image"
     PRODUCT_SPOTLIGHT = "product_spotlight"
+    MISSION_CARD = "mission_card"
 
 
 class Campaign(Base, TimestampMixin):

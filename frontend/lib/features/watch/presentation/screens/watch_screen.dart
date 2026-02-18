@@ -47,7 +47,11 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '찜한 사료', showBackButton: false),
+            AppTopBar(
+              title: '찜한 사료',
+              showBackButton: false,
+              backgroundColor: Colors.white,
+            ),
             Expanded(
               child: _buildBody(state),
             ),

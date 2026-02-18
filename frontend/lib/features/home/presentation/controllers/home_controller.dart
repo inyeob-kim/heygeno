@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart';
 import '../../../../data/models/recommendation_dto.dart';
 import '../../../../data/models/recommendation_extensions.dart';
 import '../../../../data/models/pet_summary_dto.dart';
+import '../../../../data/models/campaign_dto.dart';
 import '../../../../domain/services/pet_service.dart';
 import '../../../../domain/services/recommendation_service.dart';
 import '../../../../domain/services/user_service.dart';
+import '../../../../domain/services/campaign_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
+import '../../../../core/providers/active_pet_context_provider.dart';
 
 /// 홈 화면 상태 타입 (A/B/C 분기)
 enum HomeStateType {
@@ -29,8 +32,12 @@ class HomeState {
   final DateTime? lastRecommendedAt;
   final bool hasRecentRecommendation;
   final String? userNickname; // 유저 닉네임
-  // 프로필 업데이트 감지 (revision 기반)
-  final int profileRevision; // 프로필 변경 버전 (증가할수록 최신)
+    // 프로필 업데이트 감지 (revision 기반)
+    final int profileRevision; // 프로필 변경 버전 (증가할수록 최신)
+    // 캠페인
+    final List<CampaignDto>? homeModalCampaigns; // 홈 모달 캠페인 목록
+    final List<CampaignDto>? homeBannerCampaigns; // 홈 배너 캠페인 목록
+    final bool isLoadingCampaigns; // 캠페인 로딩 중
 
   HomeState({
     HomeStateType? stateType,
@@ -42,6 +49,9 @@ class HomeState {
     this.hasRecentRecommendation = false,
     this.userNickname,
     this.profileRevision = 0,
+    this.homeModalCampaigns,
+    this.homeBannerCampaigns,
+    this.isLoadingCampaigns = false,
   }) : stateType = stateType ?? HomeStateType.loading;
 
   bool get hasPet => stateType == HomeStateType.hasPet && petSummary != null;
@@ -71,6 +81,9 @@ class HomeState {
     bool? hasRecentRecommendation,
     String? userNickname,
     int? profileRevision,
+    List<CampaignDto>? homeModalCampaigns,
+    List<CampaignDto>? homeBannerCampaigns,
+    bool? isLoadingCampaigns,
   }) {
     return HomeState(
       stateType: stateType ?? this.stateType,
@@ -82,6 +95,9 @@ class HomeState {
       hasRecentRecommendation: hasRecentRecommendation ?? this.hasRecentRecommendation,
       userNickname: userNickname ?? this.userNickname,
       profileRevision: profileRevision ?? this.profileRevision,
+      homeModalCampaigns: homeModalCampaigns ?? this.homeModalCampaigns,
+      homeBannerCampaigns: homeBannerCampaigns ?? this.homeBannerCampaigns,
+      isLoadingCampaigns: isLoadingCampaigns ?? this.isLoadingCampaigns,
     );
   }
 }
@@ -90,12 +106,14 @@ class HomeController extends StateNotifier<HomeState> {
   final RecommendationService _recommendationService;
   final PetService _petService;
   final UserService _userService;
+  final CampaignService _campaignService;
   final Ref _ref;
 
   HomeController(
     this._recommendationService,
     this._petService,
     this._userService,
+    this._campaignService,
     this._ref,
   ) : super(HomeState(stateType: HomeStateType.loading));
 
@@ -139,14 +157,23 @@ class HomeController extends StateNotifier<HomeState> {
 
       // 3. 펫 전환 감지 (기존 펫과 다른 펫인 경우)
       final currentPetId = _ref.read(currentPetIdProvider);
-      final isPetChanged = currentPetId != null && currentPetId != petSummary.petId;
+      final activeContext = _ref.read(activePetContextProvider);
+      final isPetChanged = (currentPetId != null && currentPetId != petSummary.petId) ||
+                          (activeContext.petId != null && activeContext.petId != petSummary.petId);
       
       if (isPetChanged) {
         print('[HomeController] 🔄 펫 전환 감지: $currentPetId -> ${petSummary.petId}');
       }
       
-      // 4. Pet ID를 provider에 저장
+      // 4. Pet ID를 provider에 저장 (하위 호환성)
       _ref.read(currentPetIdProvider.notifier).state = petSummary.petId;
+
+      // 4-1. ActivePetContext 업데이트 (전역 단일 상태)
+      _ref.read(activePetContextProvider.notifier).setPet(
+        petId: petSummary.petId,
+        petSummary: petSummary,
+        initialRevision: isPetChanged ? 0 : state.profileRevision,
+      );
 
       // 5. B 상태: pet 존재 (추천은 버튼 클릭 시 로드)
       // 펫 전환 시 기존 추천 결과 초기화
@@ -158,7 +185,12 @@ class HomeController extends StateNotifier<HomeState> {
         hasRecentRecommendation: isPetChanged ? false : state.hasRecentRecommendation,
         lastRecommendedAt: isPetChanged ? null : state.lastRecommendedAt,
         userNickname: nickname,
+        profileRevision: isPetChanged ? 0 : state.profileRevision, // ActivePetContext와 동기화
       );
+      
+      // 홈 모달 및 배너 캠페인 로드
+      _loadHomeModalCampaigns();
+      _loadHomeBannerCampaigns();
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
@@ -173,68 +205,133 @@ class HomeController extends StateNotifier<HomeState> {
   /// 펫 프로필만 새로고침 (프로필 업데이트 후 호출)
   Future<void> refreshPetSummary() async {
     print('[HomeController] 🔄 refreshPetSummary() 시작');
-    final oldPetId = state.petSummary?.petId;
-    print('[HomeController]   - 기존 petId: $oldPetId');
-    print('[HomeController]   - 기존 petName: ${state.petSummary?.name}');
     
     try {
-      final oldPetSummary = state.petSummary;
-      final newPetSummary = await _petService.getPrimaryPetSummary();
-      final newPetId = newPetSummary?.petId;
+      // 1. 서버에서 항상 최신 petSummary 받아오기
+      final newSummary = await _petService.getPrimaryPetSummary();
       
-      print('[HomeController] 📡 API 호출 완료');
-      print('[HomeController]   - 새 petId: $newPetId');
-      print('[HomeController]   - 새 petName: ${newPetSummary?.name}');
-      print('[HomeController]   - petId 변경 여부: ${oldPetId != newPetId}');
-      
-      if (newPetSummary == null) {
+      if (newSummary == null) {
         print('[HomeController] ⚠️ 펫 프로필이 없음 - noPet 상태로 변경');
         state = state.copyWith(
           stateType: HomeStateType.noPet,
           petSummary: null,
         );
+        _ref.read(activePetContextProvider.notifier).clearPet();
         return;
       }
-
-      // 펫 ID 변경 감지 (다른 펫으로 전환된 경우)
-      final isPetChanged = oldPetSummary != null && oldPetSummary.petId != newPetSummary.petId;
       
-      // 프로필 변경 감지 (같은 펫의 프로필이 변경된 경우)
+      print('[HomeController] 📡 API 호출 완료');
+      print('[HomeController]   - 새 summary: weight=${newSummary.weightKg}kg, concerns=${newSummary.healthConcerns.length}개, allergies=${newSummary.foodAllergies.length}개');
+      print('[HomeController]   - 새 summary 상세: weight=${newSummary.weightKg}, concerns=${newSummary.healthConcerns}, allergies=${newSummary.foodAllergies}');
+      
+      // 2. updatePetSummary() 전에 현재 상태 읽기 (비교용 - 이전 상태 캡처)
+      final beforeUpdate = _ref.read(activePetContextProvider);
+      final oldActiveSummary = beforeUpdate.petSummary;
+      final oldPetId = beforeUpdate.petId;
+      final oldRevision = beforeUpdate.profileRevision;
+      
+      // activePetContext.petSummary가 null이면 HomeState.petSummary를 사용 (대체 비교 기준)
+      final oldSummary = oldActiveSummary ?? state.petSummary;
+      
+      print('[HomeController] 📊 업데이트 전 상태:');
+      print('[HomeController]   - activePetContext.petId: $oldPetId');
+      print('[HomeController]   - activePetContext.revision: $oldRevision');
+      print('[HomeController]   - activePetContext.petSummary: ${oldActiveSummary != null ? "있음" : "null"}');
+      print('[HomeController]   - HomeState.petSummary: ${state.petSummary != null ? "있음" : "null"}');
+      if (oldSummary != null) {
+        print('[HomeController]   - 이전 summary (비교용): weight=${oldSummary.weightKg}kg, concerns=${oldSummary.healthConcerns}, allergies=${oldSummary.foodAllergies}');
+      } else {
+        print('[HomeController]   - 이전 summary (비교용): null');
+      }
+      
+      // 3. 먼저 summary를 무조건 업데이트 (null 방지 + 변경 추적 가능)
+      print('[HomeController] 🔄 updatePetSummary() 호출 - petSummary 먼저 업데이트');
+      _ref.read(activePetContextProvider.notifier).updatePetSummary(newSummary);
+      
+      // 4. 펫 ID 변경 감지 (다른 펫으로 전환된 경우)
+      final isPetChanged = oldPetId != null && oldPetId != newSummary.petId;
+      if (isPetChanged) {
+        print('[HomeController] 🔄 펫 전환 감지: $oldPetId -> ${newSummary.petId}');
+      }
+      
+      // 5. 프로필 변경 감지: 이전 summary(oldSummary)와 새 summary(newSummary) 비교
       bool isProfileChanged = false;
-      if (oldPetSummary != null && !isPetChanged) {
-        isProfileChanged = _petService.hasProfileChanged(oldPetSummary, newPetSummary);
+      
+      if (isPetChanged) {
+        print('[HomeController] ℹ️ 펫 전환이므로 프로필 변경 감지 스킵');
+      } else if (oldSummary != null && oldSummary.petId == newSummary.petId) {
+        // 같은 펫의 프로필이 변경되었는지 확인 (oldSummary가 있는 경우)
+        print('[HomeController] 🔍 프로필 변경 감지 시작 (같은 펫: ${newSummary.petId}, oldSummary 있음)');
+        isProfileChanged = _hasProfileChanged(oldSummary, newSummary);
+        
         if (isProfileChanged) {
-          print('[HomeController] 📋 프로필 변경 감지:');
-          print('  - 체중: ${oldPetSummary.weightKg}kg -> ${newPetSummary.weightKg}kg');
-          print('  - 중성화: ${oldPetSummary.isNeutered} -> ${newPetSummary.isNeutered}');
-          print('  - 건강고민: ${oldPetSummary.healthConcerns} -> ${newPetSummary.healthConcerns}');
-          print('  - 알레르기: ${oldPetSummary.foodAllergies} -> ${newPetSummary.foodAllergies}');
+          print('[HomeController] 🔥 프로필 변경 감지됨! → revision 증가 필요');
+        } else {
+          print('[HomeController] ✅ 프로필 변경 없음 (모든 필드 동일)');
         }
+      } else if (oldSummary == null && oldPetId != null && oldPetId == newSummary.petId) {
+        // oldSummary가 null이지만 oldPetId가 있고 newSummary.petId와 같다면
+        // → 프로필 업데이트 후 refreshPetSummary()가 호출된 경우로 간주
+        print('[HomeController] 🔍 프로필 변경 감지 시작 (같은 펫: ${newSummary.petId}, oldSummary null이지만 oldPetId 있음)');
+        print('[HomeController]   - oldSummary가 null이지만 oldPetId($oldPetId)와 newPetId(${newSummary.petId})가 같음');
+        print('[HomeController]   - 프로필 업데이트 후 refreshPetSummary() 호출로 간주 → revision 증가');
+        isProfileChanged = true;
+      } else if (oldSummary == null && oldPetId == null) {
+        // oldSummary도 null이고 oldPetId도 null → 첫 설정
+        print('[HomeController] ⚠️ 이전 summary와 petId가 모두 null → 첫 설정으로 간주 (revision 증가 스킵)');
+      } else if (oldSummary != null && oldSummary.petId != newSummary.petId) {
+        print('[HomeController] ⚠️ petId 불일치: ${oldSummary.petId} != ${newSummary.petId}');
+      } else {
+        print('[HomeController] ⚠️ 예상치 못한 상태: oldSummary=${oldSummary != null ? "있음" : "null"}, oldPetId=$oldPetId, newPetId=${newSummary.petId}');
       }
       
-      if (isPetChanged && oldPetSummary != null) {
-        print('[HomeController] 🔄 펫 전환 감지: ${oldPetSummary.name} -> ${newPetSummary.name}');
+      // 7. 프로필 변경이 감지되면 반드시 updateProfile() 호출하여 revision 증가
+      if (isProfileChanged) {
+        print('[HomeController] 🔥 프로필 변경 감지됨! revision 증가 트리거');
+        print('[HomeController]   - 이전 revision: $oldRevision');
+        _ref.read(activePetContextProvider.notifier).updateProfile(
+          petId: newSummary.petId,
+          petSummary: newSummary,
+        );
+        final afterRevision = _ref.read(activePetContextProvider).profileRevision;
+        print('[HomeController]   - 새 revision: $afterRevision');
+        print('[HomeController]   - revision 증가: $oldRevision → $afterRevision');
       }
-
-      // Pet ID 업데이트
-      print('[HomeController] 🔄 currentPetIdProvider 업데이트: ${newPetSummary.petId}');
-      _ref.read(currentPetIdProvider.notifier).state = newPetSummary.petId;
       
-      // profileRevision 증가 (펫 전환 또는 프로필 변경 시)
+      // 8. Pet ID 업데이트 (하위 호환성)
+      print('[HomeController] 🔄 currentPetIdProvider 업데이트: ${newSummary.petId}');
+      _ref.read(currentPetIdProvider.notifier).state = newSummary.petId;
+      
+      // 9. ActivePetContext 최종 업데이트 (petId 등 나머지 상태 동기화)
+      if (isPetChanged) {
+        print('[HomeController] 🔄 ActivePetContext.setPet() 호출 (펫 전환)');
+        _ref.read(activePetContextProvider.notifier).setPet(
+          petId: newSummary.petId,
+          petSummary: newSummary,
+          initialRevision: 0,
+        );
+      } else {
+        // 프로필 변경이 있으면 이미 updateProfile()에서 처리되었으므로 setPet()은 revision만 동기화
+        print('[HomeController] ℹ️ ActivePetContext.setPet() 호출 (프로필 변경: ${isProfileChanged ? "있음" : "없음"})');
+        _ref.read(activePetContextProvider.notifier).setPet(
+          petId: newSummary.petId,
+          petSummary: newSummary,
+          initialRevision: _ref.read(activePetContextProvider).profileRevision,
+        );
+      }
+      
+      // 10. HomeState 업데이트 (activePetContext와 동기화)
       final shouldIncrementRevision = isPetChanged || isProfileChanged;
-      final newRevision = shouldIncrementRevision ? state.profileRevision + 1 : state.profileRevision;
+      final finalContext = _ref.read(activePetContextProvider);
+      final newRevision = finalContext.profileRevision;
       
-      // 펫 프로필 업데이트 및 추천 결과 초기화
-      // (펫 전환 또는 프로필 변경 시 기존 추천은 부정확할 수 있음)
       print('[HomeController] 📝 HomeState 업데이트 시작');
       print('[HomeController]   - isPetChanged: $isPetChanged');
       print('[HomeController]   - isProfileChanged: $isProfileChanged');
-      print('[HomeController]   - oldPetId: $oldPetId');
-      print('[HomeController]   - newPetId: ${newPetSummary.petId}');
       print('[HomeController]   - profileRevision: ${state.profileRevision} -> $newRevision');
       
       state = state.copyWith(
-        petSummary: newPetSummary,
+        petSummary: newSummary,
         profileRevision: newRevision,
         // 펫 전환 또는 프로필 변경 시 기존 추천 무효화 (중요!)
         recommendations: shouldIncrementRevision ? null : state.recommendations,
@@ -245,13 +342,92 @@ class HomeController extends StateNotifier<HomeState> {
       print('[HomeController] ✅ 펫 프로필 새로고침 완료');
       print('[HomeController]   - 최종 petId: ${state.petSummary?.petId}');
       print('[HomeController]   - 최종 petName: ${state.petSummary?.name}');
-      print('[HomeController]   - profileRevision: ${state.profileRevision}');
+      print('[HomeController]   - 최종 profileRevision: ${state.profileRevision}');
+      print('[HomeController]   - 최종 activePetContext.revision: $newRevision');
     } catch (e) {
       debugPrint('refreshPetSummary error: $e');
       // 에러가 발생해도 기존 상태 유지
     }
   }
 
+
+  /// 프로필 변경 감지 (weight_kg, health_concerns, food_allergies 등 비교)
+  /// 
+  /// DeepCollectionEquality 대신 직접 비교 (순서 무관하게 리스트 비교)
+  bool _hasProfileChanged(PetSummaryDto oldPet, PetSummaryDto newPet) {
+    // 체중 비교 (0.1kg 이상 차이)
+    if ((oldPet.weightKg - newPet.weightKg).abs() > 0.1) {
+      print('[HomeController]   - 체중 변경 감지: ${oldPet.weightKg}kg -> ${newPet.weightKg}kg');
+      return true;
+    }
+    
+    // 건강 고민 리스트 비교 (순서 무관하게 비교)
+    if (!_listEqualsUnordered(oldPet.healthConcerns, newPet.healthConcerns)) {
+      print('[HomeController]   - 건강고민 변경 감지: ${oldPet.healthConcerns} -> ${newPet.healthConcerns}');
+      return true;
+    }
+    
+    // 음식 알레르기 리스트 비교 (순서 무관하게 비교)
+    if (!_listEqualsUnordered(oldPet.foodAllergies, newPet.foodAllergies)) {
+      print('[HomeController]   - 알레르기 변경 감지: ${oldPet.foodAllergies} -> ${newPet.foodAllergies}');
+      return true;
+    }
+    
+    // 중성화 여부 비교
+    if (oldPet.isNeutered != newPet.isNeutered) {
+      print('[HomeController]   - 중성화 변경 감지: ${oldPet.isNeutered} -> ${newPet.isNeutered}');
+      return true;
+    }
+    
+    // 나이 단계 비교
+    if (oldPet.ageStage != newPet.ageStage) {
+      print('[HomeController]   - 나이 단계 변경 감지: ${oldPet.ageStage} -> ${newPet.ageStage}');
+      return true;
+    }
+    
+    // 나이 개월 비교 (6개월 단위 변화 감지)
+    final oldAgeMonths = oldPet.ageMonths;
+    final newAgeMonths = newPet.ageMonths;
+    if (oldAgeMonths != null && newAgeMonths != null) {
+      final oldAgeStage = oldAgeMonths ~/ 6;
+      final newAgeStage = newAgeMonths ~/ 6;
+      if (oldAgeStage != newAgeStage) {
+        print('[HomeController]   - 나이 개월 변경 감지: ${oldAgeMonths}개월 -> ${newAgeMonths}개월 (단계: $oldAgeStage -> $newAgeStage)');
+        return true;
+      }
+    } else if (oldAgeMonths != newAgeMonths) {
+      print('[HomeController]   - 나이 개월 변경 감지: $oldAgeMonths -> $newAgeMonths');
+      return true;
+    }
+    
+    // 품종 코드 비교
+    if (oldPet.breedCode != newPet.breedCode) {
+      print('[HomeController]   - 품종 변경 감지: ${oldPet.breedCode} -> ${newPet.breedCode}');
+      return true;
+    }
+    
+    // 종 비교
+    if (oldPet.species != newPet.species) {
+      print('[HomeController]   - 종 변경 감지: ${oldPet.species} -> ${newPet.species}');
+      return true;
+    }
+    
+    // 기타 알레르기 텍스트 비교
+    if (oldPet.otherAllergies?.trim() != newPet.otherAllergies?.trim()) {
+      print('[HomeController]   - 기타 알레르기 변경 감지: ${oldPet.otherAllergies} -> ${newPet.otherAllergies}');
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// 리스트 비교 헬퍼 (순서 무관하게 비교)
+  bool _listEqualsUnordered(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    final aSet = a.toSet();
+    final bSet = b.toSet();
+    return aSet.length == bSet.length && aSet.every((item) => bSet.contains(item));
+  }
 
   /// 추천 데이터 로드
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 캐싱 정보 처리 추가
@@ -354,6 +530,37 @@ class HomeController extends StateNotifier<HomeState> {
       hasRecentRecommendation: false,
     );
   }
+
+  /// 홈 모달 캠페인 로드
+  Future<void> _loadHomeModalCampaigns() async {
+    try {
+      state = state.copyWith(isLoadingCampaigns: true);
+      final campaigns = await _campaignService.getHomeModalCampaigns();
+      state = state.copyWith(
+        homeModalCampaigns: campaigns,
+        isLoadingCampaigns: false,
+      );
+      print('[HomeController] 홈 모달 캠페인 로드 완료: ${campaigns.length}개');
+    } catch (e) {
+      print('[HomeController] 홈 모달 캠페인 로드 실패: $e');
+      state = state.copyWith(isLoadingCampaigns: false);
+      // 에러가 발생해도 홈 화면은 정상 동작하도록 함
+    }
+  }
+
+  /// 홈 배너 캠페인 로드
+  Future<void> _loadHomeBannerCampaigns() async {
+    try {
+      final campaigns = await _campaignService.getHomeBannerCampaigns();
+      state = state.copyWith(
+        homeBannerCampaigns: campaigns,
+      );
+      print('[HomeController] 홈 배너 캠페인 로드 완료: ${campaigns.length}개');
+    } catch (e) {
+      print('[HomeController] 홈 배너 캠페인 로드 실패: $e');
+      // 에러가 발생해도 홈 화면은 정상 동작하도록 함
+    }
+  }
 }
 
 final homeControllerProvider =
@@ -361,5 +568,6 @@ final homeControllerProvider =
   final recommendationService = ref.watch(recommendationServiceProvider);
   final petService = ref.watch(petServiceProvider);
   final userService = ref.watch(userServiceProvider);
-  return HomeController(recommendationService, petService, userService, ref);
+  final campaignService = ref.watch(campaignServiceProvider);
+  return HomeController(recommendationService, petService, userService, campaignService, ref);
 });

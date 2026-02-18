@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import 'app_bottom_tab_bar.dart';
+import '../../core/providers/modal_visibility_provider.dart';
 
 /// 하단 네비게이션 셸 위젯
-class BottomNavShell extends StatelessWidget {
+class BottomNavShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const BottomNavShell({
@@ -37,12 +39,15 @@ class BottomNavShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // 현재 브랜치 인덱스를 탭 인덱스로 변환 (안전하게 범위 체크)
     final currentBranchIndex = navigationShell.currentIndex;
     final safeTabIndex = (currentBranchIndex >= 0 && currentBranchIndex < _branchCount)
         ? currentBranchIndex
         : 0; // 기본값은 0 (홈)
+    
+    // 모달 표시 여부 확인 (모달이 표시되면 바텀탭 숨기기)
+    final isModalVisible = ref.watch(modalVisibilityProvider);
     
     return PopScope(
       canPop: false, // 바텀 탭에서는 뒤로가기로 탭 간 이동 불가
@@ -62,10 +67,12 @@ class BottomNavShell extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: navigationShell,
-        bottomNavigationBar: AppBottomTabBar(
-          currentIndex: safeTabIndex,
-          onTap: (index) => _onTabTapped(index, context),
-        ),
+        bottomNavigationBar: isModalVisible
+            ? null // 모달이 표시되면 바텀탭 숨기기
+            : AppBottomTabBar(
+                currentIndex: safeTabIndex,
+                onTap: (index) => _onTabTapped(index, context),
+              ),
       ),
     );
   }

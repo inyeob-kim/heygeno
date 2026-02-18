@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import users, pets, products, trackings, alerts, clicks, onboarding, admin, user_reco_prefs, missions, points
+from app.api.v1 import users, pets, products, trackings, alerts, clicks, onboarding, admin, user_reco_prefs, missions, points, campaigns
 
 api_router = APIRouter()
 
@@ -15,4 +15,5 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(user_reco_prefs.router, prefix="/user-reco-prefs", tags=["user-reco-prefs"])
 api_router.include_router(missions.router, prefix="/missions", tags=["missions"])
 api_router.include_router(points.router, prefix="/points", tags=["points"])
+api_router.include_router(campaigns.router, prefix="/campaigns", tags=["campaigns"])
 

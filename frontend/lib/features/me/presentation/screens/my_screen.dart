@@ -136,7 +136,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -162,9 +162,41 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (state.recentRecommendations.isNotEmpty)
-                              ..._buildRecentRecommendations(state.recentRecommendations)
-                            else
+                            if (state.recentRecommendations.isNotEmpty) ...[
+                              // 가장 최근 1개만 표시
+                              ..._buildRecentRecommendations(
+                                state.recentRecommendations.take(1).toList(),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              // 전체보기 버튼
+                              GestureDetector(
+                                onTap: () {
+                                  context.push('/me/recommendation-history');
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.md,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppColors.divider,
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '전체보기',
+                                      style: AppTypography.body.copyWith(
+                                        color: AppColors.primaryBlue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else
                               Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: Text(

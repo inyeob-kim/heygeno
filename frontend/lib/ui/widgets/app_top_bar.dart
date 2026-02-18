@@ -10,6 +10,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSettingsTap;
   final List<Widget>? actions;
   final bool showBackButton;
+  final Color? backgroundColor;
 
   const AppTopBar({
     super.key,
@@ -18,12 +19,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSettingsTap,
     this.actions,
     this.showBackButton = true, // 기본값은 true (뒤로가기 버튼 표시)
+    this.backgroundColor, // null이면 기본값(AppColors.background) 사용
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white, // White background (DESIGN_GUIDE v2.2)
+      color: backgroundColor ?? AppColors.background, // 기본값은 옅은 회색, 지정 시 해당 색상 사용
       height: kToolbarHeight,
       child: Padding(
         padding: const EdgeInsets.only(left: 15), // 왼쪽 패딩 15px

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,11 +22,14 @@ import '../../../../../data/repositories/product_repository.dart';
 import '../../../../../core/constants/pet_constants.dart';
 import '../widgets/icon_text_row.dart';
 import '../widgets/status_signal_card.dart';
-import '../../../../../data/models/pet_summary_extensions.dart';
+import '../widgets/campaign_modal.dart';
+import '../widgets/home_campaign_banner.dart';
 import '../../../../../data/models/recommendation_dto.dart';
+import '../../../../../data/models/campaign_dto.dart';
 import '../../../../../ui/widgets/pet_info_row.dart';
 import '../../../../../ui/widgets/health_concern_chips.dart';
 import '../../../../../ui/widgets/allergy_list.dart';
+import '../../../../../core/providers/modal_visibility_provider.dart';
 
 /// Toss-style 판단 UI Home Screen
 /// 실제 API 데이터를 사용하여 Pet 프로필 및 추천 상품 표시
@@ -46,6 +50,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isRecommendationExpanded = false; // 추천 결과 펼침 여부
   bool _hasAutoExpanded = false; // 자동 펼침 여부 (한 번만)
   DateTime? _lastRefreshTime; // 마지막 새로고침 시간
+  CampaignDto? _currentCampaign; // 현재 표시할 캠페인
+  bool _hasClosedModal = false; // 모달을 닫았는지 여부
+  bool _hasClosedBanner = false; // 배너를 닫았는지 여부
 
   @override
   void initState() {
@@ -219,14 +226,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _hasAutoExpanded = false;
         _isRecommendationExpanded = false;
       }
+      
+      // 캠페인 로드 완료 시 첫 번째 캠페인 표시 (모달을 닫지 않았을 때만)
+      if (next.homeModalCampaigns != null && 
+          next.homeModalCampaigns!.isNotEmpty &&
+          _currentCampaign == null &&
+          !_hasClosedModal) {
+        // 이전 상태와 비교하여 새로 로드된 경우에만 표시
+        final wasEmpty = previous?.homeModalCampaigns == null || 
+                        previous!.homeModalCampaigns!.isEmpty;
+        if (wasEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            if (_currentCampaign == null && !_hasClosedModal) {
+              setState(() {
+                _currentCampaign = next.homeModalCampaigns!.first;
+              });
+              // 모달 표시 시 바텀탭 숨기기
+              ref.read(modalVisibilityProvider.notifier).state = true;
+              print('[HomeScreen] 캠페인 모달 표시: ${_currentCampaign?.key}');
+            }
+          });
+        }
+      }
+      
+      // 배너 캠페인 로드 완료 시 - ref.listen에서는 아무것도 하지 않음
+      // build 메서드에서 조건부로 표시
     });
+    
+    // build 메서드에서도 확인 (초기 로드 시)
+    if (state.homeModalCampaigns != null && 
+        state.homeModalCampaigns!.isNotEmpty &&
+        _currentCampaign == null &&
+        !_hasClosedModal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_currentCampaign == null && !_hasClosedModal) {
+          setState(() {
+            _currentCampaign = state.homeModalCampaigns!.first;
+          });
+          // 모달 표시 시 바텀탭 숨기기
+          ref.read(modalVisibilityProvider.notifier).state = true;
+          print('[HomeScreen] 캠페인 모달 표시 (build): ${_currentCampaign?.key}');
+        }
+      });
+    }
+    
+    // 배너도 확인 (초기 로드 시)
+    // build 메서드에서는 상태 변수를 변경하지 않고, 조건부 렌더링만 수행
 
     // 위젯 트리 구조 통일: 모든 상태에서 동일한 Scaffold 구조 사용
     // _scrollController를 항상 사용하여 unmount/mount 시 안전성 확보
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
           children: [
             // 상단 고정 탭 (알림 아이콘 포함)
             AppTopBar(
@@ -311,7 +367,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 controller: _scrollController,
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(), // iOS 스타일 바운스
+                  // 모달이 떠있을 때는 스크롤 비활성화
+                  physics: _currentCampaign != null 
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(), // iOS 스타일 바운스
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       MediaQuery.of(context).size.width >= 640 ? 24 : 16, // 반응형: sm:px-6 (24px), 기본: px-4 (16px)
@@ -325,8 +384,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ],
+            ),
+          ),
         ),
-      ),
+        // 캠페인 모달 배경 오버레이 및 모달
+        if (_currentCampaign != null)
+          Stack(
+            children: [
+              // 어두운 배경 오버레이 (blur 효과)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentCampaign = null;
+                    _hasClosedModal = true;
+                  });
+                  // 모달 닫기 시 바텀탭 다시 표시
+                  ref.read(modalVisibilityProvider.notifier).state = false;
+                  print('[HomeScreen] 모달 닫기 (배경 클릭)');
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              ),
+              // 모달
+              CampaignModal(
+                campaign: _currentCampaign!,
+                onClose: () {
+                  setState(() {
+                    _currentCampaign = null;
+                    _hasClosedModal = true;
+                  });
+                  // 모달 닫기 시 바텀탭 다시 표시
+                  ref.read(modalVisibilityProvider.notifier).state = false;
+                  print('[HomeScreen] 모달 닫기 (닫기 버튼)');
+                },
+              ),
+            ],
+          ),
+      ],
     );
   }
   
@@ -385,6 +488,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SizedBox(height: AppSpacing.md),
         // 1️⃣ 펫 선택 + 상태 요약 (카드) - 이미 애니메이션 포함
         _buildPetSummaryHeader(context, petSummary, state),
+        // 배너 (펫 카드 아래)
+        // 상태 변수 대신 state에서 직접 가져오기 (더 안전)
+        if (!_hasClosedBanner &&
+            state.homeBannerCampaigns != null &&
+            state.homeBannerCampaigns!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md), // 펫 카드와 배너 사이 간격
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: _buildCampaignBanner(context, state.homeBannerCampaigns!.first),
+          ),
+          const SizedBox(height: AppSpacing.lg), // 배너와 다음 콘텐츠 사이 간격
+        ],
         // 홈 콘텐츠 - 애니메이션 포함
         _buildHomeContent(context, petSummary, state, topRecommendation),
       ],
@@ -833,6 +948,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
+
+  /// 캠페인 배너 빌드 (CampaignDto를 파싱하여 HomeCampaignBanner에 전달)
+  Widget _buildCampaignBanner(BuildContext context, CampaignDto campaign) {
+    final content = campaign.content;
+    final title = content['title'] as String? ?? '';
+    final description = content['description'] as String? ?? '';
+    final imageUrl = content['image_url'] as String?;
+    final cta = content['cta'] as Map<String, dynamic>?;
+    final ctaText = cta?['text'] as String? ?? '참여하기';
+    final ctaDeeplink = cta?['deeplink'] as String?;
+
+    // message는 description을 사용 (없으면 빈 문자열)
+    final message = description.isNotEmpty ? description : '';
+
+    return HomeCampaignBanner(
+      title: title,
+      message: message,
+      ctaText: ctaText,
+      imageUrl: imageUrl,
+      onTap: () {
+        if (ctaDeeplink != null && ctaDeeplink.isNotEmpty) {
+          context.push(ctaDeeplink);
+        }
+      },
+      onClose: () {
+        if (mounted) {
+          setState(() {
+            _hasClosedBanner = true;
+          });
+          print('[HomeScreen] 배너 닫기');
+        }
+      },
+    );
+  }
 
   /// 1️⃣ 펫 선택 + 상태 요약 (카드 스타일) - iOS 스타일
   Widget _buildPetSummaryHeader(BuildContext context, petSummary, state) {

@@ -324,8 +324,12 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
   }
 
   /// 맞춤 점수 로드 (재시도 로직 포함)
+  /// 
+  /// @deprecated 새로운 matchScoreProvider를 사용하세요.
+  /// 이 메서드는 하위 호환성을 위해 유지되지만, 새로운 코드에서는 사용하지 마세요.
+  @Deprecated('Use matchScoreProvider instead')
   Future<void> loadMatchScore(String productId, String petId, {int retryCount = 0}) async {
-    print('[ProductDetailController] 🎯 loadMatchScore 시작 (retryCount: $retryCount)');
+    print('[ProductDetailController] 🎯 loadMatchScore 시작 (retryCount: $retryCount) [DEPRECATED]');
     print('[ProductDetailController]   - productId: $productId');
     print('[ProductDetailController]   - petId: $petId');
     

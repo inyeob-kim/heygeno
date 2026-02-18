@@ -8,6 +8,7 @@ import { EditNutritionDialog } from './EditNutritionDialog';
 import { AddAllergenDialog } from './AddAllergenDialog';
 import { AddClaimDialog } from './AddClaimDialog';
 import { AddOfferDialog } from './AddOfferDialog';
+import { IngredientAnalysisPreviewModal } from './IngredientAnalysisPreviewModal';
 import { productService } from '../../services/productService';
 import { ApiError } from '../../config/api';
 
@@ -28,6 +29,8 @@ export function ProductDetail({ product, onUpdate, onDelete }: ProductDetailProp
   const [showAddOffer, setShowAddOffer] = useState(false);
   const [showEditOffer, setShowEditOffer] = useState(false);
   const [editingOffer, setEditingOffer] = useState<any>(null);
+  const [showAnalysisPreview, setShowAnalysisPreview] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
   
   // 상세 정보 상태
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -165,13 +168,27 @@ export function ProductDetail({ product, onUpdate, onDelete }: ProductDetailProp
   };
 
   const handleAnalyzeIngredients = async () => {
-    if (!product) return;
+    if (!product || !ingredientProfile) return;
+    
+    // 성분 텍스트가 없으면 에러
+    if (!ingredientProfile.ingredients_text || !ingredientProfile.ingredients_text.trim()) {
+      toast.error('먼저 성분 정보를 입력해주세요.');
+      return;
+    }
     
     try {
       setLoading(prev => ({ ...prev, analyze: true }));
-      await productService.analyzeAndSaveIngredient(product.id);
-      await loadProductDetails();
-      toast.success('성분 분석이 완료되었습니다.');
+      
+      // AI 분석만 수행 (저장하지 않음)
+      const result = await productService.analyzeIngredients({
+        ingredients_text: ingredientProfile.ingredients_text,
+        additives_text: ingredientProfile.additives_text || '',
+        species: product.species,
+      });
+      
+      // 분석 결과를 상태에 저장하고 미리보기 모달 표시
+      setAnalysisResult(result.parsed);
+      setShowAnalysisPreview(true);
     } catch (err) {
       const errorMessage = err instanceof ApiError 
         ? `분석 실패: ${err.status} ${err.statusText}`
@@ -179,6 +196,31 @@ export function ProductDetail({ product, onUpdate, onDelete }: ProductDetailProp
       toast.error(errorMessage);
     } finally {
       setLoading(prev => ({ ...prev, analyze: false }));
+    }
+  };
+
+  const handleSaveAnalysis = async () => {
+    if (!product || !analysisResult) return;
+    
+    try {
+      setLoading(prev => ({ ...prev, saveParsed: true }));
+      
+      // 분석된 parsed 데이터 저장
+      await productService.saveParsed(product.id, analysisResult);
+      
+      // 상세 정보 다시 로드
+      await loadProductDetails();
+      
+      toast.success('성분 분석 결과가 저장되었습니다.');
+      setShowAnalysisPreview(false);
+      setAnalysisResult(null);
+    } catch (err) {
+      const errorMessage = err instanceof ApiError 
+        ? `저장 실패: ${err.status} ${err.statusText}`
+        : '분석 결과 저장에 실패했습니다.';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(prev => ({ ...prev, saveParsed: false }));
     }
   };
 
@@ -783,6 +825,19 @@ export function ProductDetail({ product, onUpdate, onDelete }: ProductDetailProp
           onSave={async () => {
             await loadProductDetails();
           }}
+        />
+      )}
+
+      {/* Analysis Preview Modal */}
+      {showAnalysisPreview && analysisResult && (
+        <IngredientAnalysisPreviewModal
+          parsed={analysisResult}
+          onClose={() => {
+            setShowAnalysisPreview(false);
+            setAnalysisResult(null);
+          }}
+          onSave={handleSaveAnalysis}
+          saving={loading.saveParsed || false}
         />
       )}
     </>

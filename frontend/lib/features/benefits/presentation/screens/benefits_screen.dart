@@ -6,7 +6,7 @@ import '../../../../../ui/widgets/app_top_bar.dart';
 import '../../../../../ui/widgets/app_buttons.dart';
 import '../../../../../app/router/route_paths.dart';
 import '../../../../../domain/services/pet_service.dart';
-import '../../../../../domain/services/campaign_service.dart';
+import '../../../../../data/models/mission_dto.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
@@ -48,7 +48,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     // 로딩 상태
     if (state.isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Column(
             children: [
@@ -65,7 +65,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     // 에러 상태
     if (state.error != null && state.missions.isEmpty) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         body: EmptyStateWidget(
           title: state.error ?? '오류가 발생했습니다',
           buttonText: '다시 시도',
@@ -79,7 +79,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     final missions = state.missions;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -252,7 +252,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     );
   }
 
-  Widget _buildMissionCard(BuildContext context, MissionData mission) {
+  Widget _buildMissionCard(BuildContext context, MissionDto mission) {
     // 미션 타입별 아이콘 및 색상 매핑
     final icon = _getMissionIcon(mission.title);
     final missionColor = _getMissionColor(mission.title);
@@ -382,7 +382,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (!mission.completed && mission.total > 1) ...[
+                  if (!mission.completed && mission.targetValue > 1) ...[
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -394,7 +394,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '${mission.current}/${mission.total} 완료',
+                        '${mission.currentValue}/${mission.targetValue} 완료',
                         style: AppTypography.small.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -468,7 +468,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     };
   }
 
-  void _showMissionBottomSheet(BuildContext context, MissionData mission) {
+  void _showMissionBottomSheet(BuildContext context, MissionDto mission) {
     showCupertinoModalPopup(
       context: context,
       builder: (context) => _MissionBottomSheet(mission: mission),
@@ -478,7 +478,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
 
 /// 미션 상세 바텀 시트
 class _MissionBottomSheet extends ConsumerWidget {
-  final MissionData mission;
+  final MissionDto mission;
 
   const _MissionBottomSheet({required this.mission});
 
@@ -693,13 +693,13 @@ class _MissionBottomSheet extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${mission.current}/${mission.total} 완료',
+                                '${mission.currentValue}/${mission.targetValue} 완료',
                                 style: AppTypography.small.copyWith(
                                   color: AppColors.textSecondary,
                                 ),
                               ),
                               Text(
-                                '${((mission.current / mission.total) * 100).round()}%',
+                                '${((mission.currentValue / mission.targetValue) * 100).round()}%',
                                 style: AppTypography.small.copyWith(
                                   color: AppColors.primaryBlue, // 결정/정보용
                                   fontWeight: FontWeight.w600,
@@ -716,8 +716,8 @@ class _MissionBottomSheet extends ConsumerWidget {
                             ),
                             child: FractionallySizedBox(
                               alignment: Alignment.centerLeft,
-                              widthFactor: mission.total > 0
-                                  ? mission.current / mission.total
+                              widthFactor: mission.targetValue > 0
+                                  ? mission.currentValue / mission.targetValue
                                   : 0,
                               child: Container(
                                 decoration: BoxDecoration(

@@ -1,8 +1,8 @@
 export interface Campaign {
   id: string;
   key: string;
-  kind: 'EVENT' | 'NOTICE' | 'AD';
-  placement: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER';
+  kind: 'EVENT' | 'NOTICE' | 'AD' | 'MISSION';
+  placement: 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER' | 'BENEFITS_PAGE';
   template: string;
   priority: number;
   isEnabled: boolean;

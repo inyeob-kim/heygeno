@@ -236,11 +236,31 @@ export const productService = {
   },
 
   /**
-   * 성분 분석 및 저장
+   * 성분 분석 및 저장 (기존 - 하위 호환성 유지)
    */
   async analyzeAndSaveIngredient(productId: string): Promise<any> {
     return apiRequest(API_PATHS.PRODUCT_INGREDIENT_ANALYZE(productId), {
       method: 'POST',
+    });
+  },
+
+  /**
+   * 성분 분석만 수행 (저장하지 않음)
+   */
+  async analyzeIngredients(data: { ingredients_text: string; additives_text?: string; species?: string }): Promise<{ parsed: any }> {
+    return apiRequest(API_PATHS.ANALYZE_INGREDIENTS, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * 분석된 parsed 데이터 저장
+   */
+  async saveParsed(productId: string, parsed: any): Promise<any> {
+    return apiRequest(API_PATHS.PRODUCT_INGREDIENT_PARSED(productId), {
+      method: 'PUT',
+      body: JSON.stringify({ parsed }),
     });
   },
 

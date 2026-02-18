@@ -17,6 +17,8 @@ export const API_PATHS = {
   // 성분 정보
   PRODUCT_INGREDIENT: (id: string) => `/api/v1/admin/products/${id}/ingredient`,
   PRODUCT_INGREDIENT_ANALYZE: (id: string) => `/api/v1/admin/products/${id}/ingredient/analyze-and-save`,
+  PRODUCT_INGREDIENT_PARSED: (id: string) => `/api/v1/admin/products/${id}/ingredient/parsed`,
+  ANALYZE_INGREDIENTS: '/api/v1/admin/analyze-ingredients',
   
   // 영양 정보
   PRODUCT_NUTRITION: (id: string) => `/api/v1/admin/products/${id}/nutrition`,

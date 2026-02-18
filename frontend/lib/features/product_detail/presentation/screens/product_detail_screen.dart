@@ -24,6 +24,8 @@ import '../widgets/price_alert_settings_section.dart';
 import '../widgets/disclaimer_section.dart';
 import '../../../watch/presentation/controllers/watch_controller.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
+import '../providers/match_score_provider.dart';
+import '../../../../core/providers/active_pet_context_provider.dart';
 
 /// 실제 API 데이터를 사용하는 Product Detail Screen
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -39,8 +41,6 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
-  int? _lastHandledRevision;  // 마지막으로 처리한 profileRevision
-  bool _hasInitializedMatchScore = false; // 초기 맞춤 점수 로드 여부
   bool _isClaimsExpanded = false; // 기능성 클레임 접기/펼치기 상태
   
   @override
@@ -59,108 +59,31 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       final controller = ref.read(productDetailControllerProvider(widget.productId).notifier);
       await controller.loadProduct(widget.productId);
       
-      // ✅ 제품 정보 로드 완료 후 맞춤 점수 로드 (homeState가 준비되면 build에서 처리)
-      // build 메서드의 ref.listen에서 homeState 업데이트를 감지하여 처리
+      // ✅ matchScore는 matchScoreProvider가 activePetContext 변경을 자동으로 감지하여 처리
     });
-  }
-  
-  /// 맞춤 점수 재계산 (revision 기반)
-  void _maybeRecalculate(HomeState state) {
-    final petId = state.petSummary?.petId;
-    if (petId == null) {
-      print('[ProductDetailScreen] ⚠️ petId가 null이어서 맞춤 점수 재계산 스킵');
-      return;
-    }
-
-    final revision = state.profileRevision;
-
-    // 이미 처리한 revision이면 무시
-    if (_lastHandledRevision == revision) {
-      print('[ProductDetailScreen] ℹ️ 이미 처리한 revision ($revision) - 스킵');
-      return;
-    }
-
-    _lastHandledRevision = revision;
-
-    print('[ProductDetailScreen] ✅ 맞춤 점수 재계산 시작');
-    print('[ProductDetailScreen]   - productId: ${widget.productId}');
-    print('[ProductDetailScreen]   - petId: $petId');
-    print('[ProductDetailScreen]   - revision: $revision');
-
-    final controller = ref.read(
-      productDetailControllerProvider(widget.productId).notifier
-    );
-    controller.loadMatchScore(widget.productId, petId);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productDetailControllerProvider(widget.productId));
-    final homeState = ref.watch(homeControllerProvider);
+    final homeState = ref.watch(homeControllerProvider); // petName 표시용
+    final activePetContext = ref.watch(activePetContextProvider); // matchScore용
     
-    // ✅ 화면 열린 상태에서 업데이트 감지 및 초기 로드
-    ref.listen<HomeState>(
-      homeControllerProvider,
-      (previousState, currentState) {
-        print('[ProductDetailScreen] 🔔 homeState 변경 감지:');
-        print('[ProductDetailScreen]   - previousState.stateType: ${previousState?.stateType}');
-        print('[ProductDetailScreen]   - currentState.stateType: ${currentState.stateType}');
-        print('[ProductDetailScreen]   - currentState.hasPet: ${currentState.hasPet}');
-        print('[ProductDetailScreen]   - currentState.petSummary: ${currentState.petSummary != null ? "있음 (petId: ${currentState.petSummary?.petId})" : "없음"}');
-        
-        // petSummary가 처음 로드되거나 업데이트될 때 맞춤 점수 로드
-        final petId = currentState.petSummary?.petId;
-        if (petId != null) {
-          final previousPetId = previousState?.petSummary?.petId;
-          // petId가 새로 로드되었거나 변경된 경우에만 로드
-          if (previousPetId != petId || (previousPetId == null && !_hasInitializedMatchScore)) {
-            print('[ProductDetailScreen] ✅ homeState 업데이트 감지, 맞춤 점수 로드 시작');
-            print('[ProductDetailScreen]   - petId: $petId');
-            print('[ProductDetailScreen]   - previousPetId: $previousPetId');
-            print('[ProductDetailScreen]   - _hasInitializedMatchScore: $_hasInitializedMatchScore');
-            final controller = ref.read(productDetailControllerProvider(widget.productId).notifier);
-            // 이미 로딩 중이 아니고, matchScore가 없을 때만 로드
-            if (!state.isLoadingMatchScore && state.matchScore == null) {
-              controller.loadMatchScore(widget.productId, petId);
-              _hasInitializedMatchScore = true;
-            } else {
-              print('[ProductDetailScreen] ⚠️ 로드 스킵: isLoadingMatchScore=${state.isLoadingMatchScore}, matchScore=${state.matchScore != null}');
-            }
-          } else {
-            print('[ProductDetailScreen] ℹ️ petId 변경 없음 또는 이미 초기화됨');
-          }
-        } else {
-          print('[ProductDetailScreen] ⚠️ petId가 null - 맞춤 점수 로드 불가');
-        }
-        _maybeRecalculate(currentState);
-      },
-    );
-    
-    // ✅ build에서 직접 확인: homeState가 업데이트될 때마다 체크
-    // homeState가 hasPet 상태가 되면 맞춤 점수 로드
-    if (!_hasInitializedMatchScore && homeState.hasPet && homeState.petSummary != null) {
-      final petId = homeState.petSummary!.petId;
-      if (!state.isLoadingMatchScore && state.matchScore == null) {
-        print('[ProductDetailScreen] ✅ build에서 직접 맞춤 점수 로드 시작');
-        print('[ProductDetailScreen]   - petId: $petId');
-        print('[ProductDetailScreen]   - homeState.stateType: ${homeState.stateType}');
-        print('[ProductDetailScreen]   - homeState.hasPet: ${homeState.hasPet}');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_hasInitializedMatchScore) {
-            final controller = ref.read(productDetailControllerProvider(widget.productId).notifier);
-            controller.loadMatchScore(widget.productId, petId);
-            _hasInitializedMatchScore = true;
-          }
-        });
-      }
-    } else if (!_hasInitializedMatchScore) {
-      // homeState 상태 로깅
-      print('[ProductDetailScreen] ⏳ 맞춤 점수 로드 대기:');
-      print('[ProductDetailScreen]   - homeState.stateType: ${homeState.stateType}');
-      print('[ProductDetailScreen]   - homeState.hasPet: ${homeState.hasPet}');
-      print('[ProductDetailScreen]   - homeState.petSummary: ${homeState.petSummary != null ? "있음 (petId: ${homeState.petSummary?.petId})" : "없음"}');
-      print('[ProductDetailScreen]   - state.isLoadingMatchScore: ${state.isLoadingMatchScore}');
-      print('[ProductDetailScreen]   - state.matchScore: ${state.matchScore != null ? "있음" : "없음"}');
+    // ✅ activePetContext 기반 matchScore provider 사용
+    // activePetContext가 변경되면 자동으로 무효화·재계산됨
+    AsyncValue<MatchScoreResult> matchScoreAsync;
+    if (activePetContext.petId == null) {
+      // 펫이 없는 경우 에러 상태
+      print('[ProductDetailScreen] ⚠️ petId가 null - 에러 상태 반환');
+      matchScoreAsync = const AsyncValue.data(MatchScoreResult.error('no_pet'));
+    } else {
+      final key = (
+        productId: widget.productId,
+        petId: activePetContext.petId!,
+        revision: activePetContext.profileRevision,
+      );
+      print('[ProductDetailScreen] 🔑 MatchScoreQueryKey 생성: ${key.toDebugString()}');
+      matchScoreAsync = ref.watch(matchScoreProvider(key));
     }
     
     // 에러 메시지 표시
@@ -331,14 +254,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         },
                       ),
                       Divider(color: AppColors.border.withOpacity(0.3), thickness: 4, height: 1),
-                      // 맞춤 분석 섹션 (항상 표시)
-                      if (state.matchScore != null)
-                        MatchAnalysisCard(
-                          matchScore: state.matchScore!,
-                          petName: homeState.petSummary?.name,
-                        )
-                      else if (state.isLoadingMatchScore)
-                        Container(
+                      // 맞춤 분석 섹션 (항상 표시) - 새로운 provider 사용
+                      matchScoreAsync.when(
+                        data: (result) {
+                          if (result.isSuccess && result.matchScore != null) {
+                            return MatchAnalysisCard(
+                              matchScore: result.matchScore!,
+                              petName: activePetContext.petSummary?.name ?? homeState.petSummary?.name,
+                            );
+                          } else {
+                            // 에러 상태
+                            final petName = activePetContext.petSummary?.name ?? homeState.petSummary?.name;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                              width: double.infinity,
+                              color: AppColors.surface,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    petName != null
+                                        ? '$petName 맞춤 점수'
+                                        : '맞춤 점수',
+                                    style: AppTypography.body.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  Text(
+                                    activePetContext.petId == null
+                                        ? '펫 정보를 등록하면 맞춤 점수를 확인할 수 있습니다.'
+                                        : result.errorType == 'no_ingredient_info'
+                                            ? '이 상품의 성분 분석 정보가 아직 준비되지 않아 맞춤 점수를 제공할 수 없습니다.'
+                                            : '맞춤 점수를 계산할 수 없습니다.',
+                                    style: AppTypography.body.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                        loading: () => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                           width: double.infinity,
                           color: AppColors.surface,
@@ -352,10 +314,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               animate: true,
                             ),
                           ),
-                        )
-                      else
-                        // petId가 없거나 맞춤 점수를 로드할 수 없는 경우
-                        Container(
+                        ),
+                        error: (error, stackTrace) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                           width: double.infinity,
                           color: AppColors.surface,
@@ -363,8 +323,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                homeState.petSummary?.name != null
-                                    ? '${homeState.petSummary!.name} 맞춤 점수'
+                                (activePetContext.petSummary?.name ?? homeState.petSummary?.name) != null
+                                    ? '${activePetContext.petSummary?.name ?? homeState.petSummary?.name} 맞춤 점수'
                                     : '맞춤 점수',
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.textPrimary,
@@ -374,11 +334,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Text(
-                                homeState.petSummary == null
-                                    ? '펫 정보를 등록하면 맞춤 점수를 확인할 수 있습니다.'
-                                    : state.matchScoreError == 'no_ingredient_info'
-                                        ? '이 상품의 성분 분석 정보가 아직 준비되지 않아 맞춤 점수를 제공할 수 없습니다.'
-                                        : '맞춤 점수를 계산하는 중입니다...',
+                                '맞춤 점수를 불러오는 중 오류가 발생했습니다.',
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 14,
@@ -388,6 +344,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             ],
                           ),
                         ),
+                      ),
                       Divider(color: AppColors.border.withOpacity(0.3), thickness: 4, height: 1),
                       // 성분 분석 섹션 (주요 원료, 알레르기 성분) - 항상 표시
                       Container(
@@ -431,7 +388,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ],
                       // 면책 조항 및 안내 문구
                       DisclaimerSection(
-                        petName: homeState.petSummary?.name,
+                        petName: activePetContext.petSummary?.name ?? homeState.petSummary?.name,
                       ),
                     ],
                   ),

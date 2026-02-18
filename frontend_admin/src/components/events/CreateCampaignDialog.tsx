@@ -2,24 +2,29 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Campaign } from '../../data/mockCampaigns';
 import { toast } from 'sonner@2.0.3';
+import { campaignService } from '../../services/campaignService';
+import { ApiError } from '../../config/api';
 
 interface CreateCampaignDialogProps {
   onClose: () => void;
-  onCreate: (campaign: Omit<Campaign, 'id' | 'status'>) => void;
+  onCreate: (campaign: Campaign) => void;
 }
 
 export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialogProps) {
   const [formData, setFormData] = useState({
     key: '',
     kind: 'EVENT' as 'EVENT' | 'NOTICE' | 'AD' | 'MISSION',
-    placement: 'HOME_MODAL' as 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER',
-    template: 'full_screen_modal',
+    placement: 'HOME_MODAL' as 'HOME_MODAL' | 'HOME_BANNER' | 'NOTICE_CENTER' | 'BENEFITS_PAGE',
+    template: 'no_image' as 'image_top' | 'no_image' | 'product_spotlight' | 'mission_card',
     priority: 5,
     isEnabled: true,
     startAt: '',
     endAt: '',
     contentTitle: '',
     contentDescription: '',
+    contentImageUrl: '',
+    ctaText: '',
+    ctaDeeplink: '',
     // 미션 전용 필드
     targetValue: 1,
     rewardPoints: 0,
@@ -29,7 +34,7 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
     progressIncrement: 1,
   });
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!formData.key || !formData.startAt || !formData.endAt || !formData.contentTitle) {
       toast.error('필수 항목을 모두 입력하세요.');
       return;
@@ -45,6 +50,19 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
       description: formData.contentDescription,
     };
     
+    // 이미지 URL이 있으면 추가
+    if (formData.contentImageUrl) {
+      content.image_url = formData.contentImageUrl;
+    }
+    
+    // CTA 버튼 정보가 있으면 추가
+    if (formData.ctaText) {
+      content.cta = {
+        text: formData.ctaText,
+        deeplink: formData.ctaDeeplink || '',
+      };
+    }
+    
     // 미션인 경우 추가 필드
     if (formData.kind === 'MISSION') {
       content.target_value = formData.targetValue;
@@ -53,15 +71,16 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
       content.auto_claim = formData.autoClaim;
     }
     
+    // 백엔드는 snake_case를 기대하므로 변환
     const campaignData: any = {
       key: formData.key,
       kind: formData.kind,
       placement: formData.placement,
       template: formData.template,
       priority: formData.priority,
-      isEnabled: formData.isEnabled,
-      startAt: new Date(formData.startAt).toISOString(),
-      endAt: new Date(formData.endAt).toISOString(),
+      is_enabled: formData.isEnabled, // snake_case로 변환
+      start_at: new Date(formData.startAt).toISOString(), // snake_case로 변환
+      end_at: new Date(formData.endAt).toISOString(), // snake_case로 변환
       content,
     };
     
@@ -77,7 +96,21 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
       }];
     }
     
-    onCreate(campaignData);
+    // rules 기본값 추가
+    campaignData.rules = [];
+    
+    try {
+      // 백엔드 API 직접 호출
+      const newCampaign = await campaignService.createCampaign(campaignData);
+      onCreate(newCampaign);
+      toast.success('캠페인이 생성되었습니다.');
+    } catch (err) {
+      const errorMessage = err instanceof ApiError 
+        ? `생성 실패: ${err.status} ${err.statusText}`
+        : '캠페인 생성에 실패했습니다.';
+      toast.error(errorMessage);
+      console.error('캠페인 생성 실패:', err);
+    }
   };
 
   return (
@@ -139,6 +172,7 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
                 <option value="HOME_MODAL">HOME_MODAL</option>
                 <option value="HOME_BANNER">HOME_BANNER</option>
                 <option value="NOTICE_CENTER">NOTICE_CENTER</option>
+                <option value="BENEFITS_PAGE">BENEFITS_PAGE</option>
               </select>
             </div>
           </div>
@@ -148,13 +182,16 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Template
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.template}
-                onChange={(e) => setFormData({ ...formData, template: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, template: e.target.value as any })}
                 className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="full_screen_modal"
-              />
+              >
+                <option value="image_top">image_top</option>
+                <option value="no_image">no_image</option>
+                <option value="product_spotlight">product_spotlight</option>
+                <option value="mission_card">mission_card</option>
+              </select>
             </div>
 
             <div>
@@ -236,6 +273,52 @@ export function CreateCampaignDialog({ onClose, onCreate }: CreateCampaignDialog
                   className="admin-input w-full h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="캠페인 설명"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  이미지 URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.contentImageUrl}
+                  onChange={(e) => setFormData({ ...formData, contentImageUrl: e.target.value })}
+                  className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+                <p className="text-xs text-gray-500 mt-1">모달 상단에 표시될 이미지 URL (선택사항)</p>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">CTA 버튼 설정 (선택사항)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      버튼 텍스트
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.ctaText}
+                      onChange={(e) => setFormData({ ...formData, ctaText: e.target.value })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: 시작하기, 참여하기"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      딥링크 경로
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.ctaDeeplink}
+                      onChange={(e) => setFormData({ ...formData, ctaDeeplink: e.target.value })}
+                      className="admin-input w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="예: /benefits, /home"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">버튼 클릭 시 이동할 화면 경로</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

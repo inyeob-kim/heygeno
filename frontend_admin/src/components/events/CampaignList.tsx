@@ -76,32 +76,10 @@ export function CampaignList() {
     }
   };
 
-  const handleCreate = async (campaignData: Omit<Campaign, 'id' | 'status'>) => {
-    try {
-      // 백엔드가 기대하는 형식으로 변환
-      const newCampaign = await campaignService.createCampaign({
-        key: campaignData.key,
-        kind: campaignData.kind,
-        placement: campaignData.placement,
-        template: campaignData.template,
-        priority: campaignData.priority,
-        is_enabled: campaignData.isEnabled,
-        start_at: campaignData.startAt, // 이미 ISO 문자열 형식
-        end_at: campaignData.endAt, // 이미 ISO 문자열 형식
-        content: campaignData.content,
-        rules: [], // 기본값
-        actions: [], // 기본값
-      });
-      setCampaigns(prev => [newCampaign, ...prev]);
-      setShowCreateDialog(false);
-      toast.success('새 캠페인이 생성되었습니다.');
-    } catch (err) {
-      const errorMessage = err instanceof ApiError 
-        ? `생성 실패: ${err.status} ${err.statusText}`
-        : '캠페인 생성에 실패했습니다.';
-      toast.error(errorMessage);
-      console.error('캠페인 생성 실패:', err);
-    }
+  const handleCreate = async (newCampaign: Campaign) => {
+    // CreateCampaignDialog에서 이미 생성 완료된 캠페인을 받음
+    setCampaigns(prev => [newCampaign, ...prev]);
+    setShowCreateDialog(false);
   };
 
   if (loading) {
@@ -163,6 +141,7 @@ export function CampaignList() {
             <option value="EVENT">EVENT</option>
             <option value="NOTICE">NOTICE</option>
             <option value="AD">AD</option>
+            <option value="MISSION">MISSION</option>
           </select>
 
           <select

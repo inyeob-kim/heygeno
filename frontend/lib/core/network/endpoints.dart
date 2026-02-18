@@ -46,4 +46,7 @@ class Endpoints {
   
   // Points
   static const String pointBalance = '/points/balance';
+  
+  // Campaigns
+  static const String campaigns = '/campaigns';
 }

@@ -127,6 +127,7 @@ export function CampaignDetailSheet({ campaign, onClose, onUpdate, onDelete }: C
                   <option value="EVENT">EVENT</option>
                   <option value="NOTICE">NOTICE</option>
                   <option value="AD">AD</option>
+                  <option value="MISSION">MISSION</option>
                 </select>
               </div>
 
@@ -142,6 +143,7 @@ export function CampaignDetailSheet({ campaign, onClose, onUpdate, onDelete }: C
                   <option value="HOME_MODAL">HOME_MODAL</option>
                   <option value="HOME_BANNER">HOME_BANNER</option>
                   <option value="NOTICE_CENTER">NOTICE_CENTER</option>
+                  <option value="BENEFITS_PAGE">BENEFITS_PAGE</option>
                 </select>
               </div>
 
