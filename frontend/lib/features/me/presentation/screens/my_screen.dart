@@ -3,15 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
-import '../../../../../ui/widgets/match_score_badge.dart';
 import '../../../../../ui/widgets/setting_item.dart';
 import '../../../../../ui/widgets/toggle_switch.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../app/theme/app_radius.dart';
-import '../../../../../core/utils/price_formatter.dart';
-import '../../../../../core/utils/date_formatter.dart';
 import '../../../../../core/utils/snackbar_helper.dart';
 import '../../../../../core/utils/pet_update_helper.dart';
 import '../../../../../core/widgets/loading.dart';
@@ -25,6 +22,7 @@ import '../../../../../app/router/route_paths.dart';
 import '../../../../../domain/services/pet_service.dart';
 import '../../../../../features/home/presentation/controllers/home_controller.dart';
 import '../controllers/my_controller.dart';
+import '../widgets/recent_recommendation_item_widget.dart';
 
 /// 실제 API 데이터를 사용하는 My Screen
 class MyScreen extends ConsumerStatefulWidget {
@@ -521,76 +519,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
         padding: EdgeInsets.only(
           bottom: index == recommendations.length - 1 ? 0 : AppSpacing.md,
         ),
-        child: GestureDetector(
-          onTap: () {
-            context.push('/products/${recommendation.productId}');
-          },
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.divider, // 중성 회색 배경
-                  borderRadius: BorderRadius.circular(12), // rounded-xl
-                ),
-                child: const Icon(
-                  Icons.image_outlined,
-                  size: 32,
-                  color: AppColors.textSecondary, // 중성 회색 아이콘
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormatter.formatDateOrRecent(recommendation.recommendedAt),
-                      style: AppTypography.small.copyWith(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      recommendation.productName,
-                      style: AppTypography.small.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        if (recommendation.matchScore != null)
-                          MatchScoreBadge(
-                            score: recommendation.matchScore!,
-                            size: MatchScoreSize.small,
-                          ),
-                        if (recommendation.matchScore != null)
-                          const SizedBox(width: AppSpacing.sm),
-                        if (recommendation.price != null)
-                          Text(
-                            PriceFormatter.formatWithCurrency(recommendation.price!),
-                            style: AppTypography.small.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.iconMuted,
-              ),
-            ],
-          ),
-        ),
+        child: RecentRecommendationItemWidget.fromData(recommendation),
       );
     }).toList();
   }
