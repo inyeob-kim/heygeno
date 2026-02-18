@@ -494,6 +494,46 @@ class ProductService:
         else:
             user_prefs = default_prefs
         
+        # UPDATED: 추천 조건 조정 파라미터를 user_prefs에 추가 (요청 파라미터 우선)
+        logger.info(f"[ProductService] 📋 조건 조정 파라미터 user_prefs에 추가 시작")
+        logger.info(f"[ProductService]   - 기존 user_prefs: {user_prefs}")
+        
+        if min_daily_amount is not None:
+            user_prefs["min_daily_amount"] = min_daily_amount
+            logger.info(f"[ProductService] ✅ min_daily_amount 추가: {min_daily_amount}g")
+        else:
+            logger.info(f"[ProductService] ⏭️ min_daily_amount 없음 (기본값 사용)")
+            
+        if max_daily_amount is not None:
+            user_prefs["max_daily_amount"] = max_daily_amount
+            logger.info(f"[ProductService] ✅ max_daily_amount 추가: {max_daily_amount}g")
+        else:
+            logger.info(f"[ProductService] ⏭️ max_daily_amount 없음 (기본값 사용)")
+            
+        if max_monthly_budget is not None:
+            user_prefs["max_monthly_budget"] = max_monthly_budget
+            logger.info(f"[ProductService] ✅ max_monthly_budget 추가: {max_monthly_budget}원")
+        else:
+            logger.info(f"[ProductService] ⏭️ max_monthly_budget 없음 (기본값 사용)")
+            
+        if emphasized_concerns is not None:
+            user_prefs["emphasized_concerns"] = emphasized_concerns
+            logger.info(f"[ProductService] ✅ emphasized_concerns 추가: {emphasized_concerns}")
+        else:
+            logger.info(f"[ProductService] ⏭️ emphasized_concerns 없음 (기본값 사용)")
+            
+        if health_concern_priority:
+            user_prefs["health_concern_priority"] = health_concern_priority
+            logger.info(f"[ProductService] ✅ health_concern_priority 추가: {health_concern_priority}")
+        elif emphasized_concerns and len(emphasized_concerns) > 0:
+            # emphasized_concerns가 있으면 자동으로 health_concern_priority 활성화
+            user_prefs["health_concern_priority"] = True
+            logger.info(f"[ProductService] ✅ health_concern_priority 자동 활성화 (emphasized_concerns 있음)")
+        else:
+            logger.info(f"[ProductService] ⏭️ health_concern_priority 없음 (기본값 사용)")
+        
+        logger.info(f"[ProductService] ✅ 최종 user_prefs: {user_prefs}")
+        
         # 3. 상품 정보 조회 (ingredient_profile, nutrition_facts 포함)
         result = await db.execute(
             select(Product)
@@ -578,7 +618,12 @@ class ProductService:
         pet_id: UUID,
         db: AsyncSession,
         force_refresh: bool = False,
-        generate_explanation_only: bool = False
+        generate_explanation_only: bool = False,
+        min_daily_amount: Optional[int] = None,
+        max_daily_amount: Optional[int] = None,
+        max_monthly_budget: Optional[int] = None,
+        emphasized_concerns: Optional[List[str]] = None,
+        health_concern_priority: bool = False,
     ) -> RecommendationResponse:
         """
         추천 상품 목록 조회 (룰베이스 기반, 항상 RAG 실행)
@@ -939,8 +984,17 @@ class ProductService:
                         kcal_per_kg = float(product.nutrition_facts.kcal_per_100g) * 10
                     
                     if kcal_per_kg is not None and kcal_per_kg > 0:
-                        daily_amount_g = (der / kcal_per_kg) * 1000
-                        logger.debug(f"[ProductService] [{idx}/{len(products)}] 급여량 계산: DER={der:.1f}kcal, kcal_per_kg={kcal_per_kg:.1f}, daily_amount={daily_amount_g:.1f}g")
+                        # UPDATED: 사용자 지정 급여량 범위가 있으면 중간값 사용, 없으면 DER 기반 계산
+                        user_min = user_prefs.get("min_daily_amount")
+                        user_max = user_prefs.get("max_daily_amount")
+                        if user_min is not None and user_max is not None:
+                            # 사용자 지정 범위의 중간값을 추천용 daily_amount_g로 사용
+                            daily_amount_g = (user_min + user_max) / 2
+                            logger.debug(f"[ProductService] [{idx}/{len(products)}] 급여량 계산: 사용자 지정 범위 중간값 사용 ({user_min}g ~ {user_max}g → {daily_amount_g:.1f}g)")
+                        else:
+                            # 기존 DER 기반 계산
+                            daily_amount_g = (der / kcal_per_kg) * 1000
+                            logger.debug(f"[ProductService] [{idx}/{len(products)}] 급여량 계산: DER={der:.1f}kcal, kcal_per_kg={kcal_per_kg:.1f}, daily_amount={daily_amount_g:.1f}g")
                 except Exception as e:
                     logger.warning(f"[ProductService] [{idx}/{len(products)}] 급여량 계산 실패: {str(e)}")
                     daily_amount_g = None
@@ -966,6 +1020,31 @@ class ProductService:
                         price_exceeded = True
                         all_reasons.append(f"가격 제한 초과 ({price_per_kg:.0f}원/kg > {max_price_per_kg}원/kg)")
                 
+                # all_reasons 초기화 (월 예산 필터링에서 사용하기 위해)
+                all_reasons = safety_reasons + fitness_reasons
+                
+                # UPDATED: 월 예산 필터링/페널티 적용
+                max_monthly_budget = user_prefs.get("max_monthly_budget")
+                monthly_budget_exceeded = False
+                if max_monthly_budget is not None and daily_amount_g is not None and product.price_per_kg is not None:
+                    # 월 비용 계산: daily_amount_g (g) * 30일 * (price_per_kg / 1000) (원/g)
+                    monthly_cost = daily_amount_g * 30 * (float(product.price_per_kg) / 1000)
+                    logger.debug(f"[ProductService] [{idx}/{len(products)}] 💰 월 예산 체크: max_budget={max_monthly_budget}원, monthly_cost={monthly_cost:.0f}원, daily_amount_g={daily_amount_g:.1f}g, price_per_kg={product.price_per_kg}원/kg")
+                    
+                    if monthly_cost > max_monthly_budget * 1.2:
+                        # 120% 초과 → 하드 필터링 (후보 제외)
+                        logger.debug(f"[ProductService] [{idx}/{len(products)}] ❌ 월 예산 120% 초과로 제외: {monthly_cost:.0f}원 > {max_monthly_budget * 1.2:.0f}원")
+                        filter_stats["monthly_budget_filtered"] += 1
+                        continue
+                    elif monthly_cost > max_monthly_budget:
+                        # 초과 ~ 120% → 소프트 페널티
+                        over_ratio = (monthly_cost - max_monthly_budget) / max_monthly_budget
+                        penalty = 20 + (over_ratio / 0.2) * 10  # 20~30점
+                        total_score -= penalty
+                        monthly_budget_exceeded = True
+                        all_reasons.append(f"월 예산 약간 초과: 예상 {monthly_cost:.0f}원 > {max_monthly_budget}원 (-{penalty:.0f}점)")
+                        logger.debug(f"[ProductService] [{idx}/{len(products)}] 월 예산 초과 페널티: {monthly_cost:.0f}원 > {max_monthly_budget}원, penalty={penalty:.0f}점")
+                
                 logger.debug(f"[ProductService] [{idx}/{len(products)}] 총점: {total_score:.1f} (안전: {safety_score:.1f}, 적합: {fitness_score:.1f})")
                 
                 # 총점이 -1이면 제외 (안전성 0점)
@@ -973,11 +1052,11 @@ class ProductService:
                     logger.debug(f"[ProductService] [{idx}/{len(products)}] ❌ 총점 < 0으로 제외")
                     if price_exceeded:
                         filter_stats["price_filtered"] += 1
+                    elif monthly_budget_exceeded:
+                        filter_stats["monthly_budget_filtered"] += 1
                     else:
                         filter_stats["total_score_filtered"] += 1
                     continue
-                
-                all_reasons = safety_reasons + fitness_reasons
                 scored_products.append((product, total_score, safety_score, fitness_score, all_reasons))
                 logger.debug(f"[ProductService] [{idx}/{len(products)}] ✅ 추천 목록에 추가: 총점={total_score:.1f}")
                 

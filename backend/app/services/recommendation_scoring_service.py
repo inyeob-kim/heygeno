@@ -341,9 +341,9 @@ class RecommendationScoringService:
             if health_score < 30.0 or breed_score < 15.0:
                 reasons.append("가성비 우선 모드: 건강 고민/품종 가중치 감소")
         
-        # 5. 영양 적합성 (20점)
+        # 5. 영양 적합성 (20점) - user_prefs 전달
         nutrition_score, nutrition_reasons = RecommendationScoringService._calculate_nutritional_fitness(
-            pet, parsed, nutrition_facts
+            pet, parsed, nutrition_facts, user_prefs
         )
         reasons.extend(nutrition_reasons)
         
@@ -480,10 +480,24 @@ class RecommendationScoringService:
         health_concern_priority: bool = False
     ) -> Tuple[float, List[str]]:
         """건강 고민 매칭 (30점 만점)"""
+        if user_prefs is None:
+            user_prefs = {}
+        
         score = 0.0
         reasons = []
         
-        health_concerns = pet.health_concerns or []
+        # UPDATED: emphasized_concerns가 있으면 우선 사용, 없으면 pet.health_concerns 사용
+        emphasized_concerns = user_prefs.get("emphasized_concerns", [])
+        logger.debug(f"[ScoringService] 📊 건강 고민 체크: emphasized_concerns={emphasized_concerns}, pet.health_concerns={pet.health_concerns}")
+        
+        if emphasized_concerns and len(emphasized_concerns) > 0:
+            health_concerns = emphasized_concerns
+            reasons.append("사용자 지정 건강 고민 적용")
+            logger.debug(f"[ScoringService] ✅ 사용자 지정 건강 고민 사용: {health_concerns}")
+        else:
+            health_concerns = pet.health_concerns or []
+            logger.debug(f"[ScoringService] ⏭️ 사용자 지정 건강 고민 없음, 펫 프로필 건강 고민 사용: {health_concerns}")
+        
         if not health_concerns:
             return (0.0, [])
         
@@ -494,6 +508,10 @@ class RecommendationScoringService:
         
         # UPDATED: Customization support - 건강 고민 우선 모드 가중치
         health_multiplier = 1.5 if health_concern_priority else 1.0
+        
+        # UPDATED: emphasized_concerns가 있으면 base_weight × 2.0 적용
+        is_emphasized = emphasized_concerns and len(emphasized_concerns) > 0
+        emphasis_multiplier = 2.0 if is_emphasized else 1.0
         
         for concern in health_concerns:
             if concern not in RecommendationScoringService.HEALTH_CONCERN_WEIGHTS:
@@ -506,8 +524,10 @@ class RecommendationScoringService:
             if benefits_tags:
                 benefit_tag = RecommendationScoringService.HEALTH_CONCERN_TO_BENEFITS.get(concern)
                 if benefit_tag and benefit_tag in benefits_tags:
-                    score += base_weight * 1.5 * health_multiplier
-                    reasons.append(f"{concern} 건강 고민 매칭 (태그)")
+                    # emphasized_concerns면 base_weight × 2.0, 아니면 × 1.5
+                    weight_multiplier = emphasis_multiplier if is_emphasized else 1.5
+                    score += base_weight * weight_multiplier * health_multiplier
+                    reasons.append(f"{concern} 건강 고민 매칭 (태그)" + (" - 강조" if is_emphasized else ""))
                     matched = True
             
             # 키워드 매칭 (fallback)
@@ -515,16 +535,20 @@ class RecommendationScoringService:
                 keywords = RecommendationScoringService.HEALTH_CONCERN_KEYWORDS.get(concern, [])
                 for keyword in keywords:
                     if keyword.lower() in search_text:
-                        score += base_weight * health_multiplier
-                        reasons.append(f"{concern} 건강 고민 매칭 (키워드)")
+                        # emphasized_concerns면 base_weight × 2.0, 아니면 × 1.0
+                        weight_multiplier = emphasis_multiplier if is_emphasized else 1.0
+                        score += base_weight * weight_multiplier * health_multiplier
+                        reasons.append(f"{concern} 건강 고민 매칭 (키워드)" + (" - 강조" if is_emphasized else ""))
                         matched = True
                         break
         
-        # 최대 30점 제한
+        # 최대 30점 제한 (health_concern_priority 적용 시 약간 초과 가능하지만 30점으로 캡)
         score = min(score, 30.0)
         
         if health_concern_priority and score > 0:
             reasons.append("건강 고민 우선 모드: 가중치 1.5배 적용")
+        if is_emphasized and score > 0:
+            reasons.append("강조 건강 고민: 가중치 2.0배 적용")
         
         return (score, reasons)
     
@@ -603,9 +627,13 @@ class RecommendationScoringService:
     def _calculate_nutritional_fitness(
         pet: PetSummaryResponse,
         parsed: dict,
-        nutrition_facts: Optional[ProductNutritionFacts]
+        nutrition_facts: Optional[ProductNutritionFacts],
+        user_prefs: dict = None
     ) -> Tuple[float, List[str]]:
         """영양 적합성 계산 (20점 만점) - DER 기반"""
+        if user_prefs is None:
+            user_prefs = {}
+        
         score = 10.0  # 기본 점수
         reasons = []
         
@@ -639,15 +667,33 @@ class RecommendationScoringService:
         daily_amount_g = (der / kcal_per_kg) * 1000
         
         # 4. 적정 급여량 범위 체크
-        if pet.weight_kg < 10:  # 소형견
-            min_amount = pet.weight_kg * 20  # 2% of body weight
-            max_amount = pet.weight_kg * 40  # 4% of body weight
-        elif pet.weight_kg < 25:  # 중형견
-            min_amount = pet.weight_kg * 18
-            max_amount = pet.weight_kg * 35
-        else:  # 대형견
-            min_amount = pet.weight_kg * 15
-            max_amount = pet.weight_kg * 30
+        # UPDATED: 사용자 지정 범위가 있으면 우선 사용, 없으면 체중 기반 범위 사용
+        min_amount = None
+        max_amount = None
+        
+        user_min = user_prefs.get("min_daily_amount")
+        user_max = user_prefs.get("max_daily_amount")
+        
+        logger.debug(f"[ScoringService] 📊 급여량 범위 체크: user_min={user_min}g, user_max={user_max}g, 계산된 daily_amount_g={daily_amount_g:.1f}g")
+        
+        if user_min is not None and user_max is not None:
+            # 사용자 지정 범위 사용
+            min_amount = float(user_min)
+            max_amount = float(user_max)
+            reasons.append("사용자 지정 급여량 범위 적용")
+            logger.debug(f"[ScoringService] ✅ 사용자 지정 급여량 범위 사용: {min_amount:.1f}g ~ {max_amount:.1f}g")
+        else:
+            # 기존 체중 기반 범위 사용
+            logger.debug(f"[ScoringService] ⏭️ 사용자 지정 범위 없음, 체중 기반 범위 사용")
+            if pet.weight_kg < 10:  # 소형견
+                min_amount = pet.weight_kg * 20  # 2% of body weight
+                max_amount = pet.weight_kg * 40  # 4% of body weight
+            elif pet.weight_kg < 25:  # 중형견
+                min_amount = pet.weight_kg * 18
+                max_amount = pet.weight_kg * 35
+            else:  # 대형견
+                min_amount = pet.weight_kg * 15
+                max_amount = pet.weight_kg * 30
         
         # 5. 점수 계산
         if min_amount <= daily_amount_g <= max_amount:

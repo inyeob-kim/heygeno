@@ -13,6 +13,7 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
 import '../../../../core/providers/active_pet_context_provider.dart';
+import '../../../recommendation/presentation/screens/recommendation_adjust_screen.dart';
 
 /// 홈 화면 상태 타입 (A/B/C 분기)
 enum HomeStateType {
@@ -431,9 +432,16 @@ class HomeController extends StateNotifier<HomeState> {
 
   /// 추천 데이터 로드
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 캐싱 정보 처리 추가
-  Future<void> _loadRecommendations(String petId, {bool force = false}) async {
+  Future<void> _loadRecommendations(
+    String petId, {
+    bool force = false,
+    RecommendationAdjustParams? adjustParams,
+  }) async {
     final startTime = DateTime.now();
     print('[HomeController] 📡 추천 데이터 로드 시작: petId=$petId, force=$force');
+    if (adjustParams != null) {
+      print('[HomeController] 📋 조건 조정 파라미터: minDailyAmount=${adjustParams.minDailyAmount?.toString() ?? "null"}g, maxDailyAmount=${adjustParams.maxDailyAmount?.toString() ?? "null"}g, maxMonthlyBudget=${adjustParams.maxMonthlyBudget?.toString() ?? "null"}원, emphasizedConcerns=${adjustParams.emphasizedConcerns?.join(", ") ?? "null"}');
+    }
     state = state.copyWith(isLoadingRecommendations: true); // 로딩 상태 시작
     
     try {
@@ -442,6 +450,10 @@ class HomeController extends StateNotifier<HomeState> {
       final recommendations = await _recommendationService.getRecommendations(
         petId: petId,
         forceRefresh: force,
+        minDailyAmount: adjustParams?.minDailyAmount,
+        maxDailyAmount: adjustParams?.maxDailyAmount,
+        maxMonthlyBudget: adjustParams?.maxMonthlyBudget,
+        emphasizedConcerns: adjustParams?.emphasizedConcerns,
       );
       final duration = DateTime.now().difference(startTime);
       print('[HomeController] ✅ 추천 데이터 로드 완료: ${recommendations.items.length}개 상품, isCached=${recommendations.isCached}, 소요시간=${duration.inMilliseconds}ms');
@@ -478,8 +490,11 @@ class HomeController extends StateNotifier<HomeState> {
 
   /// 추천 로드 (버튼 클릭 시 호출)
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - force 파라미터 추가
-  Future<void> loadRecommendations({bool force = false}) async {
-    print('[HomeController] 🎯 loadRecommendations() 호출됨: force=$force');
+  Future<void> loadRecommendations({
+    bool force = false,
+    RecommendationAdjustParams? adjustParams,
+  }) async {
+    print('[HomeController] 🎯 loadRecommendations() 호출됨: force=$force, adjustParams=${adjustParams != null ? "있음" : "없음"}');
     final petSummary = state.petSummary;
     if (petSummary == null) {
       print('[HomeController] ⚠️ petSummary가 null입니다. 추천을 로드할 수 없습니다.');
@@ -493,14 +508,19 @@ class HomeController extends StateNotifier<HomeState> {
     }
     
     // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 최근 추천이 있고 force가 false면 스킵 가능
-    if (!force && state.hasRecentRecommendation && state.hasRecommendations) {
-      print('[HomeController] 💾 최근 추천이 있어서 API 호출 스킵 (force=false)');
+    // 단, adjustParams가 있으면 조건 조정이므로 항상 API 호출
+    if (!force && adjustParams == null && state.hasRecentRecommendation && state.hasRecommendations) {
+      print('[HomeController] 💾 최근 추천이 있어서 API 호출 스킵 (force=false, adjustParams=null)');
       // 상태만 업데이트 (이미 recommendations가 있음)
       return;
     }
     
     print('[HomeController] ▶️ _loadRecommendations() 호출: petId=${petSummary.petId}, force=$force');
-    await _loadRecommendations(petSummary.petId, force: force);
+    await _loadRecommendations(
+      petSummary.petId,
+      force: force,
+      adjustParams: adjustParams,
+    );
   }
 
   /// 추천 새로고침

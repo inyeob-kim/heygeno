@@ -30,6 +30,7 @@ import '../../../../../ui/widgets/pet_info_row.dart';
 import '../../../../../ui/widgets/health_concern_chips.dart';
 import '../../../../../ui/widgets/allergy_list.dart';
 import '../../../../../core/providers/modal_visibility_provider.dart';
+import '../../../recommendation/presentation/screens/recommendation_adjust_screen.dart';
 
 /// Toss-style 판단 UI Home Screen
 /// 실제 API 데이터를 사용하여 Pet 프로필 및 추천 상품 표시
@@ -152,14 +153,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     print('[HomeScreen] 현재 상태: recommendations=${recommendations?.items.length ?? 0}개, isLoading=${state.isLoadingRecommendations}, expanded=$_isRecommendationExpanded, hasRecent=${state.hasRecentRecommendation}');
     
-    // UPDATED: Dynamic recommendation card with freshness logic - 최근 추천이 있으면 바로 표시, 없으면 로드
-    if (topRecommendation == null && !state.isLoadingRecommendations) {
+    // UPDATED: "지금 추천받기" 또는 "다시 추천 받기" 버튼 클릭 시 항상 조건 조정 화면으로 이동
+    final isRecommendationButton = state.recommendationActionText == "지금 추천받기" || 
+                                    state.recommendationActionText == "다시 추천 받기";
+    
+    if (isRecommendationButton && !state.isLoadingRecommendations) {
       final petSummary = state.petSummary;
       if (petSummary != null) {
-        print('[HomeScreen] ✅ 추천 로드 시작: petId=${petSummary.petId}, petName=${petSummary.name}');
-        // 추천 로드 시작 (force 파라미터 전달)
-        ref.read(homeControllerProvider.notifier).loadRecommendations(force: forceRefresh);
-        // 로딩 중이면 펼치지 않음
+        print('[HomeScreen] ✅ 조건 조정 화면으로 이동: petId=${petSummary.petId}, petName=${petSummary.name}');
+        
+        // 기존 추천이 있으면 초기값으로 사용
+        RecommendationAdjustParams? initialParams;
+        if (recommendations != null && recommendations!.items.isNotEmpty) {
+          final topItem = recommendations!.items.first;
+          if (topItem.dailyAmountG != null) {
+            initialParams = RecommendationAdjustParams(
+              minDailyAmount: (topItem.dailyAmountG! * 0.8).round(),
+              maxDailyAmount: (topItem.dailyAmountG! * 1.2).round(),
+              maxMonthlyBudget: topItem.currentPrice * 30, // 일일 가격 * 30일
+              emphasizedConcerns: [],
+            );
+            initialParams.baseDailyAmount = topItem.dailyAmountG;
+            initialParams.baseMonthlyBudget = topItem.currentPrice * 30;
+          }
+        }
+        
+        // 조건 조정 화면으로 push
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecommendationAdjustScreen(
+              petSummary: petSummary,
+              initialParams: initialParams,
+            ),
+          ),
+        ).then((result) {
+          // 조건 조정 화면에서 뒤로 가기만 한 경우 (result가 null)
+          // 애니메이션 화면으로 이동하는 것은 RecommendationAdjustScreen에서 처리
+          if (result == null) {
+            print('[HomeScreen] 조건 조정 화면에서 뒤로 가기');
+            return;
+          }
+        });
         return;
       } else {
         print('[HomeScreen] ⚠️ petSummary가 null입니다. 추천을 로드할 수 없습니다.');
@@ -1635,14 +1670,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 width: double.infinity,
               child: ElevatedButton.icon(
                   onPressed: () {
-                    // 추천 애니메이션 화면으로 이동
-                    final petSummary = state.petSummary;
-                    if (petSummary != null) {
-                      context.push(
-                        RoutePaths.recommendationAnimation,
-                        extra: petSummary,
-                      );
-                    }
+                    // 추천 버튼 클릭 시 _toggleRecommendation 호출
+                    // (조건 조정 화면으로 이동하거나 추천 결과 토글)
+                    _toggleRecommendation();
                   },
                 icon: Icon(
                   state.recommendationActionText == "지금 추천받기" 

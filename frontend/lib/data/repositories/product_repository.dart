@@ -146,18 +146,60 @@ class ProductRepository {
     String petId, {
     bool forceRefresh = false,
     bool generateExplanationOnly = false,
+    int? minDailyAmount,
+    int? maxDailyAmount,
+    int? maxMonthlyBudget,
+    List<String>? emphasizedConcerns,
+    bool healthConcernPriority = false,
   }) async {
     final startTime = DateTime.now();
-    print('[ProductRepository] 🌐 API 호출 시작: GET ${Endpoints.productRecommendations}?pet_id=$petId&force_refresh=$forceRefresh&generate_explanation_only=$generateExplanationOnly');
+    
+    print('[ProductRepository] 📥 getRecommendations 호출');
+    print('[ProductRepository]   - petId: $petId');
+    print('[ProductRepository]   - forceRefresh: $forceRefresh');
+    print('[ProductRepository]   - generateExplanationOnly: $generateExplanationOnly');
+    print('[ProductRepository]   - minDailyAmount: ${minDailyAmount ?? "null"}g');
+    print('[ProductRepository]   - maxDailyAmount: ${maxDailyAmount ?? "null"}g');
+    print('[ProductRepository]   - maxMonthlyBudget: ${maxMonthlyBudget != null ? "${maxMonthlyBudget}원" : "null"}');
+    print('[ProductRepository]   - emphasizedConcerns: ${emphasizedConcerns?.join(", ") ?? "null"}');
+    print('[ProductRepository]   - healthConcernPriority: $healthConcernPriority');
+    
+    // 쿼리 파라미터 구성
+    final queryParams = <String, dynamic>{
+      'pet_id': petId,
+      'force_refresh': forceRefresh,
+      'generate_explanation_only': generateExplanationOnly,
+    };
+    
+    // 선택적 파라미터 추가
+    if (minDailyAmount != null) {
+      queryParams['min_daily_amount'] = minDailyAmount;
+      print('[ProductRepository] ✅ min_daily_amount 추가: $minDailyAmount');
+    }
+    if (maxDailyAmount != null) {
+      queryParams['max_daily_amount'] = maxDailyAmount;
+      print('[ProductRepository] ✅ max_daily_amount 추가: $maxDailyAmount');
+    }
+    if (maxMonthlyBudget != null) {
+      queryParams['max_monthly_budget'] = maxMonthlyBudget;
+      print('[ProductRepository] ✅ max_monthly_budget 추가: $maxMonthlyBudget');
+    }
+    if (emphasizedConcerns != null && emphasizedConcerns.isNotEmpty) {
+      queryParams['emphasized_concerns'] = emphasizedConcerns.join(',');
+      print('[ProductRepository] ✅ emphasized_concerns 추가: ${emphasizedConcerns.join(",")}');
+    }
+    if (healthConcernPriority) {
+      queryParams['health_concern_priority'] = healthConcernPriority;
+      print('[ProductRepository] ✅ health_concern_priority 추가: $healthConcernPriority');
+    }
+    
+    print('[ProductRepository] 🌐 API 호출 시작: GET ${Endpoints.productRecommendations}');
+    print('[ProductRepository] 📋 최종 쿼리 파라미터: $queryParams');
     
     try {
       final response = await _apiClient.get(
         Endpoints.productRecommendations,
-        queryParameters: {
-          'pet_id': petId,
-          'force_refresh': forceRefresh,
-          'generate_explanation_only': generateExplanationOnly,
-        },
+        queryParameters: queryParams,
       );
 
       final duration = DateTime.now().difference(startTime);

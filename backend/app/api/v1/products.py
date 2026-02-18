@@ -111,18 +111,44 @@ async def get_recommendations(
     pet_id: UUID = Query(..., description="반려동물 ID"),
     force_refresh: bool = Query(False, description="캐시 무시하고 새로 계산 (RAG 강제 실행)"),
     generate_explanation_only: bool = Query(False, description="기존 추천 결과에 RAG 설명만 생성 (전체 재계산 없음)"),
+    min_daily_amount: Optional[int] = Query(None, description="최소 하루 급여량 (g)"),
+    max_daily_amount: Optional[int] = Query(None, description="최대 하루 급여량 (g)"),
+    max_monthly_budget: Optional[int] = Query(None, description="최대 월 예산 (원)"),
+    emphasized_concerns: Optional[str] = Query(None, description="강조 건강 고민 (콤마로 구분, 예: '관절,피부')"),
+    health_concern_priority: bool = Query(False, description="건강 고민 우선 모드"),
     db: AsyncSession = Depends(get_db)
 ):
     """추천 상품 목록 조회 (실시간 계산 + 히스토리 저장, 항상 RAG 실행)"""
     start_time = time.time()
-    logger.info(f"[Products API] 📥 추천 요청 수신: pet_id={pet_id}, force_refresh={force_refresh}, generate_explanation_only={generate_explanation_only}")
+    logger.info(f"[Products API] 📥 추천 요청 수신")
+    logger.info(f"[Products API]   - pet_id: {pet_id}")
+    logger.info(f"[Products API]   - force_refresh: {force_refresh}")
+    logger.info(f"[Products API]   - generate_explanation_only: {generate_explanation_only}")
+    logger.info(f"[Products API]   - min_daily_amount: {min_daily_amount}g" if min_daily_amount else "[Products API]   - min_daily_amount: None")
+    logger.info(f"[Products API]   - max_daily_amount: {max_daily_amount}g" if max_daily_amount else "[Products API]   - max_daily_amount: None")
+    logger.info(f"[Products API]   - max_monthly_budget: {max_monthly_budget}원" if max_monthly_budget else "[Products API]   - max_monthly_budget: None")
+    logger.info(f"[Products API]   - emphasized_concerns: {emphasized_concerns}" if emphasized_concerns else "[Products API]   - emphasized_concerns: None")
+    logger.info(f"[Products API]   - health_concern_priority: {health_concern_priority}")
     
     try:
+        # emphasized_concerns 파싱 (콤마로 구분, 공백 trim)
+        emphasized_concerns_list = None
+        if emphasized_concerns:
+            emphasized_concerns_list = [c.strip() for c in emphasized_concerns.split(",") if c.strip()]
+            logger.info(f"[Products API] ✅ emphasized_concerns 파싱 완료: {emphasized_concerns_list}")
+        else:
+            logger.info(f"[Products API] ⏭️ emphasized_concerns 없음 (기본값 사용)")
+        
         result = await ProductService.get_recommendations(
             pet_id, 
             db, 
             force_refresh=force_refresh,
-            generate_explanation_only=generate_explanation_only
+            generate_explanation_only=generate_explanation_only,
+            min_daily_amount=min_daily_amount,
+            max_daily_amount=max_daily_amount,
+            max_monthly_budget=max_monthly_budget,
+            emphasized_concerns=emphasized_concerns_list,
+            health_concern_priority=health_concern_priority,
         )
         duration_ms = int((time.time() - start_time) * 1000)
         logger.info(f"[Products API] ✅ 추천 응답 반환: pet_id={pet_id}, items={len(result.items)}개, is_cached={result.is_cached}, 소요시간={duration_ms}ms")
