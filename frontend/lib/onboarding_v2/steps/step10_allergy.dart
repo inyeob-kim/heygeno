@@ -4,6 +4,8 @@ import '../widgets/pill_chip.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
+import '../../core/constants/pet_constants.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 10: Food Allergies - DESIGN_GUIDE v1.0 준수
 class Step10Allergy extends StatelessWidget {
@@ -26,37 +28,44 @@ class Step10Allergy extends StatelessWidget {
     required this.totalSteps,
   });
 
-  static const List<String> allergyOptions = [
-    '없어요',
-    '소고기',
-    '닭고기',
-    '돼지고기',
-    '오리고기',
-    '양고기',
-    '생선',
-    '계란',
-    '유제품',
-    '밀/글루텐',
-    '옥수수',
-    '콩',
-    '기타',
-  ];
+  List<String> getAllergyOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.onboarding_step9_none,
+      PetConstants.getAllergenName(context, 'beef'),
+      PetConstants.getAllergenName(context, 'chicken'),
+      PetConstants.getAllergenName(context, 'pork'),
+      PetConstants.getAllergenName(context, 'duck'),
+      PetConstants.getAllergenName(context, 'lamb'),
+      PetConstants.getAllergenName(context, 'fish'),
+      PetConstants.getAllergenName(context, 'egg'),
+      PetConstants.getAllergenName(context, 'dairy'),
+      PetConstants.getAllergenName(context, 'wheat'),
+      PetConstants.getAllergenName(context, 'corn'),
+      PetConstants.getAllergenName(context, 'soy'),
+      l10n.common_other,
+    ];
+  }
 
-  void handleToggle(String allergy) {
-    if (allergy == '없어요') {
-      // "없어요" is exclusive
+  void handleToggle(BuildContext context, String allergy) {
+    final l10n = AppLocalizations.of(context)!;
+    final noneOption = l10n.onboarding_step9_none;
+    final otherOption = l10n.common_other;
+    
+    if (allergy == noneOption) {
+      // "None" is exclusive
       onUpdate({
-        'foodAllergies': value.contains('없어요') ? [] : ['없어요'],
+        'foodAllergies': value.contains(noneOption) ? [] : [noneOption],
         'otherAllergy': '',
       });
     } else {
-      // Remove "없어요" if selecting anything else
-      final filtered = value.where((v) => v != '없어요').toList();
+      // Remove "None" if selecting anything else
+      final filtered = value.where((v) => v != noneOption).toList();
       if (filtered.contains(allergy)) {
         final newValue = filtered.where((v) => v != allergy).toList();
         onUpdate({
           'foodAllergies': newValue,
-          'otherAllergy': allergy == '기타' ? '' : otherAllergy,
+          'otherAllergy': allergy == otherOption ? '' : otherAllergy,
         });
       } else {
         onUpdate({'foodAllergies': [...filtered, allergy]});
@@ -64,12 +73,14 @@ class Step10Allergy extends StatelessWidget {
     }
   }
 
-  bool get isValid {
-    // "없어요"가 선택되어 있거나, 다른 항목이 하나라도 선택되어 있으면 유효
-    // "기타"를 선택했을 때는 otherAllergy 텍스트도 확인
+  bool isValid(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final otherOption = l10n.common_other;
+    // "None"이 선택되어 있거나, 다른 항목이 하나라도 선택되어 있으면 유효
+    // "Other"를 선택했을 때는 otherAllergy 텍스트도 확인
     if (value.isEmpty) return false;
-    if (value.contains('기타') && (otherAllergy.trim().isEmpty)) {
-      return false; // "기타" 선택했는데 텍스트가 없으면 유효하지 않음
+    if (value.contains(otherOption) && (otherAllergy.trim().isEmpty)) {
+      return false; // "Other" 선택했는데 텍스트가 없으면 유효하지 않음
     }
     return true;
   }
@@ -81,9 +92,9 @@ class Step10Allergy extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🍗',
-      title: '피해야 하는 재료가 있나요?',
-      ctaText: '다음',
-      ctaDisabled: !isValid,
+      title: AppLocalizations.of(context)!.onboarding_step10_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
+      ctaDisabled: !isValid(context),
       onCTAClick: onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +102,7 @@ class Step10Allergy extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
-            children: allergyOptions.asMap().entries.map((entry) {
+            children: getAllergyOptions(context).asMap().entries.map((entry) {
               final index = entry.key;
               final option = entry.value;
               return TweenAnimationBuilder<double>(
@@ -106,7 +117,7 @@ class Step10Allergy extends StatelessWidget {
                       child: PillChip(
                         label: option,
                         selected: this.value.contains(option),
-                        onTap: () => handleToggle(option),
+                        onTap: () => handleToggle(context, option),
                       ),
                     ),
                   );
@@ -115,10 +126,10 @@ class Step10Allergy extends StatelessWidget {
               );
             }).toList(),
           ),
-          if (value.contains('기타')) ...[
+          if (value.contains(AppLocalizations.of(context)!.common_other)) ...[
             const SizedBox(height: AppSpacing.lg),
             Text(
-              '기타 재료를 입력해주세요',
+              AppLocalizations.of(context)!.onboarding_step10_otherLabel,
               style: AppTypography.small.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -127,7 +138,7 @@ class Step10Allergy extends StatelessWidget {
             TossTextInput(
               value: otherAllergy,
               onChanged: (val) => onUpdate({'otherAllergy': val}),
-              placeholder: '기타 알레르기 재료를 입력해주세요',
+              placeholder: AppLocalizations.of(context)!.onboarding_step10_otherPlaceholder,
             ),
           ],
         ],

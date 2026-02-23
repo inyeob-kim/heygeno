@@ -3,6 +3,7 @@ import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 상품 상세 페이지 하단 고정 탭
 class ProductDetailBottomBar extends StatelessWidget {
@@ -61,7 +62,7 @@ class ProductDetailBottomBar extends StatelessWidget {
               const SizedBox(width: 16),
               // 오른쪽: 최저가 구매하기 버튼
               Expanded(
-                child: _buildPurchaseButton(),
+                child: _buildPurchaseButton(context),
               ),
             ],
           ),
@@ -70,7 +71,7 @@ class ProductDetailBottomBar extends StatelessWidget {
     );
   }
 
-  Widget _buildPurchaseButton() {
+  Widget _buildPurchaseButton(BuildContext context) {
     final hasPrice = lowestPrice != null;
     return Container(
       height: 48,
@@ -93,32 +94,17 @@ class ProductDetailBottomBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (hasPrice) ...[
+                if (hasPrice)
                   Text(
-                    '최저가 ',
+                    AppLocalizations.of(context)!.productDetailWidget_buyAtLowest(PriceFormatter.formatCompactWithoutCurrency(lowestPrice!)),
                     style: AppTypography.button.copyWith(
                       color: Colors.white,
                       fontSize: 15,
                     ),
-                  ),
+                  )
+                else
                   Text(
-                    PriceFormatter.formatCompactWithoutCurrency(lowestPrice!),
-                    style: AppTypography.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    ' 구매하기',
-                    style: AppTypography.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 15,
-                    ),
-                  ),
-                ] else
-                  Text(
-                    '구매하러 가기',
+                    AppLocalizations.of(context)!.productDetailWidget_buyNow,
                     style: AppTypography.button.copyWith(
                       color: Colors.white,
                       fontSize: 15,

@@ -4,6 +4,10 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_radius.dart';
 
 /// 쿠팡 스타일 EmptyState 위젯
+/// 
+/// @deprecated Use `design_system/components/empty_state.dart` EmptyState instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/empty_state.dart EmptyState instead')
 class EmptyStateWidget extends StatelessWidget {
   final String title;
   final String? description;

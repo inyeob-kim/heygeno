@@ -1,4 +1,6 @@
 /// 반려동물 관련 상수 (도메인 데이터)
+import 'package:flutter/material.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 class PetConstants {
   /// 견종 목록
@@ -28,48 +30,81 @@ class PetConstants {
   ];
 
   /// 나이 단계 텍스트 변환
-  static String? getAgeStageText(String? ageStage) {
+  static String? getAgeStageText(BuildContext context, String? ageStage) {
     if (ageStage == null) return null;
+    final l10n = AppLocalizations.of(context)!;
     switch (ageStage.toUpperCase()) {
       case 'PUPPY':
-        return '강아지';
+        return l10n.pet_ageStage_puppy;
       case 'ADULT':
-        return '성견';
+        return l10n.ageStage_adult;
       case 'SENIOR':
-        return '노견';
+        return l10n.pet_ageStage_senior;
       default:
         return ageStage;
     }
   }
 
   /// 건강 관심사 이름 매핑 (DB와 동기화)
-  static const Map<String, String> healthConcernNames = {
-    'ALLERGY': '알레르기',
-    'DIGESTIVE': '장/소화',
-    'DENTAL': '치아/구강',
-    'OBESITY': '비만',
-    'RESPIRATORY': '호흡기',
-    'SKIN': '피부/털',
-    'JOINT': '관절',
-    'EYE': '눈/눈물',
-    'KIDNEY': '신장/요로',
-    'HEART': '심장',
-    'SENIOR': '노령',
-  };
+  static String getHealthConcernName(BuildContext context, String concern) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (concern.toUpperCase()) {
+      case 'ALLERGY':
+        return l10n.healthConcern_allergy;
+      case 'DIGESTIVE':
+        return l10n.healthConcern_digestive;
+      case 'DENTAL':
+        return l10n.healthConcern_dental;
+      case 'OBESITY':
+        return l10n.healthConcern_obesity;
+      case 'RESPIRATORY':
+        return l10n.healthConcern_respiratory;
+      case 'SKIN':
+        return l10n.healthConcern_skin;
+      case 'JOINT':
+        return l10n.healthConcern_joint;
+      case 'EYE':
+        return l10n.healthConcern_eye;
+      case 'KIDNEY':
+        return l10n.healthConcern_kidney;
+      case 'HEART':
+        return l10n.healthConcern_heart;
+      case 'SENIOR':
+        return l10n.healthConcern_senior;
+      default:
+        return concern;
+    }
+  }
 
   /// 알레르겐 이름 매핑 (DB와 동기화)
-  static const Map<String, String> allergenNames = {
-    'BEEF': '소고기',
-    'CHICKEN': '닭고기',
-    'PORK': '돼지고기',
-    'DUCK': '오리고기',
-    'LAMB': '양고기',
-    'FISH': '생선',
-    'EGG': '계란',
-    'DAIRY': '유제품',
-    'WHEAT': '밀/글루텐',
-    'CORN': '옥수수',
-    'SOY': '콩',
-  };
+  static String getAllergenName(BuildContext context, String allergen) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (allergen.toUpperCase()) {
+      case 'BEEF':
+        return l10n.allergen_beef;
+      case 'CHICKEN':
+        return l10n.allergen_chicken;
+      case 'PORK':
+        return l10n.allergen_pork;
+      case 'DUCK':
+        return l10n.allergen_duck;
+      case 'LAMB':
+        return l10n.allergen_lamb;
+      case 'FISH':
+        return l10n.allergen_fish;
+      case 'EGG':
+        return l10n.allergen_egg;
+      case 'DAIRY':
+        return l10n.allergen_dairy;
+      case 'WHEAT':
+        return l10n.allergen_wheat;
+      case 'CORN':
+        return l10n.allergen_corn;
+      case 'SOY':
+        return l10n.allergen_soy;
+      default:
+        return allergen;
+    }
+  }
 }
 

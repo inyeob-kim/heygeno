@@ -9,4 +9,7 @@ class StorageKeys {
   // Primary Pet 캐시
   static const String primaryPetId = 'primary_pet_id';
   static const String primaryPetSummary = 'primary_pet_summary';
+
+  // Auth
+  static const String accessToken = 'access_token';
 }

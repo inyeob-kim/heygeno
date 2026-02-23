@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Search Bar 위젯 (DESIGN_GUIDE.md v2.2)
 class FigmaSearchBar extends StatelessWidget {
@@ -11,7 +12,7 @@ class FigmaSearchBar extends StatelessWidget {
 
   const FigmaSearchBar({
     super.key,
-    this.placeholder = '제품 검색',
+    this.placeholder,
     this.onSearch,
     this.controller,
   });
@@ -35,7 +36,7 @@ class FigmaSearchBar extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         decoration: InputDecoration(
-          hintText: placeholder,
+          hintText: placeholder ?? AppLocalizations.of(context)!.search_placeholderProduct,
           hintStyle: AppTypography.body.copyWith(
             color: AppColors.textSecondary,
           ),

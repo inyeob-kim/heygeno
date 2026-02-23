@@ -3,20 +3,56 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/endpoints.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/storage/storage_keys.dart';
+import '../../../data/models/pet_dto.dart';
 import '../../../data/models/pet_summary_dto.dart';
+import '../../../data/repositories/pet_repository.dart';
 import 'package:dio/dio.dart';
 
 /// Pet 관련 비즈니스 로직 서비스
 class PetService {
   final ApiClient _apiClient;
+  final PetRepository _petRepository;
 
-  PetService(this._apiClient);
+  PetService(this._apiClient, this._petRepository);
+
+  /// 펫 프로필 업데이트 (변할 수 있는 정보만)
+  Future<PetDto> updatePet({
+    required String petId,
+    double? weightKg,
+    bool? isNeutered,
+    List<String>? healthConcerns,
+    List<String>? foodAllergies,
+    String? otherAllergies,
+  }) async {
+    return _petRepository.updatePet(
+      petId: petId,
+      weightKg: weightKg,
+      isNeutered: isNeutered,
+      healthConcerns: healthConcerns,
+      foodAllergies: foodAllergies,
+      otherAllergies: otherAllergies,
+    );
+  }
+
+  /// 펫 생성 (온보딩/펫 추가 화면용)
+  Future<PetDto> createPet({
+    required String breedCode,
+    required String weightBucket,
+    required String ageStage,
+    bool isPrimary = false,
+  }) async {
+    return _petRepository.createPet(
+      breedCode: breedCode,
+      weightBucket: weightBucket,
+      ageStage: ageStage,
+      isPrimary: isPrimary,
+    );
+  }
 
   /// Primary Pet 요약 정보 조회 (서버 우선, 실패 시 로컬 캐시)
   Future<PetSummaryDto?> getPrimaryPetSummary() async {
     try {
-      // 1. 서버에서 primary pet 조회 시도
-      // Device UID는 DeviceUidInterceptor에서 자동으로 헤더에 추가됨
+      // 1. 서버에서 primary pet 조회 시도 (Bearer 토큰으로 인증)
       final response = await _apiClient.get(
         Endpoints.primaryPet,
       );
@@ -167,6 +203,16 @@ class PetService {
     if (oldPet.breedCode != newPet.breedCode) {
       return true;
     }
+
+    // 종 비교
+    if (oldPet.species != newPet.species) {
+      return true;
+    }
+
+    // 나이 단계
+    if (oldPet.ageStage != newPet.ageStage) {
+      return true;
+    }
     
     // 건강 고민 리스트 비교
     if (!_listEquals(oldPet.healthConcerns, newPet.healthConcerns)) {
@@ -186,13 +232,12 @@ class PetService {
     return false;
   }
 
-  /// 리스트 비교 헬퍼
+  /// 리스트 비교 헬퍼 (순서 무관)
   bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
+    final aSet = a.toSet();
+    final bSet = b.toSet();
+    return aSet.length == bSet.length && aSet.every((item) => bSet.contains(item));
   }
 
   /// 로컬 캐시에서 PetSummary 조회
@@ -239,5 +284,6 @@ class PetService {
 /// PetService Provider
 final petServiceProvider = Provider<PetService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return PetService(apiClient);
+  final petRepository = ref.watch(petRepositoryProvider);
+  return PetService(apiClient, petRepository);
 });

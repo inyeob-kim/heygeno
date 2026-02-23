@@ -7,6 +7,7 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_shadows.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 11: Photo - DESIGN_GUIDE v1.0 준수
 class Step11Photo extends StatefulWidget {
@@ -61,13 +62,13 @@ class _Step11PhotoState extends State<Step11Photo> {
       totalSteps: widget.totalSteps,
       onBack: widget.onBack,
       emoji: '📸',
-      title: '아이 사진을 올려볼까요?',
-      subtitle: '나중에 해도 괜찮아요',
-      ctaText: '헤이제노 시작하기',
+      title: AppLocalizations.of(context)!.onboarding_step11_title,
+      subtitle: AppLocalizations.of(context)!.onboarding_step11_subtitle,
+      ctaText: AppLocalizations.of(context)!.onboarding_step11_cta,
       onCTAClick: widget.onNext,
       ctaSecondary: hasPhoto
           ? CTASecondary(
-              text: '사진 변경',
+              text: AppLocalizations.of(context)!.onboarding_step11_changePhoto,
               onClick: () => _showImageSourceDialog(context),
             )
           : null,
@@ -137,7 +138,7 @@ class _Step11PhotoState extends State<Step11Photo> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
-                      '사진을 선택해주세요',
+                      AppLocalizations.of(context)!.onboarding_step11_selectPhoto,
                       style: AppTypography.body.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -146,7 +147,7 @@ class _Step11PhotoState extends State<Step11Photo> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      '탭하여 사진을 선택하세요',
+                      AppLocalizations.of(context)!.onboarding_step11_tapToSelect,
                       style: AppTypography.small.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -207,7 +208,7 @@ class _Step11PhotoState extends State<Step11Photo> {
                   ),
                 ),
                 title: Text(
-                  '갤러리에서 선택',
+                  AppLocalizations.of(context)!.onboarding_step11_gallery,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -238,7 +239,7 @@ class _Step11PhotoState extends State<Step11Photo> {
                   ),
                 ),
                 title: Text(
-                  '사진 촬영',
+                  AppLocalizations.of(context)!.onboarding_step11_camera,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,

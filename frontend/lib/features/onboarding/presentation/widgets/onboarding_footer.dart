@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../ui/widgets/app_buttons.dart';
+import '../../../../design_system/components/button.dart';
 
 /// 온보딩 푸터 (CTA 버튼)
 class OnboardingFooter extends StatelessWidget {
@@ -29,7 +29,7 @@ class OnboardingFooter extends StatelessWidget {
           top: AppSpacing.md,
           bottom: AppSpacing.lg,
         ),
-        child: AppPrimaryButton(
+        child: PrimaryButton(
           text: buttonText,
           onPressed: isEnabled ? onPressed : null,
         ),

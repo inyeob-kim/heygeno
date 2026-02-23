@@ -3,6 +3,7 @@ import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 상품 Hero 영역 (카드 없이 깔끔하게)
 class ProductHeroSection extends StatelessWidget {
@@ -106,7 +107,7 @@ class ProductHeroSection extends StatelessWidget {
               const SizedBox(width: 12),
               if (averagePrice != null && averagePrice! > currentPrice!)
                 Text(
-                  '최근 14일 평균 ${PriceFormatter.formatWithCurrency(averagePrice!)} 대비',
+                  AppLocalizations.of(context)!.productDetailWidget_averageLast14Days(PriceFormatter.formatWithCurrency(averagePrice!)),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -125,7 +126,7 @@ class ProductHeroSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${PriceFormatter.formatWithCurrency(averagePrice! - currentPrice!)} 저렴해요',
+                  AppLocalizations.of(context)!.productDetailWidget_cheaperBy(PriceFormatter.formatWithCurrency(averagePrice! - currentPrice!)),
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.positiveGreen,
@@ -153,7 +154,7 @@ class ProductHeroSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '우리 아이에게 좋은 가격이에요',
+                    AppLocalizations.of(context)!.productDetailWidget_goodPriceForPet,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.positiveGreen,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 가격 변동 그래프 섹션
 class PriceGraphSection extends ConsumerWidget {
@@ -29,7 +30,7 @@ class PriceGraphSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '가격 변동 그래프',
+                AppLocalizations.of(context)!.productDetailWidget_priceGraph,
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -38,7 +39,7 @@ class PriceGraphSection extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '최근 가격 흐름을 한눈에 확인하세요',
+                AppLocalizations.of(context)!.productDetailWidget_priceGraphDescription,
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey.shade600,
@@ -56,23 +57,23 @@ class PriceGraphSection extends ConsumerWidget {
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: _buildGraph(),
+          child: _buildGraph(context),
         ),
         const SizedBox(height: 16),
         
         // 숫자 요약
-        _buildPriceSummary(),
+        _buildPriceSummary(context),
       ],
     );
   }
 
-  Widget _buildGraph() {
+  Widget _buildGraph(BuildContext context) {
     // TODO: 실제 그래프 라이브러리로 구현 (fl_chart 등)
     // 임시로 간단한 바 차트 스타일
     if (priceHistory == null || priceHistory!.isEmpty) {
       return Center(
         child: Text(
-          '가격 데이터가 없습니다',
+          AppLocalizations.of(context)!.productDetailWidget_noPriceData,
           style: TextStyle(
             color: Colors.grey.shade500,
             fontSize: 14,
@@ -122,25 +123,28 @@ class PriceGraphSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriceSummary() {
+  Widget _buildPriceSummary(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         if (minPrice != null)
           _buildSummaryItem(
-            '최저가',
+            context,
+            AppLocalizations.of(context)!.productDetailWidget_lowestPrice,
             PriceFormatter.formatWithCurrency(minPrice!),
             AppColors.positiveGreen,
           ),
         if (averagePrice != null)
           _buildSummaryItem(
-            '평균가',
+            context,
+            AppLocalizations.of(context)!.productDetailWidget_averagePrice,
             PriceFormatter.formatWithCurrency(averagePrice!),
             Colors.grey.shade600,
           ),
         if (maxPrice != null)
           _buildSummaryItem(
-            '최고가',
+            context,
+            AppLocalizations.of(context)!.productDetailWidget_highestPrice,
             PriceFormatter.formatWithCurrency(maxPrice!),
             Colors.red.shade300,
           ),
@@ -148,7 +152,7 @@ class PriceGraphSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color) {
+  Widget _buildSummaryItem(BuildContext context, String label, String value, Color color) {
     return Column(
       children: [
         Text(

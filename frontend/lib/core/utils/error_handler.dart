@@ -11,12 +11,12 @@ Failure handleException(Exception exception) {
     if (message.isNotEmpty && !message.contains('Exception') && !message.contains('Error')) {
       return ServerFailure(message);
     }
-    return ServerFailure('서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    return ServerFailure('A server error occurred. Please try again later.');
   } else if (exception is NetworkException) {
-    return NetworkFailure('인터넷 연결을 확인해주세요. 네트워크가 연결되어 있는지 확인해주세요.');
+    return NetworkFailure('Please check your internet connection.');
   } else if (exception is CacheException) {
-    return CacheFailure('데이터를 불러오는데 실패했습니다. 다시 시도해주세요.');
+    return CacheFailure('Failed to load data. Please try again.');
   } else {
-    return ServerFailure('알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    return ServerFailure('An unknown error occurred. Please try again later.');
   }
 }

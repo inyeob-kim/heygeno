@@ -7,7 +7,8 @@ from typing import Optional
 from datetime import datetime
 
 from app.db.session import get_db
-from app.api.deps import get_device_uid
+from app.api.deps import get_current_user_required
+from app.models.user import User
 from app.schemas.pet import PetCreate, PetRead, PetUpdate
 from app.schemas.pet_summary import PetSummaryResponse
 from app.services.pet_service import PetService
@@ -19,36 +20,13 @@ router = APIRouter()
 
 @router.get("/", response_model=list[PetSummaryResponse])
 async def get_pets(
-    device_uid: Optional[str] = Depends(get_device_uid),
+    user: User = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db),
 ):
-    """반려동물 목록 조회 (device_uid 기반)"""
+    """반려동물 목록 조회 (Bearer 토큰 필수)"""
     import logging
     logger = logging.getLogger(__name__)
-    
-    if not device_uid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Device-UID header is required"
-        )
-    
-    logger.info(f"[Pets API] / 요청: device_uid={device_uid}")
-    
-    # device_uid로 user 찾기
-    try:
-        user = await UserService.get_user_by_device_uid(device_uid, db)
-        if not user:
-            logger.info(f"[Pets API] User 없음: device_uid={device_uid}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User 조회 중 오류가 발생했습니다: {str(e)}"
-            )
-    except Exception as e:
-        logger.error(f"[Pets API] User 조회 중 오류: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"User 조회 중 오류가 발생했습니다: {str(e)}"
-        )
+    logger.info(f"[Pets API] / 요청: user_id={user.id}")
     
     # user의 모든 펫 조회
     try:
@@ -125,23 +103,10 @@ async def get_pets(
 @router.post("/", response_model=PetRead, status_code=201)
 async def create_pet(
     pet_data: PetCreate,
-    device_uid: Optional[str] = Depends(get_device_uid),
+    user: User = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db),
 ):
-    """반려동물 등록"""
-    if not device_uid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Device-UID header is required"
-        )
-    
-    # device_uid로 사용자 조회
-    user = await UserService.get_user_by_device_uid(device_uid, db)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-    )
+    """반려동물 등록 (Bearer 토큰 필수)"""
     
     pet = await PetService.create_pet(user.id, pet_data, db)
     return PetRead.model_validate(pet)
@@ -149,24 +114,17 @@ async def create_pet(
 
 @router.get("/primary", response_model=PetSummaryResponse)
 async def get_primary_pet(
-    device_uid: Optional[str] = Depends(get_device_uid),
-    db: AsyncSession = Depends(get_db)
+    user: User = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Primary Pet 요약 정보 조회 (홈 화면용)"""
+    """Primary Pet 요약 정보 조회 (홈 화면용, Bearer 토큰 필수)"""
     import logging
     logger = logging.getLogger(__name__)
-    
-    if not device_uid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Device-UID header is required"
-        )
-    
-    logger.info(f"[Pets API] /primary 요청: device_uid={device_uid}")
-    pet = await PetService.get_primary_pet_by_device_uid(device_uid, db)
+    logger.info(f"[Pets API] /primary 요청: user_id={user.id}")
+    pet = await PetService.get_primary_pet_by_user_id(user.id, db)
     
     if pet is None:
-        logger.info(f"[Pets API] Primary pet 없음: device_uid={device_uid}")
+        logger.info(f"[Pets API] Primary pet 없음: user_id={user.id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Primary pet not found"
@@ -228,30 +186,15 @@ async def get_pet(
 @router.patch("/{pet_id}/set-primary", response_model=PetSummaryResponse)
 async def set_primary_pet(
     pet_id: UUID,
-    device_uid: Optional[str] = Depends(get_device_uid),
+    user: User = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db),
 ):
-    """특정 펫을 Primary Pet으로 설정"""
+    """특정 펫을 Primary Pet으로 설정 (Bearer 토큰 필수)"""
     import logging
     logger = logging.getLogger(__name__)
-    
-    if not device_uid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Device-UID header is required"
-        )
-    
-    logger.info(f"[Pets API] /{pet_id}/set-primary 요청: device_uid={device_uid}")
+    logger.info(f"[Pets API] /{pet_id}/set-primary 요청: user_id={user.id}")
     
     try:
-        # device_uid로 user 찾기
-        user = await UserService.get_user_by_device_uid(device_uid, db)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
         # Primary pet 설정
         pet = await PetService.set_primary_pet(pet_id, user.id, db)
         logger.info(f"[Pets API] Primary pet 설정 완료: pet_id={pet.id}, name={pet.name}")
@@ -311,29 +254,15 @@ async def set_primary_pet(
 async def update_pet(
     pet_id: UUID,
     pet_update: PetUpdate,
-    device_uid: Optional[str] = Depends(get_device_uid),
+    user: User = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db),
 ):
-    """펫 프로필 업데이트 (변할 수 있는 정보만)"""
+    """펫 프로필 업데이트 (Bearer 토큰 필수)"""
     import logging
     logger = logging.getLogger(__name__)
-    
-    if not device_uid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Device-UID header is required"
-        )
-    
-    logger.info(f"[Pets API] PATCH /{pet_id} 요청: device_uid={device_uid}, update_data={pet_update.model_dump()}")
+    logger.info(f"[Pets API] PATCH /{pet_id} 요청: user_id={user.id}, update_data={pet_update.model_dump()}")
     
     try:
-        # device_uid로 user 찾기
-        user = await UserService.get_user_by_device_uid(device_uid, db)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
         
         # 펫 조회 및 소유자 확인
         pet = await PetService.get_pet_by_id(pet_id, db)

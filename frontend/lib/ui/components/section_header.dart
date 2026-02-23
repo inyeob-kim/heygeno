@@ -4,6 +4,10 @@ import '../theme/app_typography.dart';
 
 /// 섹션 헤더 컴포넌트 (토스 스타일)
 /// 카드/구분선 없이 '타이틀 + 서브 + 더보기'로 섹션 구분
+/// 
+/// @deprecated Use `design_system/components/section_header.dart` SectionHeader instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/section_header.dart SectionHeader instead')
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;

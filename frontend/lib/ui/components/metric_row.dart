@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 토스식 수치 요약 UI 컴포넌트
 /// 예: '평균 대비 -7.9%' 형태의 한 줄 수치 표시
@@ -66,7 +67,8 @@ class MetricRow extends StatelessWidget {
 /// MetricRow의 편의 생성자들
 extension MetricRowHelpers on MetricRow {
   /// 평균 대비 퍼센트 표시용
-  static MetricRow averageDelta({
+  static MetricRow averageDelta(
+    BuildContext context, {
     required double deltaPercent,
     String? helperText,
   }) {
@@ -76,20 +78,21 @@ extension MetricRowHelpers on MetricRow {
         : '${deltaPercent.toStringAsFixed(1)}%';
     
     return MetricRow(
-      label: '평균 대비',
+      label: AppLocalizations.of(context)!.metric_averageDelta,
       valueText: valueText,
       valueColor: isPositive ? AppColors.positive : AppColors.negative,
-      helperText: helperText,
+      helperText: helperText ?? AppLocalizations.of(context)!.metric_last14Days,
     );
   }
 
   /// 할인율 표시용
-  static MetricRow discount({
+  static MetricRow discount(
+    BuildContext context, {
     required double discountPercent,
     String? helperText,
   }) {
     return MetricRow(
-      label: '할인율',
+      label: AppLocalizations.of(context)!.metric_discount,
       valueText: '-${discountPercent.toStringAsFixed(1)}%',
       valueColor: AppColors.positive,
       helperText: helperText,
@@ -97,7 +100,8 @@ extension MetricRowHelpers on MetricRow {
   }
 
   /// 가격 차이 표시용
-  static MetricRow priceDiff({
+  static MetricRow priceDiff(
+    BuildContext context, {
     required int currentPrice,
     required int avgPrice,
     String? helperText,
@@ -107,12 +111,12 @@ extension MetricRowHelpers on MetricRow {
     final isCheaper = diff > 0;
     
     return MetricRow(
-      label: '평균 대비',
+      label: AppLocalizations.of(context)!.metric_averageDelta,
       valueText: isCheaper
           ? '-${diffPercent.toStringAsFixed(1)}%'
           : '+${diffPercent.toStringAsFixed(1)}%',
       valueColor: isCheaper ? AppColors.positive : AppColors.negative,
-      helperText: helperText,
+      helperText: helperText ?? AppLocalizations.of(context)!.metric_last14Days,
     );
   }
 }

@@ -29,85 +29,85 @@ except ImportError:
 #    - LLM 응답의 신뢰도 점수 (0~100)
 #    - 75점 미만 시 fallback 메시지 사용
 
-SYSTEM_PROMPT_TECHNICAL = """너는 반려동물 사료 추천 시스템의 설명 생성기다.
-사용자에게 추천 과정을 친절하고 명확하게 설명해줘.
-한국어로 자연스럽게 설명하고, 전문 용어는 피하고 쉬운 말로 풀어서 설명해줘.
-설명은 2-3문장으로 간결하게 작성하고, 다음 내용을 포함해줘:
-1. 펫의 특성(나이, 건강 고민, 알레르기 등)과 사료의 연결점
-2. 추천 시스템이 이 상품을 선택한 이유
-3. 구체적인 혜택이나 효과"""
+SYSTEM_PROMPT_TECHNICAL = """You are an explanation generator for a pet food recommendation system.
+Explain the recommendation process to users in a friendly and clear manner.
+Write naturally in English, avoiding technical jargon and using simple language.
+Keep the explanation concise (2-3 sentences) and include the following:
+1. The connection between the pet's characteristics (age, health concerns, allergies, etc.) and the food
+2. Why the recommendation system selected this product
+3. Specific benefits or effects"""
 
-SYSTEM_PROMPT_EXPERT = """너는 반려동물 사료 추천 전문가다.
-사용자에게 추천 이유를 친절하고 상세하게 설명해줘.
-한국어로 자연스럽게 설명하고, 전문 용어는 피하고 쉬운 말로 풀어서 설명해줘.
-설명은 3-5문장으로 상세하게 작성하고, 다음 내용을 포함해줘:
-1. 펫의 특성(나이, 건강 고민, 알레르기 등)과 사료의 연결점
-2. 주요 성분이나 특징이 펫에게 왜 좋은지
-3. 참고 자료가 있으면 그것을 근거로 한 전문적인 설명
-4. 구체적인 혜택이나 효과"""
+SYSTEM_PROMPT_EXPERT = """You are a pet food recommendation expert.
+Explain the recommendation reasons to users in a friendly and detailed manner.
+Write naturally in English, avoiding technical jargon and using simple language.
+Write a detailed explanation (3-5 sentences) including the following:
+1. The connection between the pet's characteristics (age, health concerns, allergies, etc.) and the food
+2. Why the key ingredients or features are beneficial for the pet
+3. Professional explanation based on reference materials if available
+4. Specific benefits or effects"""
 
-USER_PROMPT_TEMPLATE_TECHNICAL = """펫 정보:
-- 이름: {pet_name}
-- 종류: {pet_species}
-- 나이 단계: {pet_age_stage}
-- 체중: {pet_weight}kg
-- 품종: {pet_breed}
-- 중성화: {pet_neutered}
-- 건강 고민: {health_concerns}
-- 알레르기: {allergies}
+USER_PROMPT_TEMPLATE_TECHNICAL = """Pet Information:
+- Name: {pet_name}
+- Species: {pet_species}
+- Age Stage: {pet_age_stage}
+- Weight: {pet_weight} lb
+- Breed: {pet_breed}
+- Neutered: {pet_neutered}
+- Health Concerns: {health_concerns}
+- Allergies: {allergies}
 
-추천 상품:
-- 브랜드: {brand_name}
-- 상품명: {product_name}
+Recommended Product:
+- Brand: {brand_name}
+- Product Name: {product_name}
 
-추천 이유 (기술적):
+Technical Reasons:
 {technical_reasons}
 
-사용자 선호도:
+User Preferences:
 {user_prefs_text}
 
-위 정보를 바탕으로, 추천 시스템이 이 사료를 왜 선택했는지 자연스럽고 명확하게 설명해줘.
+Based on the above information, explain naturally and clearly why the recommendation system selected this food.
 
-다음 내용을 포함해서 2-3문장으로 작성해줘:
-1. 펫의 이름을 사용해서 친근하게 시작
-2. 펫의 특성(나이 단계, 건강 고민, 알레르기 등)과 사료의 연결점을 구체적으로 설명
-3. 추천 시스템이 이 상품을 선택한 기술적 이유를 설명
-4. 사용자 선호도가 있으면 그것도 자연스럽게 언급
+Write 2-3 sentences including the following:
+1. Start warmly using the pet's name
+2. Specifically explain the connection between the pet's characteristics (age stage, health concerns, allergies, etc.) and the food
+3. Explain the technical reasons why the recommendation system selected this product
+4. If user preferences exist, mention them naturally
 
-설명은 간결하고 명확하게 작성하되, 전문 용어는 피하고 쉬운 말로 풀어서 설명해줘."""
+Keep the explanation concise and clear, avoiding technical jargon and using simple language."""
 
-USER_PROMPT_TEMPLATE_EXPERT = """펫 정보:
-- 이름: {pet_name}
-- 종류: {pet_species}
-- 나이 단계: {pet_age_stage}
-- 체중: {pet_weight}kg
-- 품종: {pet_breed}
-- 중성화: {pet_neutered}
-- 건강 고민: {health_concerns}
-- 알레르기: {allergies}
+USER_PROMPT_TEMPLATE_EXPERT = """Pet Information:
+- Name: {pet_name}
+- Species: {pet_species}
+- Age Stage: {pet_age_stage}
+- Weight: {pet_weight} lb
+- Breed: {pet_breed}
+- Neutered: {pet_neutered}
+- Health Concerns: {health_concerns}
+- Allergies: {allergies}
 
-추천 상품:
-- 브랜드: {brand_name}
-- 상품명: {product_name}
+Recommended Product:
+- Brand: {brand_name}
+- Product Name: {product_name}
 
-추천 이유 (기술적):
+Technical Reasons:
 {technical_reasons}
 
-사용자 선호도:
+User Preferences:
 {user_prefs_text}
 
 {rag_context}
 
-위 정보를 바탕으로, 이 사료가 왜 이 펫에게 추천되는지 자연스럽고 친절하게 상세하게 설명해줘.
+Based on the above information, explain naturally, kindly, and in detail why this food is recommended for this pet.
 
-다음 내용을 포함해서 3-5문장으로 작성해줘:
-1. 펫의 이름을 사용해서 친근하게 시작
-2. 펫의 특성(나이 단계, 건강 고민, 알레르기 등)과 사료의 연결점을 구체적으로 설명
-3. 주요 성분이나 특징이 펫에게 어떤 혜택을 주는지 상세히 설명
-4. 참고 자료(rag_context)가 있으면 그것을 근거로 전문적이고 신뢰할 수 있는 설명 추가
-5. 사용자 선호도가 있으면 그것도 자연스럽게 언급
+Write 3-5 sentences including the following:
+1. Start warmly using the pet's name
+2. Specifically explain the connection between the pet's characteristics (age stage, health concerns, allergies, etc.) and the food
+3. Explain in detail what benefits the key ingredients or features provide to the pet
+4. If reference materials (rag_context) are available, add professional and trustworthy explanations based on them
+5. If user preferences exist, mention them naturally
 
-설명은 구체적이고 상세하게 작성하되, 전문 용어는 피하고 쉬운 말로 풀어서 설명해줘."""
+Write the explanation specifically and in detail, avoiding technical jargon and using simple language."""
 
 
 class RecommendationExplanationService:
@@ -205,18 +205,18 @@ class RecommendationExplanationService:
                 
                 return []
             
-            # 쿼리 텍스트 생성
+            # Query text generation
             query_parts = []
             if pet_species:
-                query_parts.append(f"{pet_species} 사료")
+                query_parts.append(f"{pet_species} food")
             if health_concerns:
                 query_parts.extend(health_concerns)
             if allergies:
-                query_parts.extend([f"{allergy} 알레르기" for allergy in allergies])
+                query_parts.extend([f"{allergy} allergy" for allergy in allergies])
             if product_name:
                 query_parts.append(product_name)
             
-            query_text = " ".join(query_parts) if query_parts else product_name or "반려동물 사료"
+            query_text = " ".join(query_parts) if query_parts else product_name or "pet food"
             
             logger.info(f"[RAG] 🔍 검색 쿼리: {query_text}")
             
@@ -364,57 +364,60 @@ class RecommendationExplanationService:
             # 기술적 이유를 문자열로 변환
             reasons_text = "\n".join([f"- {reason}" for reason in technical_reasons])
             
-            # 나이 단계 한글 변환
-            age_stage_kr = {
-                "PUPPY": "강아지",
-                "ADULT": "성견",
-                "SENIOR": "노견"
-            }.get(pet_age_stage or "", "성견")
+            # Age stage conversion to English
+            age_stage_en = {
+                "PUPPY": "Puppy",
+                "ADULT": "Adult",
+                "SENIOR": "Senior"
+            }.get(pet_age_stage or "", "Adult")
             
-            # 종류 한글 변환
-            species_kr = "강아지" if pet_species == "DOG" else "고양이"
+            # Species conversion to English
+            species_en = "Dog" if pet_species == "DOG" else "Cat"
             
-            # 중성화 여부 텍스트
-            neutered_text = "완료" if pet_neutered else "미완료" if pet_neutered is False else "모름"
+            # Neutered status text
+            neutered_text = "Yes" if pet_neutered else "No" if pet_neutered is False else "Unknown"
             
-            # 건강 고민 텍스트
-            health_concerns_text = ", ".join(health_concerns) if health_concerns else "없음"
+            # Health concerns text
+            health_concerns_text = ", ".join(health_concerns) if health_concerns else "None"
             
-            # 알레르기 텍스트
-            allergies_text = ", ".join(allergies) if allergies else "없음"
+            # Allergies text
+            allergies_text = ", ".join(allergies) if allergies else "None"
             
-            # 품종 텍스트
-            breed_text = pet_breed or "정보 없음"
+            # Breed text
+            breed_text = pet_breed or "Unknown"
             
-            # 사용자 선호도 텍스트 생성
-            user_prefs_text = "없음"
+            # User preferences text generation
+            user_prefs_text = "None"
             if user_prefs:
                 weights_preset = user_prefs.get("weights_preset", "BALANCED")
                 hard_exclude = user_prefs.get("hard_exclude_allergens", [])
                 soft_avoid = user_prefs.get("soft_avoid_ingredients", [])
                 max_price = user_prefs.get("max_price_per_kg")
                 
-                preset_kr = {
-                    "SAFE": "안전 우선",
-                    "BALANCED": "균형",
-                    "VALUE": "가성비 우선"
+                preset_en = {
+                    "SAFE": "Safety First",
+                    "BALANCED": "Balanced",
+                    "VALUE": "Value First"
                 }.get(weights_preset, weights_preset)
                 
-                prefs_parts = [f"모드: {preset_kr}"]
+                prefs_parts = [f"Mode: {preset_en}"]
                 if hard_exclude:
-                    prefs_parts.append(f"제외 알레르겐: {', '.join(hard_exclude)}")
+                    prefs_parts.append(f"Excluded Allergens: {', '.join(hard_exclude)}")
                 if soft_avoid:
-                    prefs_parts.append(f"피하고 싶은 성분: {', '.join(soft_avoid)}")
+                    prefs_parts.append(f"Ingredients to Avoid: {', '.join(soft_avoid)}")
                 if max_price:
-                    prefs_parts.append(f"최대 가격: {max_price}원/kg")
+                    prefs_parts.append(f"Max Price: ${max_price:.2f}/kg")
                 
-                user_prefs_text = ", ".join(prefs_parts) if prefs_parts else "없음"
+                user_prefs_text = ", ".join(prefs_parts) if prefs_parts else "None"
+            
+            # Convert weight from kg to lb (1 kg = 2.20462 lb)
+            weight_lb = pet_weight * 2.20462
             
             prompt = USER_PROMPT_TEMPLATE_TECHNICAL.format(
                 pet_name=pet_name,
-                pet_species=species_kr,
-                pet_age_stage=age_stage_kr,
-                pet_weight=pet_weight,
+                pet_species=species_en,
+                pet_age_stage=age_stage_en,
+                pet_weight=round(weight_lb, 1),
                 pet_breed=breed_text,
                 pet_neutered=neutered_text,
                 health_concerns=health_concerns_text,
@@ -520,79 +523,82 @@ class RecommendationExplanationService:
                     logger.info(f"  메타데이터: {chunk.get('metadata', {})}")
                 logger.info("=" * 80 + "\n")
             
-            # RAG 컨텍스트 생성
+            # RAG context generation
             rag_context = ""
             if retrieved_chunks:
-                rag_context = "\n참고 자료 (전문 문서):\n"
+                rag_context = "\nReference Materials (Expert Documents):\n"
                 for idx, chunk in enumerate(retrieved_chunks[:5], 1):
                     source = chunk.get("source", "Unknown")
-                    content = chunk.get("content", "")[:500]  # 프롬프트에는 500자만 사용
+                    content = chunk.get("content", "")[:500]  # Use only 500 characters in prompt
                     distance = chunk.get("distance", 0.0)
-                    rag_context += f"{idx}. [{source}] (유사도: {1-distance:.2f})\n{content}\n\n"
+                    rag_context += f"{idx}. [{source}] (Similarity: {1-distance:.2f})\n{content}\n\n"
                 
-                # RAG 컨텍스트 전체 로그 출력
-                logger.info("[RAG] 📄 LLM에 전달될 RAG 컨텍스트:")
+                # Log full RAG context
+                logger.info("[RAG] 📄 RAG context to be passed to LLM:")
                 logger.info("=" * 80)
                 logger.info(rag_context)
                 logger.info("=" * 80)
             else:
-                rag_context = "\n참고 자료: 없음\n"
-                logger.info("[RAG] ⚠️ RAG 컨텍스트 없음 (retrieved_chunks가 비어있음)")
+                rag_context = "\nReference Materials: None\n"
+                logger.info("[RAG] ⚠️ No RAG context (retrieved_chunks is empty)")
             
             # 기술적 이유를 문자열로 변환
             reasons_text = "\n".join([f"- {reason}" for reason in technical_reasons])
             
-            # 나이 단계 한글 변환
-            age_stage_kr = {
-                "PUPPY": "강아지",
-                "ADULT": "성견",
-                "SENIOR": "노견"
-            }.get(pet_age_stage or "", "성견")
+            # Age stage conversion to English
+            age_stage_en = {
+                "PUPPY": "Puppy",
+                "ADULT": "Adult",
+                "SENIOR": "Senior"
+            }.get(pet_age_stage or "", "Adult")
             
-            # 종류 한글 변환
-            species_kr = "강아지" if pet_species == "DOG" else "고양이"
+            # Species conversion to English
+            species_en = "Dog" if pet_species == "DOG" else "Cat"
             
-            # 중성화 여부 텍스트
-            neutered_text = "완료" if pet_neutered else "미완료" if pet_neutered is False else "모름"
+            # Neutered status text
+            neutered_text = "Yes" if pet_neutered else "No" if pet_neutered is False else "Unknown"
             
-            # 건강 고민 텍스트
-            health_concerns_text = ", ".join(health_concerns) if health_concerns else "없음"
+            # Health concerns text
+            health_concerns_text = ", ".join(health_concerns) if health_concerns else "None"
             
-            # 알레르기 텍스트
-            allergies_text = ", ".join(allergies) if allergies else "없음"
+            # Allergies text
+            allergies_text = ", ".join(allergies) if allergies else "None"
             
-            # 품종 텍스트
-            breed_text = pet_breed or "정보 없음"
+            # Breed text
+            breed_text = pet_breed or "Unknown"
             
-            # 사용자 선호도 텍스트 생성
-            user_prefs_text = "없음"
+            # User preferences text generation
+            user_prefs_text = "None"
             if user_prefs:
                 weights_preset = user_prefs.get("weights_preset", "BALANCED")
                 hard_exclude = user_prefs.get("hard_exclude_allergens", [])
                 soft_avoid = user_prefs.get("soft_avoid_ingredients", [])
                 max_price = user_prefs.get("max_price_per_kg")
                 
-                preset_kr = {
-                    "SAFE": "안전 우선",
-                    "BALANCED": "균형",
-                    "VALUE": "가성비 우선"
+                preset_en = {
+                    "SAFE": "Safety First",
+                    "BALANCED": "Balanced",
+                    "VALUE": "Value First"
                 }.get(weights_preset, weights_preset)
                 
-                prefs_parts = [f"모드: {preset_kr}"]
+                prefs_parts = [f"Mode: {preset_en}"]
                 if hard_exclude:
-                    prefs_parts.append(f"제외 알레르겐: {', '.join(hard_exclude)}")
+                    prefs_parts.append(f"Excluded Allergens: {', '.join(hard_exclude)}")
                 if soft_avoid:
-                    prefs_parts.append(f"피하고 싶은 성분: {', '.join(soft_avoid)}")
+                    prefs_parts.append(f"Ingredients to Avoid: {', '.join(soft_avoid)}")
                 if max_price:
-                    prefs_parts.append(f"최대 가격: {max_price}원/kg")
+                    prefs_parts.append(f"Max Price: ${max_price:.2f}/kg")
                 
-                user_prefs_text = ", ".join(prefs_parts) if prefs_parts else "없음"
+                user_prefs_text = ", ".join(prefs_parts) if prefs_parts else "None"
+            
+            # Convert weight from kg to lb (1 kg = 2.20462 lb)
+            weight_lb = pet_weight * 2.20462
             
             prompt = USER_PROMPT_TEMPLATE_EXPERT.format(
                 pet_name=pet_name,
-                pet_species=species_kr,
-                pet_age_stage=age_stage_kr,
-                pet_weight=pet_weight,
+                pet_species=species_en,
+                pet_age_stage=age_stage_en,
+                pet_weight=round(weight_lb, 1),
                 pet_breed=breed_text,
                 pet_neutered=neutered_text,
                 health_concerns=health_concerns_text,
@@ -696,12 +702,12 @@ class RecommendationExplanationService:
     
     @staticmethod
     def _generate_fallback_explanation(pet_name: str, technical_reasons: List[str]) -> str:
-        """LLM 실패 시 기본 설명 생성"""
+        """Generate fallback explanation when LLM fails"""
         if not technical_reasons:
-            return f"{pet_name}에게 적합한 사료입니다."
+            return f"This food is suitable for {pet_name}."
         
-        # 주요 이유만 선택 (최대 3개)
+        # Select only main reasons (max 3)
         main_reasons = technical_reasons[:3]
         reasons_text = ", ".join(main_reasons)
         
-        return f"{pet_name}에게 {reasons_text} 등의 이유로 추천되는 사료입니다."
+        return f"This food is recommended for {pet_name} because of {reasons_text}."

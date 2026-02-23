@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import traceback
 import logging
 from app.db.session import get_db
+from app.api.deps import get_current_user_required
+from app.models.user import User
 from app.schemas.onboarding import OnboardingCompleteRequest, OnboardingCompleteResponse
 from app.services.onboarding_service import complete_onboarding
 
@@ -13,17 +15,18 @@ router = APIRouter()
 @router.post("/complete", response_model=OnboardingCompleteResponse)
 async def complete_onboarding_endpoint(
     request: OnboardingCompleteRequest,
-    db: AsyncSession = Depends(get_db)
+    user: User = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    온보딩 완료 API
+    온보딩 완료 API. Authorization Bearer 토큰 필수.
     - 트랜잭션으로 한번에 저장
     - 실패 시 롤백
     """
     try:
-        logger.info(f"[Onboarding] 요청 수신: device_uid={request.device_uid}, nickname={request.nickname}")
+        logger.info(f"[Onboarding] 요청 수신: user_id={user.id}, nickname={request.nickname}")
         logger.info(f"[Onboarding] Pet 정보: name={request.pet_name}, species={request.species}, age_mode={request.age_mode}")
-        return await complete_onboarding(db, request)
+        return await complete_onboarding(db, user.id, request)
     except ValueError as e:
         logger.error(f"[Onboarding] Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

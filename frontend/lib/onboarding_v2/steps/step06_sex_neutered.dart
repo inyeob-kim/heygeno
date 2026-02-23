@@ -3,6 +3,7 @@ import '../onboarding_shell.dart';
 import '../widgets/selection_card.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 6: Sex & Neutered - DESIGN_GUIDE v1.0 준수
 class Step06SexNeutered extends StatelessWidget {
@@ -34,8 +35,8 @@ class Step06SexNeutered extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '✨',
-      title: '성별과 중성화 정보를 알려주세요',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step6_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: onNext,
       child: Column(
@@ -43,7 +44,7 @@ class Step06SexNeutered extends StatelessWidget {
         children: [
           // Sex Section
           Text(
-            '성별',
+            AppLocalizations.of(context)!.onboarding_step6_sexLabel,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -54,7 +55,7 @@ class Step06SexNeutered extends StatelessWidget {
             onTap: () => onUpdate({'sex': 'male'}),
             emoji: '♂️',
             child: Text(
-              '남아',
+              AppLocalizations.of(context)!.onboarding_step6_male,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -66,7 +67,7 @@ class Step06SexNeutered extends StatelessWidget {
             onTap: () => onUpdate({'sex': 'female'}),
             emoji: '♀️',
             child: Text(
-              '여아',
+              AppLocalizations.of(context)!.onboarding_step6_female,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -75,7 +76,7 @@ class Step06SexNeutered extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           // Neutered Section
           Text(
-            '중성화',
+            AppLocalizations.of(context)!.onboarding_step6_neuteredLabel,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -85,7 +86,7 @@ class Step06SexNeutered extends StatelessWidget {
             selected: neutered == true,
             onTap: () => onUpdate({'neutered': true}),
             child: Text(
-              '했어요',
+              AppLocalizations.of(context)!.onboarding_step6_neuteredYes,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -96,7 +97,7 @@ class Step06SexNeutered extends StatelessWidget {
             selected: neutered == false,
             onTap: () => onUpdate({'neutered': false}),
             child: Text(
-              '안 했어요',
+              AppLocalizations.of(context)!.onboarding_step6_neuteredNo,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -107,7 +108,7 @@ class Step06SexNeutered extends StatelessWidget {
             selected: neutered == null,
             onTap: () => onUpdate({'neutered': null}),
             child: Text(
-              '잘 모르겠어요',
+              AppLocalizations.of(context)!.onboarding_step6_neuteredUnknown,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),

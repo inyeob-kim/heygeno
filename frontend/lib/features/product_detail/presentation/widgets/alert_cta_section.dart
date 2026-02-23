@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
-import '../../../../../ui/widgets/app_buttons.dart';
+import '../../../../../design_system/components/button.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 알림 받기 CTA 섹션
 class AlertCtaSection extends StatelessWidget {
@@ -35,7 +36,7 @@ class AlertCtaSection extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '가격 알림이 설정되었습니다',
+                AppLocalizations.of(context)!.productDetailWidget_alertSet,
                 style: AppTypography.body.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -64,7 +65,7 @@ class AlertCtaSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '지금은 평균보다 저렴해요',
+                AppLocalizations.of(context)!.productDetailWidget_cheaperThanAverage,
                 style: AppTypography.body1.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -74,16 +75,15 @@ class AlertCtaSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '이 가격을 놓치지 않으려면?',
+            AppLocalizations.of(context)!.productDetailWidget_dontMissPrice,
             style: AppTypography.body2.copyWith(
               color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 16),
-          AppPrimaryButton(
-            text: '가격 알림 받기',
+          PrimaryButton(
+            text: AppLocalizations.of(context)!.productDetailWidget_priceAlertGet,
             onPressed: isTrackingLoading ? null : onAlertTap,
-            height: 48,
           ),
         ],
       ),

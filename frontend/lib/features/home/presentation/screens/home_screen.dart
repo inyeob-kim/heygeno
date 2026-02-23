@@ -1,36 +1,41 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/price_delta.dart';
-import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../design_system/components/app_card.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../app/theme/app_radius.dart';
+// Design System
+import '../../../../../design_system/tokens/index.dart' as DesignTokens;
+import '../../../../../design_system/components/index.dart';
+import '../../../../../design_system/typography/index.dart' as DesignTypography;
+// i18n
+import 'package:pet_food_app/l10n/app_localizations.dart';
 import '../../../../../app/router/route_paths.dart';
 import '../../../../../core/utils/price_formatter.dart';
+import '../../../../../utils/formatters.dart';
 import '../../../../../core/widgets/loading.dart';
 import 'package:lottie/lottie.dart';
 import '../../../../../core/widgets/empty_state.dart';
 import '../../../../../domain/services/onboarding_service.dart';
-import '../../../../../features/onboarding/data/repositories/onboarding_repository.dart';
 import '../controllers/home_controller.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
-import '../../../../../data/repositories/product_repository.dart';
+import '../../../../../ui/widgets/pet_selector.dart';
 import '../../../../../core/constants/pet_constants.dart';
-import '../widgets/icon_text_row.dart';
 import '../widgets/status_signal_card.dart';
 import '../widgets/campaign_modal.dart';
 import '../widgets/home_campaign_banner.dart';
 import '../../../../../data/models/recommendation_dto.dart';
 import '../../../../../data/models/campaign_dto.dart';
-import '../../../../../ui/widgets/pet_info_row.dart';
 import '../../../../../ui/widgets/health_concern_chips.dart';
 import '../../../../../ui/widgets/allergy_list.dart';
 import '../../../../../core/providers/modal_visibility_provider.dart';
 import '../../../recommendation/presentation/screens/recommendation_adjust_screen.dart';
+import '../../../benefits/presentation/controllers/benefits_controller.dart';
 
 /// Toss-style 판단 UI Home Screen
 /// 실제 API 데이터를 사용하여 Pet 프로필 및 추천 상품 표시
@@ -154,10 +159,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     print('[HomeScreen] 현재 상태: recommendations=${recommendations?.items.length ?? 0}개, isLoading=${state.isLoadingRecommendations}, expanded=$_isRecommendationExpanded, hasRecent=${state.hasRecentRecommendation}');
     
     // UPDATED: "지금 추천받기" 또는 "다시 추천 받기" 버튼 클릭 시 항상 조건 조정 화면으로 이동
-    final isRecommendationButton = state.recommendationActionText == "지금 추천받기" || 
-                                    state.recommendationActionText == "다시 추천 받기";
-    
-    if (isRecommendationButton && !state.isLoadingRecommendations) {
+    // Always navigate to recommendation adjust screen when button is clicked
+    if (!state.isLoadingRecommendations) {
       final petSummary = state.petSummary;
       if (petSummary != null) {
         print('[HomeScreen] ✅ 조건 조정 화면으로 이동: petId=${petSummary.petId}, petName=${petSummary.name}');
@@ -321,79 +324,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             // 상단 고정 탭 (알림 아이콘 포함)
             AppTopBar(
+              // TODO: flutter gen-l10n 실행 후 주석 해제
+              // title: state.userNickname != null 
+              //     ? AppLocalizations.of(context)!.screenHomeTitle(state.userNickname!)
+              //     : AppLocalizations.of(context)!.appName,
               title: state.userNickname != null 
-                  ? '안녕하세요, ${state.userNickname}님!'
-                  : '헤이제노',
+                  ? AppLocalizations.of(context)!.screen_home_title(state.userNickname ?? '')
+                  : AppLocalizations.of(context)!.appName,
               showBackButton: false,
+              titleWidget: const PetSelector(),
               actions: [
-                // 전체 캐시 제거 버튼
+                // 더보기 (My Screen) 버튼
                 IconButton(
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(Icons.more_horiz),
                   color: AppColors.textPrimary,
-                  tooltip: '전체 캐시 제거',
-                  onPressed: () async {
-                    print('[HomeScreen] 🗑️ 전체 캐시 제거 버튼 클릭');
-                    
-                    // 확인 다이얼로그 표시
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('전체 캐시 제거'),
-                        content: const Text('모든 추천 캐시를 제거하시겠습니까?\n다음 추천 요청 시 새로 계산됩니다.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.drop,
-                            ),
-                            child: const Text('제거'),
-                          ),
-                        ],
-                      ),
-                    );
-                    
-                    if (confirmed != true) return;
-                    
-                    try {
-                      final repository = ref.read(productRepositoryProvider);
-                      final result = await repository.clearAllRecommendationCache();
-                      
-                      // 홈 화면 상태에서 추천 데이터 제거 (캐시가 없으므로)
-                      ref.read(homeControllerProvider.notifier).clearRecommendations();
-                      
-                      if (mounted) {
-                        final deletedRuns = result['deleted_runs'] as int? ?? 0;
-                        final redisKeysDeleted = result['redis_keys_deleted'] as int? ?? 0;
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '전체 캐시가 제거되었습니다.\n(PostgreSQL: $deletedRuns개, Redis: $redisKeysDeleted개)',
-                            ),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                      
-                      print('[HomeScreen] ✅ 전체 캐시 제거 완료: $result');
-                    } catch (e) {
-                      print('[HomeScreen] ❌ 전체 캐시 제거 실패: $e');
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('캐시 제거 실패: ${e.toString()}'),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    }
+                  tooltip: AppLocalizations.of(context)!.tab_more,
+                  onPressed: () {
+                    context.push(RoutePaths.me);
                   },
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: DesignTokens.Spacing.sm),
               ],
             ),
             // 스크롤 가능한 콘텐츠 (항상 동일한 구조)
@@ -407,11 +357,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? const NeverScrollableScrollPhysics()
                       : const BouncingScrollPhysics(), // iOS 스타일 바운스
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      MediaQuery.of(context).size.width >= 640 ? 24 : 16, // 반응형: sm:px-6 (24px), 기본: px-4 (16px)
-                      28,
-                      MediaQuery.of(context).size.width >= 640 ? 24 : 16,
-                      80,
+                    padding: EdgeInsets.only(
+                      left: AppSpacing.lg, // 16px
+                      right: AppSpacing.lg, // 16px
+                      top: AppSpacing.lg, // 16px
+                      bottom: AppSpacing.xl * 2, // 48px
                     ),
                     child: _buildBodyContent(context, state),
                   ),
@@ -442,7 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: Colors.black.withOpacity(0.5),
                   ),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                    filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                     child: Container(
                       color: Colors.transparent,
                     ),
@@ -489,8 +439,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         height: MediaQuery.of(context).size.height * 0.6,
         child: Center(
           child: EmptyStateWidget(
-            title: state.error ?? '오류가 발생했습니다',
-            buttonText: '다시 시도',
+            // TODO: flutter gen-l10n 실행 후 주석 해제
+            // title: state.error ?? AppLocalizations.of(context)!.errorOccurred,
+            // buttonText: AppLocalizations.of(context)!.actionTryAgain,
+            title: state.error ?? AppLocalizations.of(context)!.error_occurred,
+            buttonText: AppLocalizations.of(context)!.action_tryAgain,
             onButtonPressed: () => ref.read(homeControllerProvider.notifier).initialize(),
           ),
         ),
@@ -520,7 +473,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: AppSpacing.md),
+        // Hero Section (Rover 스타일)
+        _buildHeroSection(context, petSummary),
+        const SizedBox(height: AppSpacing.lg),
         // 1️⃣ 펫 선택 + 상태 요약 (카드) - 이미 애니메이션 포함
         _buildPetSummaryHeader(context, petSummary, state),
         // 배너 (펫 카드 아래)
@@ -548,74 +503,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       builder: (context, snapshot) {
         final isOnboardingCompleted = snapshot.data ?? false;
         
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 100),
-            // 아이콘
-            Icon(
-              Icons.favorite_border,
-              size: 64,
-              color: AppColors.iconMuted,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // 제목
-            Text(
-              isOnboardingCompleted
-                  ? '프로필을 불러올 수 없습니다'
-                  : '프로필을 만들어주세요',
-              style: AppTypography.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            // 설명
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              isOnboardingCompleted
-                  ? '프로필 정보를 다시 불러오는 중입니다'
-                  : '반려동물 정보를 입력하면 맞춤 추천을 받을 수 있어요',
-              style: AppTypography.body2,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // 프로필 다시 불러오기 버튼
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (isOnboardingCompleted) {
-                    // 프로필 다시 불러오기
-                    ref.read(homeControllerProvider.notifier).initialize();
-                  } else {
-                    // 프로필 만들기 (온보딩으로 이동)
-                    context.push(RoutePaths.petProfile);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary, // Blue (#2563EB) - HeyGeno Landing
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.button), // 12px (rounded-xl)
-                  ),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                ).copyWith(
-                  elevation: MaterialStateProperty.resolveWith<double>(
-                    (Set<MaterialState> states) {
-                      if (states.contains(MaterialState.hovered)) {
-                        return 8; // shadow-lg hover:shadow-xl 효과
-                      }
-                      return 4; // shadow-lg 기본
-                    },
-                  ),
-                ),
-                child: Text(
-                  isOnboardingCompleted ? '다시 불러오기' : '프로필 만들기',
-                  style: AppTypography.button,
-                ),
-              ),
-            ),
-          ],
+        // EmptyState 컴포넌트 사용
+        // TODO: flutter gen-l10n 실행 후 주석 해제
+        // final l10n = AppLocalizations.of(context)!;
+        return EmptyState(
+          icon: Icons.favorite_border,
+          // TODO: flutter gen-l10n 실행 후 교체
+          // title: isOnboardingCompleted
+          //     ? l10n.emptyNoPetProfileTitleFailed
+          //     : l10n.emptyNoPetProfileTitle,
+          // message: isOnboardingCompleted
+          //     ? l10n.emptyNoPetProfileSubtitleFailed
+          //     : l10n.emptyNoPetProfileSubtitle,
+          // buttonText: isOnboardingCompleted 
+          //     ? l10n.actionReloadProfile 
+          //     : l10n.actionCreateProfile,
+          title: isOnboardingCompleted
+              ? AppLocalizations.of(context)!.empty_noPetProfile_title_failed
+              : AppLocalizations.of(context)!.empty_noPetProfile_title,
+          message: isOnboardingCompleted
+              ? AppLocalizations.of(context)!.empty_noPetProfile_subtitle_failed
+              : AppLocalizations.of(context)!.empty_noPetProfile_subtitle,
+          buttonText: isOnboardingCompleted 
+              ? AppLocalizations.of(context)!.action_reloadProfile 
+              : AppLocalizations.of(context)!.action_createProfile,
+          onButtonPressed: () {
+            if (isOnboardingCompleted) {
+              // 프로필 다시 불러오기
+              ref.read(homeControllerProvider.notifier).initialize();
+            } else {
+              // 프로필 만들기 (온보딩으로 이동)
+              context.push(RoutePaths.petProfile);
+            }
+          },
         );
       },
     );
@@ -633,8 +553,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     int priceDiffPercent,
     recommendationItem,
   ) {
-    return CardContainer(
-      isHomeStyle: true,
+    return AppCard(
       onTap: () => context.push('/products/${product.id}'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,8 +613,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.divider, // 중성 회색 배경
                     borderRadius: BorderRadius.circular(AppRadius.pill), // rounded-full
                   ),
-                  child: const Text(
-                    '최저가',
+                  child: Text(
+                    // TODO: flutter gen-l10n 실행 후 주석 해제
+                    // AppLocalizations.of(context)!.priceLowestPrice,
+                    AppLocalizations.of(context)!.price_lowestPrice,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -717,7 +638,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // 평균 대비 텍스트 (가격 Row 바로 아래)
           const SizedBox(height: AppSpacing.sm), // 텍스트/아이콘 간격
           Text(
-            '최근 평균 대비 $priceDiffPercent% 저렴해요',
+            // TODO: flutter gen-l10n 실행 후 주석 해제
+            // AppLocalizations.of(context)!.priceCheaperThanAverage(priceDiffPercent),
+            AppLocalizations.of(context)!.price_cheaperThanAverage(priceDiffPercent),
             style: AppTypography.body.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -733,13 +656,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final explanation = recommendationItem.explanation;
     final matchReasons = recommendationItem.matchReasons ?? [];
     
-    return CardContainer(
-      isHomeStyle: true,
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '왜 이 제품일까요?',
+            // TODO: flutter gen-l10n 실행 후 주석 해제
+            // AppLocalizations.of(context)!.sectionWhyThisProduct,
+            AppLocalizations.of(context)!.section_whyThisProduct,
             style: AppTypography.body.copyWith(
               color: const Color(0xFF111827),
               fontWeight: FontWeight.w600,
@@ -780,12 +704,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }),
             ] else ...[
               // Fallback 설명
-              _buildAnimatedBulletPoint('${petSummary.weightKg.toStringAsFixed(1)}kg 체중에 적합'),
+              _buildAnimatedBulletPoint('${Formatters.weightLb(petSummary.weightKg)} 체중에 적합'),
               const SizedBox(height: AppSpacing.sm),
-              _buildAnimatedBulletPoint('${petSummary.ageStage ?? '성견'} 단계에 맞는 사료'),
+              _buildAnimatedBulletPoint(AppLocalizations.of(context)!.message_suitableForAgeStage(petSummary.ageStage ?? AppLocalizations.of(context)!.ageStage_adult)),
               if (petSummary.healthConcerns.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
-                _buildAnimatedBulletPoint('건강 고민을 고려한 사료'),
+                _buildAnimatedBulletPoint(AppLocalizations.of(context)!.product_considersHealthConcerns),
               ],
             ],
           ],
@@ -819,8 +743,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // 제목
                   Text(
                     isOnboardingCompleted
-                        ? '프로필을 불러올 수 없습니다'
-                        : '프로필을 만들어주세요',
+                        ? AppLocalizations.of(context)!.empty_noPetProfile_title_failed
+                        : AppLocalizations.of(context)!.empty_noPetProfile_title,
                     style: AppTypography.titleMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -828,8 +752,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     isOnboardingCompleted
-                        ? '프로필 정보를 다시 불러오는 중입니다'
-                        : '반려동물 정보를 입력하면 맞춤 추천을 받을 수 있어요',
+                        ? AppLocalizations.of(context)!.empty_noPetProfile_subtitle_failed
+                        : AppLocalizations.of(context)!.empty_noPetProfile_subtitle,
                     style: AppTypography.body2,
                     textAlign: TextAlign.center,
                   ),
@@ -858,8 +782,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       child: Text(
                         isOnboardingCompleted
-                            ? '프로필 다시 불러오기'
-                            : '프로필 만들기',
+                            ? AppLocalizations.of(context)!.action_reloadProfile
+                            : AppLocalizations.of(context)!.action_createProfile,
                         style: AppTypography.button,
                       ),
                     ),
@@ -873,8 +797,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: OutlinedButton(
                         onPressed: () async {
                           // 온보딩 완료 상태 초기화
-                          final repository = OnboardingRepositoryImpl();
-                          await repository.clearAll();
+                          await ref.read(onboardingServiceProvider).resetOnboarding();
                           // 온보딩 화면으로 이동
                           if (context.mounted) {
                             context.go(RoutePaths.onboarding);
@@ -891,7 +814,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         child: Text(
-                          '다시 회원가입 하기',
+                          AppLocalizations.of(context)!.action_signUpAgain,
                           style: AppTypography.button.copyWith(
                             color: AppColors.textPrimary,
                           ),
@@ -925,8 +848,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       duration: const Duration(milliseconds: 800),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        return CardContainer(
-          isHomeStyle: true,
+        return AppCard(
           backgroundColor: AppColors.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -991,7 +913,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final description = content['description'] as String? ?? '';
     final imageUrl = content['image_url'] as String?;
     final cta = content['cta'] as Map<String, dynamic>?;
-    final ctaText = cta?['text'] as String? ?? '참여하기';
+    final ctaText = cta?['text'] as String? ?? AppLocalizations.of(context)!.action_participate;
     final ctaDeeplink = cta?['deeplink'] as String?;
 
     // message는 description을 사용 (없으면 빈 문자열)
@@ -1018,6 +940,133 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Hero Section (Rover 스타일)
+  Widget _buildHeroSection(BuildContext context, petSummary) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hey ${petSummary.name}! 🐾',
+          style: DesignTypography.TextStyles.h1Mobile,
+        ),
+        SizedBox(height: DesignTokens.Spacing.sm),
+        Text(
+          'Ready to find food that fits ${petSummary.name}?',
+          style: DesignTypography.TextStyles.bodySecondary,
+        ),
+      ],
+    );
+  }
+
+  /// Rewards Summary Card
+  Widget _buildRewardsSummaryCard(BuildContext context) {
+    final benefitsState = ref.watch(benefitsControllerProvider);
+    final points = benefitsState.totalPoints;
+    final missions = benefitsState.missions;
+    final availableMissionsCount = missions.where((m) => !m.completed).length;
+    
+    return AppCard(
+      onTap: () {
+        context.push(RoutePaths.benefits);
+      },
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.card_giftcard,
+              size: 24,
+              color: Color(0xFFF59E0B),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.section_rewards,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (availableMissionsCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$availableMissionsCount',
+                          style: AppTypography.small.copyWith(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.rewards_summaryPoints(points),
+                      style: AppTypography.h3.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '•',
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context)!.rewards_summaryMissions(availableMissionsCount),
+                        style: AppTypography.small.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Chevron
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: AppColors.iconMuted,
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 1️⃣ 펫 선택 + 상태 요약 (카드 스타일) - iOS 스타일
   Widget _buildPetSummaryHeader(BuildContext context, petSummary, state) {
     
@@ -1030,8 +1079,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           opacity: value,
           child: Transform.translate(
             offset: Offset(0, 10 * (1 - value)),
-            child: CardContainer(
-              isHomeStyle: true,
+            child: AppCard(
               onTap: () {
                 print('[HomeScreen] 🔘 펫 프로필 카드 클릭: ${petSummary.name}');
                 context.push('/pet-profile-detail', extra: petSummary);
@@ -1041,132 +1089,86 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                     Row(
                       children: [
-                        // 왼쪽: 아이콘 컨테이너 (design.mdc 준수)
+                        // 왼쪽: 큰 원형 이미지 (Rover 스타일)
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            color: AppColors.divider, // 중성 회색 배경
-                            borderRadius: BorderRadius.circular(AppRadius.lg), // rounded-2xl (16px)
+                            color: AppColors.divider,
+                            shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               petSummary.species == 'DOG' ? '🐶' : '🐈',
-                              style: const TextStyle(fontSize: 24),
+                              style: const TextStyle(fontSize: 40),
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        // 가운데: 이름 + 정보
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          petSummary.name,
-                          style: AppTypography.h3.copyWith(
-                                  color: AppColors.textPrimary, // #0F172A
-                                  fontWeight: FontWeight.w700, // font-bold
-                          ),
-                        ),
-                              const SizedBox(height: AppSpacing.xs),
-                              // 상세 정보 (공통 위젯 사용)
-                              PetInfoRow(petSummary: petSummary),
+                        const SizedBox(width: DesignTokens.Spacing.base),
+                        // 가운데: 이름 + 한 줄 요약
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                petSummary.name,
+                                style: DesignTypography.TextStyles.h3,
+                              ),
+                              const SizedBox(height: DesignTokens.Spacing.xs),
+                              // 한 줄 요약: Senior • 30.2 lb • Neutered
+                              Text(
+                                _formatPetSummaryOneLine(petSummary),
+                                style: DesignTypography.TextStyles.bodySecondary,
+                              ),
                             ],
                           ),
                         ),
                         // 오른쪽: chevron
                         Icon(
-                    Icons.chevron_right,
-                          color: AppColors.border, // #E5E7EB
+                          Icons.chevron_right,
+                          color: AppColors.border,
                           size: 20,
-                  ),
-                ],
-              ),
-                    // 건강 고민 섹션
+                        ),
+                      ],
+                    ),
+                    // 건강 고민 섹션 (최대 2개 + 'more')
                     if (petSummary.healthConcerns.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                      Container(
-                        height: 1,
-                        color: AppColors.divider.withOpacity(0.3),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: DesignTokens.Spacing.base),
                       Wrap(
-                        spacing: AppSpacing.xs,
-                        runSpacing: AppSpacing.xs,
+                        spacing: DesignTokens.Spacing.sm,
+                        runSpacing: DesignTokens.Spacing.sm,
                         children: [
-                          ...petSummary.healthConcerns.take(3).map<Widget>((concern) {
-                            final concernName = PetConstants.healthConcernNames[concern] ?? concern;
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.divider,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(
-                                  color: AppColors.border,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                concernName,
-                                style: AppTypography.badge.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
+                          ...petSummary.healthConcerns.take(2).map<Widget>((concern) {
+                            final concernName = PetConstants.getHealthConcernName(context, concern);
+                            return AppBadge(
+                              label: concernName,
+                              variant: BadgeVariant.primary,
                             );
                           }),
+                          if (petSummary.healthConcerns.length > 2)
+                            AppBadge(
+                              label: '+${petSummary.healthConcerns.length - 2} more',
+                              variant: BadgeVariant.primary,
+                            ),
                         ],
                       ),
                     ],
-                    // 알레르기 섹션
+                    // 알레르기 섹션 (Avoid 배지)
                     if (petSummary.foodAllergies.isNotEmpty || petSummary.otherAllergies != null) ...[
-                      if (petSummary.healthConcerns.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          height: 1,
-                          color: AppColors.divider.withOpacity(0.3),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ] else ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          height: 1,
-                          color: AppColors.divider.withOpacity(0.3),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                      Wrap(
-                        spacing: AppSpacing.xs,
-                        runSpacing: AppSpacing.xs,
+                      const SizedBox(height: DesignTokens.Spacing.base),
+                      Row(
                         children: [
-                          // 음식 알레르기 chips
-                          if (petSummary.foodAllergies.isNotEmpty)
-                            ...petSummary.foodAllergies.take(3).map<Widget>((allergen) {
-                              final allergenName = PetConstants.allergenNames[allergen] ?? allergen;
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.dangerRed.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                                  border: Border.all(
-                                    color: AppColors.dangerRed.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  allergenName,
-                                  style: AppTypography.badge.copyWith(
-                                    color: AppColors.dangerRed,
-                                  ),
-                                ),
-                              );
-                            }),
+                          AppBadge(
+                            label: 'Avoid',
+                            variant: BadgeVariant.error,
+                          ),
+                          const SizedBox(width: DesignTokens.Spacing.sm),
+                          Expanded(
+                            child: Text(
+                              _formatAllergies(petSummary),
+                              style: DesignTypography.TextStyles.bodySecondary,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -1177,6 +1179,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       },
     );
+  }
+
+  /// 펫 한 줄 요약 포맷 (Rover 스타일)
+  String _formatPetSummaryOneLine(petSummary) {
+    final parts = <String>[];
+    
+    if (petSummary.ageStage != null) {
+      final ageStage = petSummary.ageStage!;
+      if (ageStage == 'PUPPY') {
+        parts.add('Puppy');
+      } else if (ageStage == 'ADULT') {
+        parts.add('Adult');
+      } else if (ageStage == 'SENIOR') {
+        parts.add('Senior');
+      }
+    }
+    
+    if (petSummary.weightKg > 0) {
+      parts.add(Formatters.weightLb(petSummary.weightKg));
+    }
+    
+    if (petSummary.isNeutered == true) {
+      parts.add('Neutered');
+    }
+    
+    return parts.join(' • ');
+  }
+
+  /// 알레르기 포맷
+  String _formatAllergies(petSummary) {
+    final allergies = <String>[];
+    
+    if (petSummary.foodAllergies.isNotEmpty) {
+      // List<dynamic>을 List<String>으로 안전하게 변환
+      final foodAllergiesList = List<String>.from(
+        petSummary.foodAllergies.map((e) => e.toString()),
+      );
+      
+      allergies.addAll(
+        foodAllergiesList.map((allergen) {
+          return PetConstants.getAllergenName(context, allergen);
+        }),
+      );
+    }
+    
+    if (petSummary.otherAllergies != null && petSummary.otherAllergies!.isNotEmpty) {
+      allergies.add(petSummary.otherAllergies!);
+    }
+    
+    return allergies.join(', ');
   }
 
   /// 펫 요약 바텀시트 표시
@@ -1202,7 +1254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: ui.Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -1271,7 +1323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.md), // 12px
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                           child: Text(
-                            '사료 다시 추천받기',
+                            AppLocalizations.of(context)!.action_getRecommendationsAgain,
                             style: AppTypography.button.copyWith(
                               color: Colors.white,
                             ),
@@ -1296,7 +1348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '현재 급여 사료',
+          AppLocalizations.of(context)!.pet_currentFoodSection,
           style: AppTypography.body.copyWith(
             fontWeight: FontWeight.w600,
             color: const Color(0xFF111827),
@@ -1321,7 +1373,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // TODO: 현재 급여 사료 변경 화면으로 이동
                 },
                 child: Text(
-                  '변경하기',
+                  AppLocalizations.of(context)!.action_change,
                   style: AppTypography.body.copyWith(
                     color: AppColors.status, // 상태 전용 (Green) - DESIGN_GUIDE v4.1
                   ),
@@ -1338,7 +1390,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 print('[HomeScreen] 🔘 바텀시트 "지금 등록하기" 버튼 클릭');
                 Navigator.of(context).pop(); // 바텀시트 닫기
                 // 마켓 화면으로 이동 (사료 선택)
-                context.go('/market');
+                context.go(RoutePaths.market);
               },
               color: AppColors.primary, // #2563EB
               borderRadius: BorderRadius.circular(AppRadius.md), // rounded-xl (12px)
@@ -1347,7 +1399,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 vertical: AppSpacing.md,
               ),
               child: Text(
-                '지금 등록하기',
+                AppLocalizations.of(context)!.action_registerNow,
                 style: AppTypography.button.copyWith(
                   fontSize: 16, // text-base sm:text-lg
                   fontWeight: FontWeight.w600, // font-semibold
@@ -1367,7 +1419,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '건강 고민',
+          AppLocalizations.of(context)!.section_healthConcerns,
           style: AppTypography.body.copyWith(
             fontWeight: FontWeight.w600,
             color: const Color(0xFF111827),
@@ -1386,7 +1438,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '알레르기',
+          AppLocalizations.of(context)!.section_allergies,
           style: AppTypography.body.copyWith(
             fontWeight: FontWeight.w600,
             color: const Color(0xFF111827),
@@ -1441,13 +1493,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             );
           },
         ),
+        // Rewards Summary Card (추천 카드 아래)
+        const SizedBox(height: AppSpacing.lg),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 10 * (1 - value)),
+                child: _buildRewardsSummaryCard(context),
+              ),
+            );
+          },
+        ),
         if (hasCurrentFood) ...[
           const SizedBox(height: AppSpacing.lg),
           // 가격/소진 상태 신호 카드
           _buildStatusSignalCards(petSummary, state),
         ],
         
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.lg),
         // 2. 상태 설명 텍스트 - 페이드인 애니메이션
         TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -1477,7 +1545,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             );
           },
         ),
-        const SizedBox(height: AppSpacing.xxxl), // 하단 여백 (48px)
+        // Alerts preview (최대 2개) + "See all alerts" 링크
+        const SizedBox(height: AppSpacing.lg),
+        _buildAlertsPreview(context, state),
+        SizedBox(height: DesignTokens.Spacing.screen), // 하단 여백
+      ],
+    );
+  }
+
+  /// Alerts preview 섹션 (최대 2개)
+  Widget _buildAlertsPreview(BuildContext context, state) {
+    // TODO: 실제 알림 데이터 연동
+    // 임시로 빈 상태 또는 샘플 데이터 표시
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Alerts',
+              style: DesignTypography.TextStyles.h3,
+            ),
+            TextButton(
+              onPressed: () {
+                context.go(RoutePaths.alerts);
+              },
+              child: Text(
+                'See all alerts',
+                style: DesignTypography.TextStyles.bodySecondary.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: DesignTokens.Spacing.base),
+        // TODO: 실제 알림 데이터 표시
+        Text(
+          'No alerts yet. Start tracking products to get price drop and stock alerts.',
+          style: DesignTypography.TextStyles.bodySecondary,
+        ),
       ],
     );
   }
@@ -1485,8 +1593,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// 상태 설명 문구
   Widget _buildStatusDescription(petSummary, state, bool hasCurrentFood) {
     final descriptionText = hasCurrentFood
-        ? '현재 급여 사료를 기준으로 가격과 상태를 관리하고 있어요'
-        : '지금 먹는 사료를 등록하면 가격과 소진 시점을 알려드릴 수 있어요';
+        ? AppLocalizations.of(context)!.pet_managingPriceAndStatus
+        : AppLocalizations.of(context)!.pet_registerCurrentFoodDescription;
     
     return Text(
       descriptionText,
@@ -1521,15 +1629,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     // 에러 상태 처리 (추천 로드 중 에러 발생)
     if (state.error != null && !state.isLoadingRecommendations) {
-      return CardContainer(
-        isHomeStyle: true,
+      return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               hasCurrentFood 
-                  ? "현재 사료 vs 맞춤 추천 비교" 
-                  : "우리 애에게 딱 맞는 사료 찾아보기",
+                  ? AppLocalizations.of(context)!.pet_currentVsRecommendation 
+                  : AppLocalizations.of(context)!.pet_findPerfectFood,
               style: AppTypography.h3.copyWith(
                 color: AppColors.textPrimary,
               ),
@@ -1547,7 +1654,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    "추천을 불러오는데 실패했어요",
+                    AppLocalizations.of(context)!.error_failedToLoad,
                     style: AppTypography.titleMedium.copyWith(
                       color: AppColors.textPrimary,
                     ),
@@ -1555,7 +1662,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    state.error ?? "잠시 후 다시 시도해주세요.",
+                    state.error ?? AppLocalizations.of(context)!.error_somethingWentWrong,
                     style: AppTypography.body2.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -1575,7 +1682,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         vertical: AppSpacing.md,
                       ),
                       child: Text(
-                        "다시 시도",
+                        AppLocalizations.of(context)!.action_tryAgain,
                         style: AppTypography.button.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -1594,8 +1701,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     // 로딩 중일 때
     if (state.isLoadingRecommendations) {
-      return CardContainer(
-        isHomeStyle: true,
+      return AppCard(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Center(
           child: Column(
@@ -1611,7 +1717,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                '${petSummary.name}에게 딱 맞는 사료 찾는 중...',
+                AppLocalizations.of(context)!.home_findingPerfectFood(petSummary.name),
                 style: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1631,72 +1737,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final petName = petSummary.name;
     final topRecommendation = hasRecommendations ? recommendations!.items[0] : null;
     
-    // DESIGN_GUIDE: CardContainer 사용, isHomeStyle: true, Shadow 없음
-    return CardContainer(
-      isHomeStyle: true,
+    // Rover 스타일: Recommendation CTA Card
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // DESIGN_GUIDE: 카드 타이틀은 h3 사용
           Text(
-            "$petName에게 딱 맞는 사료 찾아보기",
-            style: AppTypography.h3.copyWith(
-              color: AppColors.textPrimary,
-            ),
+            'Find ${petName}\'s best match',
+            style: DesignTypography.TextStyles.h3,
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: DesignTokens.Spacing.sm),
+          Text(
+            'Personalized for allergies, age, and health needs.',
+            style: DesignTypography.TextStyles.bodySecondary,
+          ),
+          SizedBox(height: DesignTokens.Spacing.base),
           
-          // 빈 추천 결과 처리 (로딩 완료 후 결과가 없는 경우)
+          // 빈 추천 결과 처리
           if (isEmptyResult) ...[
             _buildEmptyRecommendationState(context, recommendations?.message),
           ] else ...[
-            // 추천 결과 표시 (조건부)
+            // 추천 결과 미리보기 (있는 경우)
             if (hasRecommendations && topRecommendation != null) ...[
               _buildRecommendedProductCard(context, topRecommendation),
-              const SizedBox(height: AppSpacing.md),
-            ] else ...[
-              // 안내 문구 표시
-                          Text(
-                "알레르기, 나이, 건강 고민만 알려주세요!\n바로 맞춤 사료 추천해드릴게요.",
-                            style: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
-                      ),
-                    ),
-              const SizedBox(height: AppSpacing.xl),
+              SizedBox(height: DesignTokens.Spacing.base),
             ],
             
             // 액션 버튼
-              SizedBox(
-                width: double.infinity,
-              child: ElevatedButton.icon(
-                  onPressed: () {
-                    // 추천 버튼 클릭 시 _toggleRecommendation 호출
-                    // (조건 조정 화면으로 이동하거나 추천 결과 토글)
-                    _toggleRecommendation();
-                  },
-                icon: Icon(
-                  state.recommendationActionText == "지금 추천받기" 
-                      ? Icons.auto_awesome 
-                      : Icons.refresh,
-                  color: Colors.white,
-                  ),
-                label: Text(
-                  state.recommendationActionText,
-                        style: AppTypography.button.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                  ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  minimumSize: const Size(double.infinity, 52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  elevation: 0,
-                ),
-              ),
+            PrimaryButton(
+              text: state.hasRecommendationsForAction
+                  ? 'Get recommendations again'
+                  : 'Get recommendations',
+              onPressed: () {
+                _toggleRecommendation();
+              },
+              icon: !state.hasRecommendationsForAction
+                  ? Icons.auto_awesome 
+                  : Icons.refresh,
             ),
           ],
         ],
@@ -1706,34 +1783,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// 빈 추천 결과 Empty State
   Widget _buildEmptyRecommendationState(BuildContext context, String? message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: AppColors.iconMuted,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            "추천 상품을 찾지 못했어요",
-            style: AppTypography.titleMedium.copyWith(
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            message ?? "현재 조건에 맞는 추천 상품이 없습니다.",
-            style: AppTypography.body2.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    // TODO: flutter gen-l10n 실행 후 주석 해제
+    // final l10n = AppLocalizations.of(context)!;
+    return EmptyState(
+      icon: Icons.search_off,
+      // TODO: flutter gen-l10n 실행 후 주석 해제
+      // title: l10n.emptyNoRecommendationsTitle,
+      // message: message ?? l10n.emptyNoRecommendationsSubtitle,
+      title: AppLocalizations.of(context)!.empty_noRecommendations_title,
+      message: message ?? AppLocalizations.of(context)!.empty_noRecommendations_subtitle,
     );
   }
 
@@ -1793,13 +1851,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    PriceFormatter.formatWithCurrency(item.currentPrice),
-                    style: AppTypography.h3.copyWith(
+                    Formatters.currency(item.currentPrice / 100.0), // cents to dollars
+                    style: DesignTypography.TextStyles.data.copyWith(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-            ),
-          ),
+                    ),
+                  ),
         ],
               ),
             ),
@@ -1816,62 +1872,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     if (!hasCurrentFoodValue) {
       // 상태 B: 현재 사료 미등록
-      return CardContainer(
-        isHomeStyle: true,
+      // Rover 스타일: Current Food CTA Card
+      return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${petSummary.name}가\n지금 먹고 있는 사료를 알려주세요',
-              style: AppTypography.h2.copyWith(
-                color: AppColors.textPrimary,
-                fontSize: 24,
-                height: 1.4,
-                fontWeight: FontWeight.w800,
-              ),
+              'What\'s ${petSummary.name} eating right now?',
+              style: DesignTypography.TextStyles.h3,
             ),
-            const SizedBox(height: AppSpacing.md),
-            IconTextRow(
-                  icon: Icons.arrow_downward,
-                  text: '가격 내려가면 알림',
-                  iconColor: AppColors.petGreen, // 상태/안심용
-                ),
-                const SizedBox(height: AppSpacing.md),
-                IconTextRow(
-                  icon: Icons.access_time,
-                  text: '떨어지기 전에 알림',
-                  iconColor: AppColors.petGreen, // 상태/안심용
-                ),
-            const SizedBox(height: AppSpacing.lg), // 버튼 위 여백
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  print('[HomeScreen] 🔘 "지금 먹는 사료 등록하기" 버튼 클릭');
-                  // 마켓 화면으로 이동 (사료 선택)
-                  context.go('/market');
-                },
-                icon: Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  '지금 먹는 사료 등록하기',
-                  style: AppTypography.button.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  minimumSize: const Size(double.infinity, 52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  elevation: 0,
-                ),
-              ),
+            SizedBox(height: DesignTokens.Spacing.sm),
+            Text(
+              'We\'ll compare ingredients and track the best price.',
+              style: DesignTypography.TextStyles.bodySecondary,
+            ),
+            SizedBox(height: DesignTokens.Spacing.base),
+            PrimaryButton(
+              text: 'Add current food',
+              onPressed: () {
+                print('[HomeScreen] 🔘 "Add current food" 버튼 클릭');
+                context.go(RoutePaths.market);
+              },
             ),
           ],
         ),
@@ -1879,8 +1900,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     // 상태 A: 등록되어 있을 때
-    return CardContainer(
-      isHomeStyle: true,
+    return AppCard(
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1892,7 +1912,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.pill), // 완전 둥근 CTA
               ),
               child: Text(
-                '현재 급여 중',
+                AppLocalizations.of(context)!.pet_currentlyFeeding,
                 style: AppTypography.caption.copyWith(
                   color: Colors.white, // 흰색 텍스트
                   fontWeight: FontWeight.w700,
@@ -1933,7 +1953,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '현재 최저가',
+                              AppLocalizations.of(context)!.price_currentLowest,
                               style: AppTypography.small.copyWith(
                                 color: const Color(0xFF64748B),
                               ),
@@ -2014,7 +2034,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '예상 소진까지',
+                          AppLocalizations.of(context)!.price_estimatedDepletion,
                           style: AppTypography.small.copyWith(
                             color: const Color(0xFF64748B),
                           ),
@@ -2064,7 +2084,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     child: Text(
-                      '가격 알림 ON',
+                      AppLocalizations.of(context)!.alert_priceAlertOn,
                       style: AppTypography.button.copyWith(
                         color: AppColors.status, // 상태 전용 (Green) - DESIGN_GUIDE v4.1
                         fontSize: 15,
@@ -2089,7 +2109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       elevation: 0,
                     ),
                     child: Text(
-                      '구매하러 가기',
+                      AppLocalizations.of(context)!.action_buyNow,
                       style: AppTypography.button.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -2123,8 +2143,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 offset: Offset(0, 10 * (1 - value)),
                 child: StatusSignalCard(
                   icon: Icons.arrow_downward,
-                  title: '지금 먹는 사료가',
-                  subtitle: '최근 30일 중 가장 싸요',
+                  title: AppLocalizations.of(context)!.signal_currentFoodLowestPrice,
+                  subtitle: AppLocalizations.of(context)!.signal_lowestIn30Days,
                   backgroundColor: AppColors.divider, // 중성 회색 배경
                   iconColor: AppColors.textSecondary, // 중성 회색 아이콘
                 ),
@@ -2151,7 +2171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: StatusSignalCard(
                   icon: Icons.access_time,
                   title: '3일 뒤면 사료가',
-                  subtitle: '떨어질 수 있어요',
+                  subtitle: AppLocalizations.of(context)!.signal_depletionWarning,
                   backgroundColor: const Color(0xFFFFF7ED),
                   iconColor: const Color(0xFFF97316),
                 ),
@@ -2177,8 +2197,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 offset: Offset(0, 10 * (1 - value)),
                 child: StatusSignalCard(
                   icon: Icons.warning_amber_rounded,
-                  title: '이 사료, ${petSummary.name} 관절 고민엔',
-                  subtitle: '조금 아쉬울 수 있어요',
+                  title: AppLocalizations.of(context)!.signal_healthConcern(petSummary.name, 'joint concerns'),
+                  subtitle: AppLocalizations.of(context)!.signal_healthConcernSubtitle,
                   backgroundColor: const Color(0xFFFEF2F2),
                   iconColor: const Color(0xFFDC2626),
                 ),
@@ -2249,7 +2269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     topRecommendation,
   ) {
     if (state.isLoadingRecommendations) {
-      return CardContainer(
+      return AppCard(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Center(
           child: Column(
@@ -2265,7 +2285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                '${petSummary.name}에게 딱 맞는 사료 찾는 중...',
+                AppLocalizations.of(context)!.home_findingPerfectFood(petSummary.name),
                 style: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -2281,13 +2301,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return const SizedBox.shrink();
     }
     
-    return CardContainer(
+    return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg + AppSpacing.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '지금 먹는 사료보다\n${petSummary.name}에게 더 잘 맞는 사료가 있어요',
+            AppLocalizations.of(context)!.message_betterFoodAvailable(petSummary.name),
             style: AppTypography.h3.copyWith(
               color: const Color(0xFF111827),
               height: 1.3,
@@ -2309,7 +2329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 side: BorderSide(color: AppColors.primary), // Emerald Green (DESIGN_GUIDE v2.3)
               ),
               child: Text(
-                '비교해보기',
+                AppLocalizations.of(context)!.action_compare,
                 style: AppTypography.button.copyWith(
                   color: AppColors.primary, // Blue (#1D4ED8) - DESIGN_GUIDE v4.1 (Calm Blue 통일)
                 ),
@@ -2323,8 +2343,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// 5️⃣ 혜택 / 포인트 (보조)
   Widget _buildBenefitsSection() {
-    return CardContainer(
-      isHomeStyle: true,
+    return AppCard(
       backgroundColor: const Color(0xFFF8FAFC), // 색상 낮춤
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2345,7 +2364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(width: AppSpacing.sm), // 텍스트/아이콘 간격
               Text(
-                '이번 달 혜택',
+                AppLocalizations.of(context)!.section_monthlyBenefits,
                 style: AppTypography.body.copyWith(
                   fontWeight: FontWeight.w600, // 강조 낮춤
                   color: const Color(0xFF64748B), // 색상 낮춤
@@ -2354,9 +2373,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.md), // 섹션 그룹 간격
-          _buildBenefitItem('첫 구매 1,000P'),
+          _buildBenefitItem(AppLocalizations.of(context)!.benefit_firstPurchase),
           const SizedBox(height: AppSpacing.md), // 섹션 그룹 간격
-          _buildBenefitItem('가격 알림 유지 시 +200P'),
+          _buildBenefitItem(AppLocalizations.of(context)!.benefit_priceAlertMaintained),
         ],
       ),
     );

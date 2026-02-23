@@ -4,6 +4,10 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Primary 버튼 위젯
+/// 
+/// @deprecated Use `design_system/components/button.dart` PrimaryButton instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/button.dart PrimaryButton instead')
 class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;

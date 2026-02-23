@@ -10,6 +10,15 @@ from app.db.base import Base, TimestampMixin
 class PetSpecies(str, enum.Enum):
     DOG = "DOG"
     CAT = "CAT"
+    BIRD = "BIRD"
+    SMALL_MAMMAL = "SMALL_MAMMAL"
+    REPTILE = "REPTILE"
+    FISH = "FISH"
+
+
+class WeightUnit(str, enum.Enum):
+    KG = "KG"
+    LB = "LB"
 
 
 class PetSex(str, enum.Enum):
@@ -52,8 +61,25 @@ class Pet(Base, TimestampMixin):
     is_neutered = Column(Boolean, nullable=True)  # 모름이면 null
     
     # 체중 및 체형
-    weight_kg = Column(Numeric(5, 2), nullable=False)
+    weight_numeric = Column(Numeric(5, 2), nullable=False)  # 무게 숫자
+    weight_unit = Column(SQLEnum(WeightUnit), nullable=False, server_default='LB')  # US lb 기본
     body_condition_score = Column(Integer, nullable=False)
+    
+    # 호환성 프로퍼티: weight_kg (kg 단위로 변환)
+    @property
+    def weight_kg(self) -> float:
+        """weight_numeric을 kg 단위로 변환하여 반환 (호환성 유지)"""
+        if self.weight_unit == WeightUnit.KG:
+            return float(self.weight_numeric)
+        else:  # LB
+            return float(self.weight_numeric) / 2.20462
+    
+    @weight_kg.setter
+    def weight_kg(self, value: float):
+        """weight_kg 값을 받아서 weight_numeric (lb)로 변환하여 저장"""
+        # US 시장 기본이므로 lb로 저장
+        self.weight_numeric = value * 2.20462
+        self.weight_unit = WeightUnit.LB
     
     # 계산된 필드 (서버에서 계산해서 저장)
     age_stage = Column(SQLEnum(AgeStage), nullable=False)  # puppy/adult/senior
@@ -85,6 +111,7 @@ class HealthConcernCode(Base):
     
     code = Column(String(30), primary_key=True)
     display_name = Column(String(50), nullable=False)
+    display_name_en = Column(String(50), nullable=False)  # 영어 추가
 
 
 # 펫-건강고민 (멀티선택)
@@ -105,6 +132,7 @@ class AllergenCode(Base):
     
     code = Column(String(30), primary_key=True)
     display_name = Column(String(50), nullable=False)
+    display_name_en = Column(String(50), nullable=False)  # 영어 추가
 
 
 # 펫-알레르겐 (멀티선택)

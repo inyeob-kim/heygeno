@@ -4,6 +4,7 @@ import '../../../../../ui/theme/app_colors.dart';
 import '../../../../../ui/theme/app_typography.dart';
 import '../../../../../ui/components/metric_row.dart';
 import '../../../../data/models/recommendation_dto.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 추천 사료 섹션 (토스 스타일 - 카드 없음)
 /// 텍스트 기반 섹션으로 구성
@@ -24,9 +25,10 @@ class RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
+      final l10n = AppLocalizations.of(context)!;
       final loadingText = petName != null
-          ? '$petName에게 딱 맞는 사료 찾는 중...'
-          : '분석 중...';
+          ? l10n.home_findingPerfectFood(petName!)
+          : l10n.common_analyzing;
       
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -50,16 +52,17 @@ class RecommendationCard extends StatelessWidget {
     }
 
     if (topRecommendation == null) {
+      final l10n = AppLocalizations.of(context)!;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '추천 준비 중',
+            l10n.recommendation_preparing,
             style: AppTypography.body,
           ),
           const SizedBox(height: 8),
           Text(
-            '곧 맞춤 추천을 드릴게요!',
+            l10n.recommendation_comingSoon,
             style: AppTypography.sub,
           ),
         ],
@@ -101,12 +104,12 @@ class RecommendationCard extends StatelessWidget {
         // MetricRow: 평균 대비
         if (deltaPercent != null && avgPrice > 0)
           MetricRow(
-            label: '평균 대비',
+            label: AppLocalizations.of(context)!.metric_averageDelta,
             valueText: isCheaper
                 ? '-${priceDiffPercent.toStringAsFixed(1)}%'
                 : '+${priceDiffPercent.toStringAsFixed(1)}%',
             valueColor: isCheaper ? AppColors.positive : AppColors.negative,
-            helperText: '최근 14일 기준',
+            helperText: AppLocalizations.of(context)!.metric_last14Days,
           ),
         
         // '왜 추천?' 링크
@@ -115,7 +118,7 @@ class RecommendationCard extends StatelessWidget {
           GestureDetector(
             onTap: onWhyRecommended,
             child: Text(
-              '왜 추천?',
+              AppLocalizations.of(context)!.action_whyRecommended,
               style: AppTypography.sub.copyWith(
                 color: AppColors.textSecondary, // 중성 회색 텍스트
                 decoration: TextDecoration.underline,

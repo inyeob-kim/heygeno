@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../ui/widgets/card_container.dart';
+import '../../../../design_system/components/app_card.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/app_typography.dart';
 import '../../../../ui/theme/app_spacing.dart';
@@ -26,7 +26,7 @@ class PriceHistoryMini extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CardContainer(
+    return AppCard(
       padding: const EdgeInsets.all(AppSpacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

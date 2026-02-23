@@ -7,7 +7,8 @@ import '../../../../../app/theme/app_radius.dart';
 import '../../../../../app/theme/app_shadows.dart';
 import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../ui/icons/app_icons.dart';
-import '../../../../../ui/widgets/app_buttons.dart';
+import '../../../../../design_system/components/button.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// DESIGN_GUIDE.md 스타일 Today EmptyState (프로필 없음)
 class TodayEmptyState extends StatelessWidget {
@@ -39,14 +40,14 @@ class TodayEmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
             // 설명 텍스트 (Lead: 17px, color: muted)
             Text(
-              '프로필이 아직 없어요. 30초면 끝나요 🐶🐱',
+              AppLocalizations.of(context)!.home_emptyProfileMessage,
               style: AppTypography.lead,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xxl),
             // Primary CTA 버튼 (1개만)
-            AppPrimaryButton(
-              text: '프로필 만들기',
+            PrimaryButton(
+              text: AppLocalizations.of(context)!.home_createProfile,
               onPressed: onAddProfile ?? () {
                 context.push(RoutePaths.petProfile);
               },
@@ -90,7 +91,7 @@ class _AddCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             // '추가' 텍스트
             Text(
-              '추가',
+              AppLocalizations.of(context)!.home_add,
               style: AppTypography.body2,
             ),
           ],

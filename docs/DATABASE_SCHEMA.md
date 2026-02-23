@@ -2,6 +2,8 @@
 
 > **최근 변경사항**: 2026-02-05에 MVP용 스키마 개선사항이 적용되었습니다.
 > 자세한 내용은 [SCHEMA_CHANGES_APPLIED.md](./SCHEMA_CHANGES_APPLIED.md)를 참조하세요.
+> 
+> **미국 시장 확장**: 미국 시장 확장을 위한 스키마 변경사항은 [DATABASE_SCHEMA_US.md](./DATABASE_SCHEMA_US.md)를 참조하세요.
 
 ## 전체 테이블 목록
 
@@ -178,7 +180,7 @@
 
 ### 9. products (상품)
 ```sql
-- id: UUID (PK)
+- id: UUID (PK) play play
 - category: VARCHAR(30) NOT NULL DEFAULT 'FOOD'
 - brand_name: VARCHAR(100) NOT NULL
 - product_name: VARCHAR(255) NOT NULL

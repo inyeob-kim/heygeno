@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_names.dart';
-import '../../../../core/widgets/primary_button.dart';
+import '../../../../design_system/components/button.dart';
 import '../../../../core/constants/pet_constants.dart';
 import '../controllers/pet_profile_controller.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 class PetProfileScreen extends ConsumerStatefulWidget {
   const PetProfileScreen({super.key});
@@ -28,7 +29,7 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
         title: Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Text(
-            '반려동물 프로필',
+            AppLocalizations.of(context)!.petProfile_title,
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
@@ -50,15 +51,15 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
             children: [
               const SizedBox(height: 16),
               Text(
-                '반려동물 정보를 입력해주세요',
+                AppLocalizations.of(context)!.petProfile_enterInfo,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 32),
               DropdownButtonFormField<String>(
                 value: _selectedBreed,
-                decoration: const InputDecoration(
-                  labelText: '견종',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.petProfile_breed,
+                  border: const OutlineInputBorder(),
                 ),
                 items: PetConstants.breeds.map((breed) {
                   return DropdownMenuItem(
@@ -75,9 +76,9 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedWeight,
-                decoration: const InputDecoration(
-                  labelText: '체중',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.petProfile_weight,
+                  border: const OutlineInputBorder(),
                 ),
                 items: PetConstants.weightBuckets.map((weight) {
                   return DropdownMenuItem(
@@ -94,9 +95,9 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedAgeStage,
-                decoration: const InputDecoration(
-                  labelText: '나이 단계',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.petProfile_ageStage,
+                  border: const OutlineInputBorder(),
                 ),
                 items: PetConstants.ageStages.map((stage) {
                   return DropdownMenuItem(
@@ -121,7 +122,7 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
                   ),
                 ),
               PrimaryButton(
-                text: '저장',
+                text: AppLocalizations.of(context)!.petProfile_save,
                 isLoading: state.isLoading,
                 onPressed: (_selectedBreed != null &&
                         _selectedWeight != null &&

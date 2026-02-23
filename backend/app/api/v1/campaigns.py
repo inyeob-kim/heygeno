@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 import logging
 
 from app.db.session import get_db
-from app.api.deps import get_device_uid
+from app.api.deps import get_current_user_required
+from app.models.user import User
 from app.services.campaign_service import CampaignService
-from app.services.user_service import UserService
 from app.schemas.campaign import CampaignRead
 from app.models.campaign import CampaignPlacement
 
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.get("/", response_model=List[CampaignRead])
 async def get_active_campaigns(
     placement: Optional[CampaignPlacement] = Query(None, description="배치 위치 필터"),
-    device_uid: Optional[str] = Depends(get_device_uid),
+    user: User = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db),
 ):
     """

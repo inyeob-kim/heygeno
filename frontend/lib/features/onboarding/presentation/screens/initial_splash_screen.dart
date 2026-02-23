@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../domain/services/onboarding_service.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
@@ -59,24 +57,11 @@ class _InitialSplashScreenState extends ConsumerState<InitialSplashScreen>
   }
 
   Future<void> _checkAndNavigate() async {
-    // 최소 3초 대기
+    // 최소 3초 대기 후 시작 화면으로 이동
     await Future.delayed(const Duration(seconds: 3));
-    
-    if (!mounted) return;
-
-    // 온보딩 서비스를 통해 완료 여부 확인
-    final onboardingService = ref.read(onboardingServiceProvider);
-    final isCompleted = await onboardingService.isOnboardingCompleted();
 
     if (!mounted) return;
-
-    // 온보딩 완료 → 홈 화면
-    // 온보딩 미완료 → 온보딩 플로우
-    if (isCompleted) {
-      context.go(RoutePaths.home);
-    } else {
-      context.go(RoutePaths.onboarding);
-    }
+    context.go(RoutePaths.start);
   }
 
   @override

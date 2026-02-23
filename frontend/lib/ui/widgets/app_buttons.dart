@@ -6,6 +6,10 @@ import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_shadows.dart';
 
 /// Primary Button (DESIGN_GUIDE.md 스타일)
+/// 
+/// @deprecated Use `design_system/components/button.dart` PrimaryButton instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/button.dart PrimaryButton instead')
 class AppPrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -68,6 +72,10 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
 }
 
 /// Secondary Button (DESIGN_GUIDE.md 스타일)
+/// 
+/// @deprecated Use `design_system/components/button.dart` SecondaryButton instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/button.dart SecondaryButton instead')
 class AppSecondaryButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;

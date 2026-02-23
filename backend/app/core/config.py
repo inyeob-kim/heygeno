@@ -45,7 +45,14 @@ class Settings(BaseSettings):
     
     # Worker Settings
     PRICE_COLLECTOR_INTERVAL_MINUTES: int = 60
-    
+
+    # Billing (IAP)
+    IOS_PRODUCT_ID: Optional[str] = None
+    ANDROID_PRODUCT_ID: Optional[str] = None
+
+    # Auth (OAuth client IDs for id_token verification)
+    GOOGLE_CLIENT_ID: Optional[str] = None
+
     class Config:
         env_file = ".env"
         case_sensitive = True

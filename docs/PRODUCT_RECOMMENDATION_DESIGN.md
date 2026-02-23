@@ -156,7 +156,7 @@ else:
 **점수 계산 로직:**
 ```
 알레르기 점수 = 50점
-
+Allergy prodigy Chicago
 # 1. Hard Exclude: 펫의 food_allergies와 상품의 potential_allergens 겹침 체크
 펫_알레르기_셋 = set(펫.food_allergies)
 상품_알레르겐_셋 = set(상품.parsed.potential_allergens)

@@ -62,15 +62,21 @@ class HomeState {
   bool get hasRecommendations => recommendations != null && recommendations!.items.isNotEmpty;
 
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 동적 버튼 텍스트
+  // NOTE: This getter is deprecated. Use AppLocalizations in the UI instead.
+  // Keeping for backward compatibility but should be removed.
+  @Deprecated('Use AppLocalizations.action_getRecommendations or action_getRecommendationsAgain in UI')
   String get recommendationActionText {
     // 추천이 있는 경우
     if (hasRecommendations) {
-      return "다시 추천 받기";
+      return "다시 추천 받기"; // Will be replaced by UI
     }
     
     // 추천이 없는 경우
-    return "지금 추천받기";
+    return "지금 추천받기"; // Will be replaced by UI
   }
+  
+  // Helper to determine which action text key to use
+  bool get hasRecommendationsForAction => hasRecommendations;
 
   HomeState copyWith({
     HomeStateType? stateType,
@@ -136,7 +142,7 @@ class HomeController extends StateNotifier<HomeState> {
         // 사용자가 없으면 에러 상태로 설정
         state = state.copyWith(
           stateType: HomeStateType.error,
-          error: '사용자 정보를 불러올 수 없습니다. 다시 시도해주세요.',
+          error: 'Failed to load user information. Please try again.',
         );
         return;
       }
@@ -195,7 +201,7 @@ class HomeController extends StateNotifier<HomeState> {
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('펫 정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+          : ServerFailure('Failed to load pet information. Please try again later.');
       state = state.copyWith(
         stateType: HomeStateType.error,
         error: failure.message,
@@ -263,7 +269,7 @@ class HomeController extends StateNotifier<HomeState> {
       } else if (oldSummary != null && oldSummary.petId == newSummary.petId) {
         // 같은 펫의 프로필이 변경되었는지 확인 (oldSummary가 있는 경우)
         print('[HomeController] 🔍 프로필 변경 감지 시작 (같은 펫: ${newSummary.petId}, oldSummary 있음)');
-        isProfileChanged = _hasProfileChanged(oldSummary, newSummary);
+        isProfileChanged = _petService.hasProfileChanged(oldSummary, newSummary);
         
         if (isProfileChanged) {
           print('[HomeController] 🔥 프로필 변경 감지됨! → revision 증가 필요');
@@ -352,84 +358,6 @@ class HomeController extends StateNotifier<HomeState> {
   }
 
 
-  /// 프로필 변경 감지 (weight_kg, health_concerns, food_allergies 등 비교)
-  /// 
-  /// DeepCollectionEquality 대신 직접 비교 (순서 무관하게 리스트 비교)
-  bool _hasProfileChanged(PetSummaryDto oldPet, PetSummaryDto newPet) {
-    // 체중 비교 (0.1kg 이상 차이)
-    if ((oldPet.weightKg - newPet.weightKg).abs() > 0.1) {
-      print('[HomeController]   - 체중 변경 감지: ${oldPet.weightKg}kg -> ${newPet.weightKg}kg');
-      return true;
-    }
-    
-    // 건강 고민 리스트 비교 (순서 무관하게 비교)
-    if (!_listEqualsUnordered(oldPet.healthConcerns, newPet.healthConcerns)) {
-      print('[HomeController]   - 건강고민 변경 감지: ${oldPet.healthConcerns} -> ${newPet.healthConcerns}');
-      return true;
-    }
-    
-    // 음식 알레르기 리스트 비교 (순서 무관하게 비교)
-    if (!_listEqualsUnordered(oldPet.foodAllergies, newPet.foodAllergies)) {
-      print('[HomeController]   - 알레르기 변경 감지: ${oldPet.foodAllergies} -> ${newPet.foodAllergies}');
-      return true;
-    }
-    
-    // 중성화 여부 비교
-    if (oldPet.isNeutered != newPet.isNeutered) {
-      print('[HomeController]   - 중성화 변경 감지: ${oldPet.isNeutered} -> ${newPet.isNeutered}');
-      return true;
-    }
-    
-    // 나이 단계 비교
-    if (oldPet.ageStage != newPet.ageStage) {
-      print('[HomeController]   - 나이 단계 변경 감지: ${oldPet.ageStage} -> ${newPet.ageStage}');
-      return true;
-    }
-    
-    // 나이 개월 비교 (6개월 단위 변화 감지)
-    final oldAgeMonths = oldPet.ageMonths;
-    final newAgeMonths = newPet.ageMonths;
-    if (oldAgeMonths != null && newAgeMonths != null) {
-      final oldAgeStage = oldAgeMonths ~/ 6;
-      final newAgeStage = newAgeMonths ~/ 6;
-      if (oldAgeStage != newAgeStage) {
-        print('[HomeController]   - 나이 개월 변경 감지: ${oldAgeMonths}개월 -> ${newAgeMonths}개월 (단계: $oldAgeStage -> $newAgeStage)');
-        return true;
-      }
-    } else if (oldAgeMonths != newAgeMonths) {
-      print('[HomeController]   - 나이 개월 변경 감지: $oldAgeMonths -> $newAgeMonths');
-      return true;
-    }
-    
-    // 품종 코드 비교
-    if (oldPet.breedCode != newPet.breedCode) {
-      print('[HomeController]   - 품종 변경 감지: ${oldPet.breedCode} -> ${newPet.breedCode}');
-      return true;
-    }
-    
-    // 종 비교
-    if (oldPet.species != newPet.species) {
-      print('[HomeController]   - 종 변경 감지: ${oldPet.species} -> ${newPet.species}');
-      return true;
-    }
-    
-    // 기타 알레르기 텍스트 비교
-    if (oldPet.otherAllergies?.trim() != newPet.otherAllergies?.trim()) {
-      print('[HomeController]   - 기타 알레르기 변경 감지: ${oldPet.otherAllergies} -> ${newPet.otherAllergies}');
-      return true;
-    }
-    
-    return false;
-  }
-
-  /// 리스트 비교 헬퍼 (순서 무관하게 비교)
-  bool _listEqualsUnordered(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    final aSet = a.toSet();
-    final bSet = b.toSet();
-    return aSet.length == bSet.length && aSet.every((item) => bSet.contains(item));
-  }
-
   /// 추천 데이터 로드
   // UPDATED: Dynamic recommendation UI to reduce reload fatigue - 캐싱 정보 처리 추가
   Future<void> _loadRecommendations(
@@ -478,7 +406,7 @@ class HomeController extends StateNotifier<HomeState> {
       print('[HomeController] ❌ StackTrace: $stackTrace');
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('추천 상품을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+          : ServerFailure('Failed to load recommendations. Please try again later.');
       state = state.copyWith(
         isLoadingRecommendations: false,
         error: failure.message,

@@ -4,6 +4,7 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_radius.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 8: BCS - DESIGN_GUIDE v1.0 준수
 class Step08BCS extends StatelessWidget {
@@ -24,10 +25,10 @@ class Step08BCS extends StatelessWidget {
     required this.totalSteps,
   });
 
-  String getBCSLabel(int score) {
-    if (score <= 3) return '조금 마른 편이에요';
-    if (score <= 6) return '딱 좋아요!';
-    return '조금 관리해볼까요?';
+  String getBCSLabel(BuildContext context, int score) {
+    if (score <= 3) return AppLocalizations.of(context)!.onboarding_step8_bcsThin;
+    if (score <= 6) return AppLocalizations.of(context)!.onboarding_step8_bcsGood;
+    return AppLocalizations.of(context)!.onboarding_step8_bcsOverweight;
   }
 
   @override
@@ -37,8 +38,8 @@ class Step08BCS extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🧡',
-      title: '체형은 어느 쪽에 가까울까요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step8_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       onCTAClick: onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +89,7 @@ class Step08BCS extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
-                    getBCSLabel(value),
+                    getBCSLabel(context, value),
                     style: AppTypography.body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
@@ -129,14 +130,14 @@ class Step08BCS extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '마른 편',
+                AppLocalizations.of(context)!.onboarding_step8_sliderThin,
                 style: AppTypography.small.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
-                '통통한 편',
+                AppLocalizations.of(context)!.onboarding_step8_sliderOverweight,
                 style: AppTypography.small.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,

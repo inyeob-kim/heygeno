@@ -10,19 +10,16 @@ import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/utils/snackbar_helper.dart';
-import '../../../../../core/utils/pet_update_helper.dart';
 import '../../../../../core/widgets/loading.dart';
-import '../../../../../core/widgets/empty_state.dart';
-import '../../../../../core/widgets/loading_dialog.dart';
+import '../../../../../design_system/components/empty_state.dart';
 import '../../../../../core/widgets/modal_bottom_sheet_wrapper.dart';
 import '../../../../../core/constants/pet_constants.dart';
 import '../../../../../features/home/presentation/widgets/pet_avatar.dart';
 import '../../../../../data/models/pet_summary_dto.dart';
 import '../../../../../app/router/route_paths.dart';
-import '../../../../../domain/services/pet_service.dart';
-import '../../../../../features/home/presentation/controllers/home_controller.dart';
 import '../controllers/my_controller.dart';
-import '../widgets/recent_recommendation_item_widget.dart';
+import '../../../../../features/benefits/presentation/controllers/benefits_controller.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 실제 API 데이터를 사용하는 My Screen
 class MyScreen extends ConsumerStatefulWidget {
@@ -62,7 +59,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              AppTopBar(title: '더보기', showBackButton: false),
+              AppTopBar(title: AppLocalizations.of(context)!.tab_more, showBackButton: false),
               const Expanded(
                 child: Center(child: LoadingWidget()),
               ),
@@ -76,24 +73,39 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     if (state.error != null && state.petSummary == null) {
       return Scaffold(
         backgroundColor: Colors.white,
-        body: EmptyStateWidget(
-          title: state.error ?? '오류가 발생했습니다',
-          buttonText: '다시 시도',
+        body: EmptyState(
+          icon: Icons.error_outline,
+          title: state.error ?? AppLocalizations.of(context)!.me_errorOccurred,
+          buttonText: AppLocalizations.of(context)!.action_tryAgain,
           onButtonPressed: () => ref.read(myControllerProvider.notifier).refresh(),
         ),
       );
     }
 
+    // Benefits 데이터 가져오기 (Rewards 메뉴용)
+    final benefitsState = ref.watch(benefitsControllerProvider);
+    final rewardsPoints = benefitsState.totalPoints;
+    final rewardsMissionsCount = benefitsState.missions.length;
+    
     final settings = [
       SettingData(
+        icon: Icons.card_giftcard,
+        label: AppLocalizations.of(context)!.me_rewards,
+        value: AppLocalizations.of(context)!.me_rewardsSubtitle(rewardsPoints, rewardsMissionsCount),
+        hasChevron: true,
+        onTap: () {
+          context.push(RoutePaths.benefits);
+        },
+      ),
+      SettingData(
         icon: Icons.notifications_outlined,
-        label: '알림 설정',
+        label: AppLocalizations.of(context)!.me_notificationSettings,
         hasToggle: true,
         onTap: null, // 토글로 처리
       ),
       SettingData(
         icon: Icons.lock_outline,
-        label: '개인정보 보호',
+        label: AppLocalizations.of(context)!.me_privacy,
         hasChevron: true,
         onTap: () {
           context.push('/me/privacy');
@@ -101,7 +113,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       ),
       SettingData(
         icon: Icons.help_outline,
-        label: '도움말',
+        label: AppLocalizations.of(context)!.me_help,
         hasChevron: true,
         onTap: () {
           context.push('/me/help');
@@ -109,7 +121,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       ),
       SettingData(
         icon: Icons.email_outlined,
-        label: '문의하기',
+        label: AppLocalizations.of(context)!.me_contact,
         hasChevron: true,
         onTap: () {
           context.push('/me/contact');
@@ -117,7 +129,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       ),
       SettingData(
         icon: Icons.lightbulb_outline,
-        label: '기능 요청하기',
+        label: AppLocalizations.of(context)!.me_featureRequest,
         hasChevron: true,
         onTap: () {
           _showFeatureRequestBottomSheet(context);
@@ -125,7 +137,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       ),
       SettingData(
         icon: Icons.info_outline,
-        label: '앱 정보',
+        label: AppLocalizations.of(context)!.me_appInfo,
         hasChevron: true,
         onTap: () {
           context.push('/me/app-info');
@@ -138,7 +150,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '더보기', showBackButton: false),
+            AppTopBar(title: AppLocalizations.of(context)!.tab_more, showBackButton: false),
             Expanded(
               child: CupertinoScrollbar(
                 controller: _scrollController,
@@ -153,66 +165,10 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                       // 펫 프로필 카드 섹션 (가로 스크롤)
                       _buildPetProfilesSection(state.pets),
                       const SizedBox(height: 24),
-                      // Recent Recommendation History
-                      _buildSectionCard(
-                        title: '최근 추천 히스토리',
-                        subtitle: '이전에 추천받은 사료를 확인할 수 있습니다.',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (state.recentRecommendations.isNotEmpty) ...[
-                              // 가장 최근 1개만 표시
-                              ..._buildRecentRecommendations(
-                                state.recentRecommendations.take(1).toList(),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              // 전체보기 버튼
-                              GestureDetector(
-                                onTap: () {
-                                  context.push('/me/recommendation-history');
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.md,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: AppColors.divider,
-                                      width: 1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '전체보기',
-                                      style: AppTypography.body.copyWith(
-                                        color: AppColors.primaryBlue,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ] else
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Text(
-                                  '아직 추천 히스토리가 없어요',
-                                  style: AppTypography.small.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
                       // Settings
                       _buildSectionCard(
-                        title: '설정',
-                        subtitle: '앱 설정 및 정보를 관리할 수 있습니다.',
+                        title: AppLocalizations.of(context)!.me_settings,
+                        subtitle: AppLocalizations.of(context)!.me_settingsSubtitle,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -295,7 +251,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '우리 아이들',
+          AppLocalizations.of(context)!.me_ourPets,
           style: AppTypography.body.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -304,7 +260,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '펫 프로필을 관리하고 전환할 수 있습니다.',
+          AppLocalizations.of(context)!.me_ourPetsSubtitle,
           style: AppTypography.small.copyWith(
             fontSize: 13,
             color: AppColors.textSecondary,
@@ -342,10 +298,8 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       ),
       child: GestureDetector(
         onTap: () {
-          // 현재 아이가 아닌 경우에만 전환 확인 모달 표시
-          if (!isPrimary) {
-            _showPetSwitchConfirmDialog(context, pet);
-          }
+          // 펫 카드 클릭 시 전환 기능 제거 (Manage Pets만 유지)
+          // 전환은 TopBar의 PetSelector에서만 가능
         },
         child: SizedBox(
           width: 220,
@@ -400,7 +354,9 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                           Row(
                             children: [
                 Text(
-                  pet.species == 'DOG' ? '강아지' : '고양이',
+                  pet.species == 'DOG' 
+                      ? AppLocalizations.of(context)!.pet_species_dog
+                      : AppLocalizations.of(context)!.pet_species_cat,
                   style: AppTypography.small.copyWith(
                                   fontSize: 14,
                     color: AppColors.textSecondary,
@@ -415,7 +371,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                                   ),
                                 ),
                   Text(
-                    PetConstants.getAgeStageText(pet.ageStage) ?? '',
+                    PetConstants.getAgeStageText(context, pet.ageStage) ?? '',
                     style: AppTypography.small.copyWith(
                                     fontSize: 14,
                       color: AppColors.textSecondary,
@@ -430,13 +386,6 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                   ],
                 ),
               ),
-              // 업데이트 필요 배지 (오른쪽 상단)
-              if (PetUpdateHelper.needsUpdate(pet.updatedAt, pet.createdAt))
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _buildUpdateBadge(pet),
-                ),
             ],
           ),
         ),
@@ -493,7 +442,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                 // 텍스트 (오른쪽)
                 Expanded(
                   child: Text(
-                  '아이 추가하기',
+                  AppLocalizations.of(context)!.me_addPet,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                       fontSize: 18,
@@ -511,18 +460,6 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     );
   }
 
-  List<Widget> _buildRecentRecommendations(List<RecentRecommendationData> recommendations) {
-    return recommendations.asMap().entries.map((entry) {
-      final index = entry.key;
-      final recommendation = entry.value;
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: index == recommendations.length - 1 ? 0 : AppSpacing.md,
-        ),
-        child: RecentRecommendationItemWidget.fromData(recommendation),
-      );
-    }).toList();
-  }
 
   Widget _buildSettingItem(SettingData setting) {
     Widget? trailing;
@@ -547,6 +484,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
 
     return SettingItem.withAutoColors(
       label: setting.label,
+      subtitle: setting.value,
       icon: setting.icon,
       onTap: setting.onTap,
       trailing: trailing,
@@ -554,123 +492,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
   }
 
   /// 펫 전환 확인 다이얼로그 표시
-  Future<void> _showPetSwitchConfirmDialog(BuildContext context, PetSummaryDto targetPet) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-        title: Text(
-          '펫 전환',
-          style: AppTypography.h3.copyWith(
-            fontWeight: FontWeight.w700,
-            ),
-          ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${targetPet.name}로 전환하시겠어요?',
-              style: AppTypography.body.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '홈 화면이 ${targetPet.name}의 정보로 표시됩니다.',
-              style: AppTypography.small.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              '취소',
-              style: AppTypography.button.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          CupertinoButton(
-            color: AppColors.primaryBlue,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              '전환',
-              style: AppTypography.button.copyWith(
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
 
-    if (confirmed == true && mounted) {
-      await _switchPet(targetPet);
-    }
-  }
-
-  /// 펫 전환 실행
-  Future<void> _switchPet(PetSummaryDto targetPet) async {
-    if (!mounted) return;
-    
-    LoadingDialog.show(context);
-
-    try {
-      // Primary pet 설정
-      await ref.read(petServiceProvider).setPrimaryPet(targetPet.petId);
-      
-      // 화면 새로고침
-      await ref.read(myControllerProvider.notifier).refresh();
-      await ref.read(homeControllerProvider.notifier).initialize();
-
-      if (!mounted) return;
-      LoadingDialog.hide(context);
-      SnackBarHelper.showSuccess(context, '${targetPet.name}로 전환되었습니다');
-    } catch (e) {
-      if (!mounted) return;
-      LoadingDialog.hide(context);
-      SnackBarHelper.showError(context, '아이 전환에 실패했습니다: ${e.toString()}');
-    }
-  }
-
-  /// 업데이트 필요 배지 위젯
-  Widget _buildUpdateBadge(PetSummaryDto pet) {
-    final urgency = PetUpdateHelper.getUpdateUrgency(pet.updatedAt, pet.createdAt);
-    
-    if (urgency == UpdateUrgency.none) {
-      return const SizedBox.shrink();
-    }
-    
-    return GestureDetector(
-      onTap: () {
-        context.push(RoutePaths.petUpdate(pet.petId));
-      },
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.edit_rounded,
-          size: 16,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
 
   /// 기능 요청 바텀시트 표시
   void _showFeatureRequestBottomSheet(BuildContext context) {
@@ -678,7 +500,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     
     ModalBottomSheetWrapper.show(
       context,
-      title: '기능 요청하기',
+      title: AppLocalizations.of(context)!.me_featureRequest,
                   child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
@@ -689,7 +511,7 @@ class _MyScreenState extends ConsumerState<MyScreen> {
               controller: textController,
               maxLines: 8,
               decoration: InputDecoration(
-                hintText: '원하시는 기능을 자유롭게 작성해주세요',
+                hintText: AppLocalizations.of(context)!.me_featureRequestHint,
                 hintStyle: AppTypography.body.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -718,15 +540,15 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 onPressed: () {
                   if (textController.text.trim().isEmpty) {
-                    SnackBarHelper.showError(context, '내용을 입력해주세요');
+                    SnackBarHelper.showError(context, AppLocalizations.of(context)!.me_featureRequestEmpty);
                     return;
                   }
                   // TODO: 기능 요청 저장 로직 추가
                   Navigator.of(context).pop();
-                  SnackBarHelper.showSuccess(context, '기능 요청이 전송되었습니다');
+                  SnackBarHelper.showSuccess(context, AppLocalizations.of(context)!.me_featureRequestSent);
                 },
                 child: Text(
-                  '저장',
+                  AppLocalizations.of(context)!.common_save,
                   style: AppTypography.button.copyWith(color: Colors.white),
                 ),
               ),

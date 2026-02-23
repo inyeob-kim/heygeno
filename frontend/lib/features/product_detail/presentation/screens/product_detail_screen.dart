@@ -10,10 +10,11 @@ import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../app/theme/app_shadows.dart';
 import '../../../../../core/utils/price_formatter.dart';
-import '../../../../../core/widgets/empty_state.dart';
+import '../../../../../design_system/components/empty_state.dart';
 import '../../../../../core/widgets/loading.dart';
 import '../../../../../ui/widgets/figma_app_bar.dart';
-import '../../../../../ui/widgets/app_buttons.dart';
+import '../../../../../design_system/components/button.dart';
+import '../../../../data/models/product_display_models.dart';
 import '../controllers/product_detail_controller.dart';
 import '../widgets/price_comparison_card.dart';
 import '../widgets/match_analysis_card.dart';
@@ -26,6 +27,7 @@ import '../../../watch/presentation/controllers/watch_controller.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
 import '../providers/match_score_provider.dart';
 import '../../../../core/providers/active_pet_context_provider.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 실제 API 데이터를 사용하는 Product Detail Screen
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -112,15 +114,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return Scaffold(
         backgroundColor: AppColors.surface,
         appBar: AppBar(
-          title: const Text('제품 상세'),
+          title: Text(AppLocalizations.of(context)!.productDetail_title),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
         ),
-        body: EmptyStateWidget(
-          title: state.error ?? '오류가 발생했습니다',
-          buttonText: '다시 시도',
+        body: EmptyState(
+          icon: Icons.error_outline,
+          title: state.error ?? AppLocalizations.of(context)!.productDetail_errorOccurred,
+          buttonText: AppLocalizations.of(context)!.action_tryAgain,
           onButtonPressed: () => ref
               .read(productDetailControllerProvider(widget.productId).notifier)
               .loadProduct(widget.productId),
@@ -136,7 +139,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           child: Column(
             children: [
               FigmaAppBar(
-                title: '제품 상세',
+                title: AppLocalizations.of(context)!.productDetail_title,
                 onBack: () => context.pop(),
               ),
               const Expanded(
@@ -154,7 +157,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         child: Column(
           children: [
             FigmaAppBar(
-              title: '제품 상세',
+              title: AppLocalizations.of(context)!.productDetail_title,
               onBack: () => context.pop(),
             ),
             Expanded(
@@ -274,8 +277,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 children: [
                                   Text(
                                     petName != null
-                                        ? '$petName 맞춤 점수'
-                                        : '맞춤 점수',
+                                        ? AppLocalizations.of(context)!.productDetail_matchScoreForPet(petName)
+                                        : AppLocalizations.of(context)!.productDetail_matchScore,
                                     style: AppTypography.body.copyWith(
                                       color: AppColors.textPrimary,
                                       fontSize: 18,
@@ -285,10 +288,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   const SizedBox(height: AppSpacing.md),
                                   Text(
                                     activePetContext.petId == null
-                                        ? '펫 정보를 등록하면 맞춤 점수를 확인할 수 있습니다.'
+                                        ? AppLocalizations.of(context)!.productDetail_registerPetForScore
                                         : result.errorType == 'no_ingredient_info'
-                                            ? '이 상품의 성분 분석 정보가 아직 준비되지 않아 맞춤 점수를 제공할 수 없습니다.'
-                                            : '맞춤 점수를 계산할 수 없습니다.',
+                                            ? AppLocalizations.of(context)!.productDetail_noIngredientInfo
+                                            : AppLocalizations.of(context)!.productDetail_cannotCalculateScore,
                                     style: AppTypography.body.copyWith(
                                       color: AppColors.textSecondary,
                                       fontSize: 14,
@@ -324,8 +327,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             children: [
                               Text(
                                 (activePetContext.petSummary?.name ?? homeState.petSummary?.name) != null
-                                    ? '${activePetContext.petSummary?.name ?? homeState.petSummary?.name} 맞춤 점수'
-                                    : '맞춤 점수',
+                                    ? AppLocalizations.of(context)!.productDetail_matchScoreForPet((activePetContext.petSummary?.name ?? homeState.petSummary?.name)!)
+                                    : AppLocalizations.of(context)!.productDetail_matchScore,
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.textPrimary,
                                   fontSize: 18,
@@ -334,7 +337,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Text(
-                                '맞춤 점수를 불러오는 중 오류가 발생했습니다.',
+                                AppLocalizations.of(context)!.productDetail_scoreLoadError,
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 14,
@@ -362,7 +365,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '성분 분석',
+                                    AppLocalizations.of(context)!.productDetail_ingredientAnalysis,
                                     style: AppTypography.body.copyWith(
                                       color: AppColors.textPrimary,
                                       fontSize: 18,
@@ -371,7 +374,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.md),
                                   Text(
-                                    '성분 정보가 없습니다.',
+                                    AppLocalizations.of(context)!.productDetail_noIngredientData,
                                     style: AppTypography.body.copyWith(
                                       color: AppColors.textSecondary,
                                       fontSize: 14,
@@ -452,8 +455,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ),
               SizedBox(width: AppSpacing.md),
               Expanded(
-                child: AppPrimaryButton(
-                  text: '구매하러가기',
+                child: PrimaryButton(
+                  text: AppLocalizations.of(context)!.productDetail_buyNow,
                   onPressed: () async {
                     final purchaseUrl = state.purchaseUrl;
                     if (purchaseUrl != null && purchaseUrl.isNotEmpty) {
@@ -461,9 +464,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     } else {
                       // TODO: 구매 링크가 없을 때 처리
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('구매 링크를 불러올 수 없습니다'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context)!.productDetail_cannotLoadPurchaseLink),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     }
@@ -488,7 +491,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '가격 추이',
+            AppLocalizations.of(context)!.productDetail_priceTrend,
             style: AppTypography.body.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -497,7 +500,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
           SizedBox(height: AppSpacing.xs),
           Text(
-            '최근 가격 흐름을 한눈에 확인하세요',
+            AppLocalizations.of(context)!.productDetail_priceTrendDescription,
             style: AppTypography.small.copyWith(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -521,7 +524,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '역대 최저가',
+                      AppLocalizations.of(context)!.productDetail_allTimeLow,
                       style: AppTypography.small.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -531,7 +534,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     Text(
                       state.minPrice != null
                           ? PriceFormatter.formatWithCurrency(state.minPrice!)
-                          : '정보 없음',
+                          : AppLocalizations.of(context)!.productDetail_noInfo,
                       style: AppTypography.body.copyWith(
                         color: AppColors.textPrimary,
                         fontSize: 14,
@@ -548,7 +551,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        '평균가',
+                        AppLocalizations.of(context)!.productDetail_averagePrice,
                         style: AppTypography.small.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -572,7 +575,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '역대 최고가',
+                      AppLocalizations.of(context)!.productDetail_allTimeHigh,
                       style: AppTypography.small.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -582,7 +585,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     Text(
                       state.maxPrice != null
                           ? PriceFormatter.formatWithCurrency(state.maxPrice!)
-                          : '정보 없음',
+                          : AppLocalizations.of(context)!.productDetail_noInfo,
                       style: AppTypography.body.copyWith(
                         color: AppColors.textPrimary,
                         fontSize: 14,
@@ -634,7 +637,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '기능성 클레임',
+                        AppLocalizations.of(context)!.productDetail_functionalClaims,
                         style: AppTypography.body.copyWith(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -644,7 +647,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       if (!_isClaimsExpanded) ...[
                         SizedBox(height: AppSpacing.xs),
                         Text(
-                          '이 제품이 지원하는 기능성 정보입니다',
+                          AppLocalizations.of(context)!.productDetail_functionalClaimsDescription,
                           style: AppTypography.small.copyWith(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -675,7 +678,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               children: [
                 SizedBox(height: AppSpacing.xs),
                 Text(
-                  '이 제품이 지원하는 기능성 정보입니다',
+                  AppLocalizations.of(context)!.productDetail_functionalClaimsDescription,
                   style: AppTypography.small.copyWith(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -716,7 +719,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 borderRadius: BorderRadius.circular(AppRadius.sm),
                               ),
                               child: Text(
-                                '증거 수준 ${claim.evidenceLevel}%',
+                                AppLocalizations.of(context)!.productDetail_evidenceLevel(claim.evidenceLevel),
                                 style: AppTypography.small.copyWith(
                                   fontSize: 11,
                                   color: AppColors.primary,
@@ -763,9 +766,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('구매 링크를 열 수 없습니다'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.productDetail_cannotOpenPurchaseLink),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -774,7 +777,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('구매 링크 열기 실패: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.productDetail_purchaseLinkError(e.toString())),
             duration: const Duration(seconds: 2),
           ),
         );

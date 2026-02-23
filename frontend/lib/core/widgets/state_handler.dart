@@ -5,6 +5,7 @@ import '../../app/theme/app_spacing.dart';
 import 'loading.dart';
 import 'empty_state.dart';
 import '../../ui/widgets/app_buttons.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 공통 상태 처리 위젯 (로딩/에러/빈 상태/정상 상태)
 /// 
@@ -73,8 +74,8 @@ class StateHandler extends StatelessWidget {
 
     // 3. 빈 상태
     if (isEmpty) {
-      return emptyWidget ?? const EmptyStateWidget(
-        title: '데이터가 없습니다',
+      return emptyWidget ?? EmptyStateWidget(
+        title: AppLocalizations.of(context)!.empty_noData,
       );
     }
 
@@ -105,7 +106,7 @@ class StateHandler extends StatelessWidget {
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
               AppPrimaryButton(
-                text: '다시 시도',
+                text: AppLocalizations.of(context)!.action_tryAgain,
                 onPressed: onRetry,
               ),
             ],

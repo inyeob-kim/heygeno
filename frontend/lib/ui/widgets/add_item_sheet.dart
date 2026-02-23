@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 추가 아이템 Bottom Sheet
 class AddItemSheet extends StatelessWidget {
@@ -36,33 +37,33 @@ class AddItemSheet extends StatelessWidget {
           // Options
           _SheetOption(
             icon: Icons.search,
-            title: '사료 검색으로 추가',
+            title: AppLocalizations.of(context)!.addItem_searchFood,
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('준비중')),
+                SnackBar(content: Text(AppLocalizations.of(context)!.common_comingSoon)),
               );
             },
           ),
           const Divider(height: 1),
           _SheetOption(
             icon: Icons.link,
-            title: '링크로 사료 추가',
+            title: AppLocalizations.of(context)!.addItem_addByLink,
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('준비중')),
+                SnackBar(content: Text(AppLocalizations.of(context)!.common_comingSoon)),
               );
             },
           ),
           const Divider(height: 1),
           _SheetOption(
             icon: Icons.notifications_outlined,
-            title: '키워드 알림 받기',
+            title: AppLocalizations.of(context)!.addItem_keywordAlert,
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('준비중')),
+                SnackBar(content: Text(AppLocalizations.of(context)!.common_comingSoon)),
               );
             },
           ),

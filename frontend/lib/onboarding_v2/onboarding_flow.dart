@@ -5,10 +5,10 @@ import 'package:dio/dio.dart';
 import '../theme_v2/app_theme.dart';
 import '../../app/router/route_paths.dart';
 import 'model/onboarding_state.dart';
-import '../../features/onboarding/data/repositories/onboarding_repository.dart';
-import '../../core/services/device_uid_service.dart';
+import '../../domain/services/onboarding_service.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/endpoints.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 import 'steps/step01_nickname.dart';
 import 'steps/step02_pet_name.dart';
 import 'steps/step03_species.dart';
@@ -61,11 +61,8 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
     });
 
     try {
-      // Device UID 생성/확인
-      final deviceUid = await DeviceUidService.getOrCreate();
-
-      // API 요청 데이터 생성
-      final requestData = _data.toApiRequest(deviceUid);
+      // API 요청 데이터 생성 (Bearer 토큰으로 인증)
+      final requestData = _data.toApiRequest();
       // 펫 추가 모드면 닉네임을 빈 문자열로 설정하고 is_add_pet_mode 플래그 추가
       if (widget.isAddPetMode) {
         requestData['nickname'] = '';
@@ -95,7 +92,9 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('서버 오류: ${e.response?.data?['detail'] ?? e.message}'),
+                content: Text(AppLocalizations.of(context)!.onboarding_flow_serverError(
+                  e.response?.data?['detail'] ?? e.message ?? 'Unknown error',
+                )),
                 backgroundColor: Colors.red,
               ),
             );
@@ -104,8 +103,7 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
       }
 
       // 온보딩 완료 플래그 설정
-      final repository = OnboardingRepositoryImpl();
-      await repository.setOnboardingCompleted(true);
+      await ref.read(onboardingServiceProvider).setOnboardingCompleted(true);
 
       debugPrint('[OnboardingFlowV2] 온보딩 완료 처리 완료');
 
@@ -118,7 +116,7 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('온보딩 완료 중 오류가 발생했습니다: $e'),
+            content: Text(AppLocalizations.of(context)!.onboarding_flow_completionError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -291,8 +289,8 @@ class _OnboardingFlowV2State extends ConsumerState<OnboardingFlowV2> {
           totalSteps: totalSteps,
         );
             default:
-              return const Scaffold(
-                body: Center(child: Text('Unknown step')),
+              return Scaffold(
+                body: Center(child: Text(AppLocalizations.of(context)!.onboarding_flow_unknownStep)),
               );
           }
         },

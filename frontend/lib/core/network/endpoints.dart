@@ -1,7 +1,15 @@
 class Endpoints {
   // Health
   static const String health = '/health';
-  
+
+  // Auth
+  static const String authGuestLogin = '/auth/guest-login';
+  static const String authSocialLogin = '/auth/social-login';
+  static const String authRegister = '/auth/register';
+  static const String authRefresh = '/auth/refresh';
+  static const String authEmailSignUp = '/auth/email/signup';
+  static const String authEmailSignIn = '/auth/email/signin';
+
   // Users
   static const String currentUser = '/users/me';
   
@@ -36,6 +44,9 @@ class Endpoints {
   // Clicks
   static const String clicks = '/clicks';
   
+  // Quick recommendations (anonymous, no auth)
+  static const String recommendationsQuick = '/recommendations/quick';
+
   // Onboarding
   static const String onboardingComplete = '/onboarding/complete';
   

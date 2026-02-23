@@ -1,19 +1,22 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
-import '../../../../../ui/widgets/app_buttons.dart';
 import '../../../../../app/router/route_paths.dart';
-import '../../../../../domain/services/pet_service.dart';
 import '../../../../../data/models/mission_dto.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/widgets/loading.dart';
-import '../../../../../core/widgets/empty_state.dart';
+import '../../../../../design_system/components/empty_state.dart';
 import '../controllers/benefits_controller.dart';
+// Design System
+import '../../../../../design_system/components/index.dart';
+// i18n
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 실제 API 데이터를 사용하는 Benefits Screen
 class BenefitsScreen extends ConsumerStatefulWidget {
@@ -52,7 +55,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              AppTopBar(title: '혜택', showBackButton: false),
+              AppTopBar(title: AppLocalizations.of(context)!.section_rewards, showBackButton: true),
               const Expanded(
                 child: Center(child: LoadingWidget()),
               ),
@@ -66,9 +69,10 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
     if (state.error != null && state.missions.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: EmptyStateWidget(
-          title: state.error ?? '오류가 발생했습니다',
-          buttonText: '다시 시도',
+        body: EmptyState(
+          icon: Icons.error_outline,
+          title: state.error ?? AppLocalizations.of(context)!.error_occurred,
+          buttonText: AppLocalizations.of(context)!.action_tryAgain,
           onButtonPressed: () => ref.read(benefitsControllerProvider.notifier).refresh(),
         ),
       );
@@ -83,7 +87,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: '혜택', showBackButton: false),
+            AppTopBar(title: AppLocalizations.of(context)!.section_rewards, showBackButton: true),
             Expanded(
               child: CupertinoScrollbar(
                 controller: _scrollController,
@@ -115,7 +119,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             Row(
                               children: [
                                 Text(
-                                  '내 포인트',
+                                  AppLocalizations.of(context)!.benefits_myPoints,
                                   style: AppTypography.body.copyWith(
                                     color: AppColors.textPrimary,
                                     fontSize: 16,
@@ -184,7 +188,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${availablePoints.toLocaleString()}P 더 받을 수 있어요',
+                              AppLocalizations.of(context)!.benefits_morePointsAvailable(availablePoints.toInt()),
                               style: AppTypography.body.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 14,
@@ -215,14 +219,19 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  '미션 완료하고 포인트 받기',
-                                  style: AppTypography.h3.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                Expanded(
+                                  child: Text(
+                                    AppLocalizations.of(context)!.benefits_completeMissions,
+                                    style: AppTypography.h3.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                const SizedBox(width: 8),
                                 Text(
                                   '${state.completedCount}/${missions.length}',
                                   style: AppTypography.small.copyWith(
@@ -340,7 +349,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             children: [
                               TextSpan(text: mission.title),
                               TextSpan(
-                                text: ' ${mission.reward}P 받기',
+                                text: ' ${AppLocalizations.of(context)!.mission_getReward(mission.reward)}',
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontWeight: FontWeight.w700,
@@ -361,7 +370,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            '완료',
+                            AppLocalizations.of(context)!.mission_completed,
                             style: AppTypography.small.copyWith(
                               color: Colors.white,
                               fontSize: 10,
@@ -394,7 +403,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '${mission.currentValue}/${mission.targetValue} 완료',
+                        AppLocalizations.of(context)!.mission_progressCompleted(mission.currentValue, mission.targetValue),
                         style: AppTypography.small.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -542,8 +551,8 @@ class _MissionBottomSheet extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppRadius.lg),
+            borderRadius: const BorderRadius.vertical(
+              top: ui.Radius.circular(AppRadius.lg),
             ),
           ),
           child: SafeArea(
@@ -682,7 +691,7 @@ class _MissionBottomSheet extends ConsumerWidget {
                         // Progress
                         if (!mission.completed) ...[
                           Text(
-                            '진행 상황',
+                            AppLocalizations.of(context)!.mission_progress,
                             style: AppTypography.body.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -693,7 +702,7 @@ class _MissionBottomSheet extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${mission.currentValue}/${mission.targetValue} 완료',
+                                AppLocalizations.of(context)!.mission_progressCompleted(mission.currentValue, mission.targetValue),
                                 style: AppTypography.small.copyWith(
                                   color: AppColors.textSecondary,
                                 ),
@@ -752,8 +761,8 @@ class _MissionBottomSheet extends ConsumerWidget {
                       ),
                     ),
                     child: SafeArea(
-                      child: AppPrimaryButton(
-                        text: '시작하기',
+                      child: PrimaryButton(
+                        text: AppLocalizations.of(context)!.action_start,
                         height: 56,
                         onPressed: () async {
                           Navigator.pop(context);
@@ -762,26 +771,21 @@ class _MissionBottomSheet extends ConsumerWidget {
                           if (mission.title.contains('프로필 업데이트') || 
                               mission.title.contains('업데이트')) {
                             try {
-                              // Primary pet 가져오기
-                              final petService = ref.read(petServiceProvider);
-                              final primaryPet = await petService.getPrimaryPetSummary();
-                              
-                              if (primaryPet != null && context.mounted) {
-                                context.push(RoutePaths.petUpdate(primaryPet.petId));
+                              final petId = await ref.read(benefitsControllerProvider.notifier).getPetIdForPetUpdateMission();
+                              if (petId != null && context.mounted) {
+                                context.push(RoutePaths.petUpdate(petId));
                               } else if (context.mounted) {
-                                // Primary pet이 없으면 모든 펫 목록에서 선택
-                                final pets = await petService.getAllPetSummaries();
-                                if (pets.isNotEmpty && context.mounted) {
-                                  // 첫 번째 펫으로 이동 (나중에 펫 선택 화면 추가 가능)
-                                  context.push(RoutePaths.petUpdate(pets.first.petId));
-                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(AppLocalizations.of(context)!.error_failedToLoadPetInfo),
+                                  ),
+                                );
                               }
                             } catch (e) {
-                              // 에러 처리
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('펫 정보를 불러오는데 실패했습니다'),
+                                    content: Text(AppLocalizations.of(context)!.error_failedToLoadPetInfo),
                                   ),
                                 );
                               }

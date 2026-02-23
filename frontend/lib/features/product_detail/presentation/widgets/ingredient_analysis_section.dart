@@ -3,21 +3,8 @@ import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../app/theme/app_spacing.dart';
-
-/// 성분 분석 데이터 모델
-class IngredientAnalysisData {
-  final List<String> mainIngredients; // 주요 원료
-  final Map<String, double> nutritionFacts; // 영양소 분석 (단백질, 지방, 섬유질, 수분 등)
-  final List<String>? allergens; // 알레르기 유발 성분
-  final String? description; // 기타 설명
-
-  IngredientAnalysisData({
-    required this.mainIngredients,
-    required this.nutritionFacts,
-    this.allergens,
-    this.description,
-  });
-}
+import '../../../../../data/models/product_display_models.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 성분 분석 섹션 위젯
 class IngredientAnalysisSection extends StatefulWidget {
@@ -58,7 +45,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '성분 분석',
+                      AppLocalizations.of(context)!.productDetailWidget_ingredientAnalysis,
                       style: AppTypography.h3.copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 20,
@@ -68,7 +55,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
                     if (!_isExpanded) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        '주요 원료와 영양소 정보를 확인하세요',
+                        AppLocalizations.of(context)!.productDetailWidget_checkIngredientsNutrition,
                         style: AppTypography.body2.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -99,7 +86,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
             children: [
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '주요 원료와 영양소 정보를 확인하세요',
+                AppLocalizations.of(context)!.productDetailWidget_checkIngredientsNutrition,
                 style: AppTypography.body2.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 13,
@@ -146,7 +133,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '주요 원료',
+              AppLocalizations.of(context)!.productDetailWidget_mainIngredients,
               style: AppTypography.body1.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
@@ -198,7 +185,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '영양소 분석',
+              AppLocalizations.of(context)!.productDetailWidget_nutritionAnalysis,
               style: AppTypography.body1.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
@@ -271,7 +258,7 @@ class _IngredientAnalysisSectionState extends State<IngredientAnalysisSection> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '알레르기 유발 성분',
+              AppLocalizations.of(context)!.productDetailWidget_allergenIngredients,
               style: AppTypography.body1.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,

@@ -1,34 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/repositories/product_repository.dart';
 import '../../../../data/models/product_dto.dart';
 import '../../../../data/models/product_match_score_dto.dart';
+import '../../../../data/models/product_display_models.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/utils/error_handler.dart';
+import '../../../../domain/services/product_service.dart';
 import '../../../../domain/services/tracking_service.dart';
-import '../widgets/ingredient_analysis_section.dart';
-
-class PriceHistoryItem {
-  final DateTime date;
-  final int price;
-
-  PriceHistoryItem({required this.date, required this.price});
-}
-
-class ClaimItem {
-  final String claimCode;
-  final String? claimDisplayName;
-  final int evidenceLevel;
-  final String? note;
-
-  ClaimItem({
-    required this.claimCode,
-    this.claimDisplayName,
-    required this.evidenceLevel,
-    this.note,
-  });
-}
 
 class ProductDetailState {
   final ProductDto? product;
@@ -121,11 +100,11 @@ class ProductDetailState {
 }
 
 class ProductDetailController extends StateNotifier<ProductDetailState> {
-  final ProductRepository _productRepository;
+  final ProductService _productService;
   final TrackingService _trackingService;
 
   ProductDetailController(
-    this._productRepository,
+    this._productService,
     this._trackingService,
   ) : super(ProductDetailState(
     isLoadingMatchScore: false,
@@ -135,79 +114,19 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // 상세 정보 조회 (가격, 성분, 영양, 클레임 포함)
-      final detail = await _productRepository.getProductDetail(productId);
-      
-      // 영양 정보 맵 생성
-      final nutritionFacts = <String, double>{};
-      if (detail.nutrition != null) {
-        if (detail.nutrition!.proteinPct != null) {
-          nutritionFacts['조단백질'] = detail.nutrition!.proteinPct!;
-        }
-        if (detail.nutrition!.fatPct != null) {
-          nutritionFacts['조지방'] = detail.nutrition!.fatPct!;
-        }
-        if (detail.nutrition!.fiberPct != null) {
-          nutritionFacts['조섬유'] = detail.nutrition!.fiberPct!;
-        }
-        if (detail.nutrition!.moisturePct != null) {
-          nutritionFacts['수분'] = detail.nutrition!.moisturePct!;
-        }
-        if (detail.nutrition!.calciumPct != null) {
-          nutritionFacts['칼슘'] = detail.nutrition!.calciumPct!;
-        }
-        if (detail.nutrition!.phosphorusPct != null) {
-          nutritionFacts['인'] = detail.nutrition!.phosphorusPct!;
-        }
-      }
-      
-      // 성분 분석 데이터 생성 (ingredient 또는 nutrition이 있으면 설정)
-      IngredientAnalysisData? ingredientData;
-      if (detail.ingredient != null || detail.nutrition != null) {
-        final mainIngredients = detail.ingredient?.mainIngredients ?? [];
-        final allergens = detail.ingredient?.allergens ?? [];
-        final description = detail.ingredient?.description;
-        
-        print('[ProductDetailController] 성분 정보 수신:');
-        print('  - mainIngredients: ${mainIngredients.length}개');
-        print('  - allergens: ${allergens.length}개');
-        print('  - description: ${description != null ? "있음" : "없음"}');
-        print('  - nutritionFacts: ${nutritionFacts.length}개');
-        
-        ingredientData = IngredientAnalysisData(
-          mainIngredients: mainIngredients,
-          nutritionFacts: nutritionFacts,
-          allergens: allergens.isNotEmpty ? allergens : null,
-          description: description,
-        );
-      }
-      
-      // 가격 히스토리 설정
-      final priceHistory = detail.priceHistory.map((h) => PriceHistoryItem(
-        date: h.date,
-        price: h.price,
-      )).toList();
-      
-      // 기능성 클레임 설정
-      final claims = detail.claims.map((c) => ClaimItem(
-        claimCode: c.claimCode,
-        claimDisplayName: c.claimDisplayName,
-        evidenceLevel: c.evidenceLevel,
-        note: c.note,
-      )).toList();
-      
-      // 모든 데이터를 한 번에 업데이트
+      final result = await _productService.getProductDetailForDisplay(productId);
+
       state = state.copyWith(
         isLoading: false,
-        product: detail.product,
-        currentPrice: detail.currentPrice,
-        averagePrice: detail.averagePrice,
-        minPrice: detail.minPrice,
-        maxPrice: detail.maxPrice,
-        purchaseUrl: detail.purchaseUrl,
-        ingredientAnalysis: ingredientData,
-        priceHistory: priceHistory,
-        claims: claims,
+        product: result.product,
+        currentPrice: result.currentPrice,
+        averagePrice: result.averagePrice,
+        minPrice: result.minPrice,
+        maxPrice: result.maxPrice,
+        purchaseUrl: result.purchaseUrl,
+        ingredientAnalysis: result.ingredientAnalysis,
+        priceHistory: result.priceHistory,
+        claims: result.claims,
       );
       
       // 나머지 작업들은 병렬로 실행
@@ -222,7 +141,7 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('알 수 없는 오류가 발생했습니다: ${e.toString()}');
+          : ServerFailure('An unknown error occurred: ${e.toString()}');
       state = state.copyWith(
         isLoading: false,
         error: failure.message,
@@ -281,7 +200,7 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
       // 에러 발생 시 이전 상태로 되돌리기
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('찜하기 기능을 사용하는데 실패했습니다: ${e.toString()}');
+          : ServerFailure('Failed to use favorites feature: ${e.toString()}');
       state = state.copyWith(
         isFavorite: previousFavoriteState,
         error: failure.message,
@@ -315,7 +234,7 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('알 수 없는 오류가 발생했습니다: ${e.toString()}');
+          : ServerFailure('An unknown error occurred: ${e.toString()}');
       state = state.copyWith(
         isTrackingLoading: false,
         error: failure.message,
@@ -337,7 +256,7 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
 
     try {
       print('[ProductDetailController] 📡 API 호출 시작: getProductMatchScore');
-      final matchScore = await _productRepository.getProductMatchScore(
+      final matchScore = await _productService.getProductMatchScore(
         productId: productId,
         petId: petId,
       );
@@ -398,8 +317,8 @@ class ProductDetailController extends StateNotifier<ProductDetailState> {
 final productDetailControllerProvider =
     StateNotifierProvider.autoDispose.family<ProductDetailController, ProductDetailState, String>(
   (ref, productId) {
-    final productRepository = ref.watch(productRepositoryProvider);
+    final productService = ref.watch(productServiceProvider);
     final trackingService = ref.watch(trackingServiceProvider);
-    return ProductDetailController(productRepository, trackingService);
+    return ProductDetailController(productService, trackingService);
   },
 );

@@ -5,6 +5,7 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 5: Breed (Dog & Cat) - DESIGN_GUIDE v1.0 준수
 class Step05Breed extends StatefulWidget {
@@ -143,15 +144,15 @@ class _Step05BreedState extends State<Step05Breed> {
       totalSteps: widget.totalSteps,
       onBack: widget.onBack,
       emoji: widget.species == 'cat' ? '🐱' : '🐶',
-      title: '어떤 품종인가요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step5_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: widget.onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '품종',
+            AppLocalizations.of(context)!.onboarding_step5_label,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -159,12 +160,12 @@ class _Step05BreedState extends State<Step05Breed> {
           const SizedBox(height: AppSpacing.sm),
           FigmaSearchBar(
             controller: _searchController,
-            placeholder: '품종을 검색하세요',
+            placeholder: AppLocalizations.of(context)!.onboarding_step5_placeholder,
             onSearch: _onSearchChanged,
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            '대표 품종',
+            AppLocalizations.of(context)!.onboarding_step5_popularBreeds,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),

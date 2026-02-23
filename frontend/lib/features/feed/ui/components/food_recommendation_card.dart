@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../ui/widgets/card_container.dart';
-import '../../../../ui/widgets/primary_button.dart';
+import '../../../../design_system/components/app_card.dart';
+import '../../../../design_system/components/button.dart';
 import '../../../../ui/widgets/soft_chip.dart';
 import '../../../../ui/widgets/stat_badge.dart';
 import '../../../../ui/theme/app_colors.dart';
@@ -34,7 +34,7 @@ class FoodRecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CardContainer(
+    return AppCard(
       padding: const EdgeInsets.all(AppSpacing.pagePadding),
       onTap: null,
       child: Column(

@@ -3,6 +3,7 @@ import '../onboarding_shell.dart';
 import '../widgets/selection_card.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 3: Species - matches React Step3Species
 class Step03Species extends StatelessWidget {
@@ -30,8 +31,8 @@ class Step03Species extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '',
-      title: '어떤 친구인가요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step3_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: value.isEmpty,
       onCTAClick: onNext,
       child: Column(
@@ -41,7 +42,7 @@ class Step03Species extends StatelessWidget {
             onTap: () => onUpdate('dog'),
             emoji: '🐶',
             child: Text(
-              '강아지',
+              AppLocalizations.of(context)!.pet_species_dog,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -53,7 +54,7 @@ class Step03Species extends StatelessWidget {
             onTap: () => onUpdate('cat'),
             emoji: '🐱',
             child: Text(
-              '고양이',
+              AppLocalizations.of(context)!.pet_species_cat,
               style: AppTypography.body.copyWith(
                 fontWeight: FontWeight.w600,
               ),

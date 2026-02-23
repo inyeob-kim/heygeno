@@ -7,7 +7,8 @@ import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_radius.dart';
 import '../../../../../app/theme/app_spacing.dart';
-import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../design_system/components/app_card.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 상품 카드 (DESIGN_GUIDE.md 스타일)
 class ProductCard extends StatelessWidget {
@@ -25,7 +26,7 @@ class ProductCard extends StatelessWidget {
     final discountText = PriceFormatter.formatDiscountPercent(item.deltaPercent);
     final isNewLow = item.isNewLow;
 
-    return CardContainer(
+    return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: () {
         context.go('/products/${product.id}');
@@ -100,7 +101,7 @@ class ProductCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          isNewLow ? '최저가!' : discountText,
+                          isNewLow ? AppLocalizations.of(context)!.home_newLowPrice : discountText,
                           style: AppTypography.badge.copyWith(
                             color: isNewLow ? AppColors.dangerRed : AppColors.chipText,
                           ),

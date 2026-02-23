@@ -3,6 +3,7 @@ import '../onboarding_shell.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 1: Nickname - matches React Step1Nickname
 class Step01Nickname extends StatelessWidget {
@@ -29,9 +30,9 @@ class Step01Nickname extends StatelessWidget {
       currentStep: currentStep,
       totalSteps: totalSteps,
       emoji: '', // 이모지 제거
-      title: '안녕하세요',
-      subtitle: '헤이제노에서 쓸 닉네임만 먼저 정해볼까요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step1_title,
+      subtitle: AppLocalizations.of(context)!.onboarding_step1_subtitle,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: onNext,
       leadingWidget: Image.asset(
@@ -43,7 +44,7 @@ class Step01Nickname extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '닉네임',
+            AppLocalizations.of(context)!.onboarding_step1_label,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -52,12 +53,12 @@ class Step01Nickname extends StatelessWidget {
           TossTextInput(
             value: value,
             onChanged: onUpdate,
-            placeholder: '닉네임을 입력해주세요',
+            placeholder: AppLocalizations.of(context)!.onboarding_step1_placeholder,
             maxLength: 12,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '2~12자',
+            AppLocalizations.of(context)!.onboarding_step1_hint,
             style: AppTypography.small,
           ),
         ],

@@ -70,8 +70,8 @@ class OnboardingStateV2 {
     );
   }
 
-  /// 서버 API 요청 형식으로 변환
-  Map<String, dynamic> toApiRequest(String deviceUid) {
+  /// 서버 API 요청 형식으로 변환 (Bearer 토큰으로 인증)
+  Map<String, dynamic> toApiRequest() {
     // species 변환: 'dog' -> 'DOG', 'cat' -> 'CAT'
     final speciesUpper = species.toUpperCase();
     
@@ -142,7 +142,6 @@ class OnboardingStateV2 {
         .toList();
     
     return {
-      'device_uid': deviceUid,
       'nickname': nickname,
       'pet_name': petName,
       'species': speciesUpper,

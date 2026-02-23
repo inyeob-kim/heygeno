@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../data/repositories/tracking_repository.dart';
-import '../../../../data/repositories/product_repository.dart';
+import '../../../../domain/services/product_service.dart';
+import '../../../../domain/services/tracking_service.dart';
 import '../../../../data/models/tracking_dto.dart';
 import '../../../../core/constants/enums.dart';
 import '../../../../core/error/failures.dart';
@@ -113,15 +113,13 @@ class WatchState {
 /// 관심 화면 컨트롤러
 /// 단일 책임: 추적 상품 목록 관리
 class WatchController extends StateNotifier<WatchState> {
-  final TrackingRepository _trackingRepository;
-  final ProductRepository _productRepository;
+  final TrackingService _trackingService;
+  final ProductService _productService;
 
   WatchController(
-    TrackingRepository trackingRepository,
-    ProductRepository productRepository,
-  ) : _trackingRepository = trackingRepository,
-      _productRepository = productRepository,
-      super(WatchState()) {
+    this._trackingService,
+    this._productService,
+  ) : super(WatchState()) {
     loadTrackingProducts();
   }
 
@@ -131,7 +129,7 @@ class WatchController extends StateNotifier<WatchState> {
     
     try {
       // 추적 목록 조회
-      final trackings = await _trackingRepository.getTrackings();
+      final trackings = await _trackingService.getTrackings();
       
       // 빈 배열인 경우
       if (trackings.isEmpty) {
@@ -205,7 +203,7 @@ class WatchController extends StateNotifier<WatchState> {
       
       // 상품 정보 조회
       print('[WatchController] 상품 정보 조회 시작: productId=${tracking.productId}');
-      final product = await _productRepository.getProduct(tracking.productId);
+      final product = await _productService.getProduct(tracking.productId);
       print('[WatchController] 상품 정보 조회 완료: brandName=${product.brandName}, productName=${product.productName}');
       
       // 임시 데이터 (백엔드 API 확장 시 실제 데이터로 대체)
@@ -295,7 +293,7 @@ class WatchController extends StateNotifier<WatchState> {
       updatedIds.add(productId);
       state = state.copyWith(trackedProductIds: updatedIds);
       
-      await _trackingRepository.createTracking(
+      await _trackingService.createTracking(
         productId: productId,
         petId: petId,
       );
@@ -350,7 +348,7 @@ class WatchController extends StateNotifier<WatchState> {
       updatedIds.remove(productId);
       state = state.copyWith(trackedProductIds: updatedIds);
       
-      await _trackingRepository.deleteTracking(tracking.id);
+      await _trackingService.deleteTracking(tracking.id);
       
       // 찜한 상품 목록 새로고침 (백그라운드)
       loadTrackingProducts();
@@ -389,7 +387,7 @@ class WatchController extends StateNotifier<WatchState> {
 
 final watchControllerProvider =
     StateNotifierProvider<WatchController, WatchState>((ref) {
-  final trackingRepository = ref.watch(trackingRepositoryProvider);
-  final productRepository = ref.watch(productRepositoryProvider);
-  return WatchController(trackingRepository, productRepository);
+  final trackingService = ref.watch(trackingServiceProvider);
+  final productService = ref.watch(productServiceProvider);
+  return WatchController(trackingService, productService);
 });

@@ -116,10 +116,9 @@ class PetProfileDraft {
     );
   }
   
-  /// 서버 API 요청 형식으로 변환
-  Map<String, dynamic> toApiRequest(String deviceUid, String nickname) {
+  /// 서버 API 요청 형식으로 변환 (Bearer 토큰으로 인증)
+  Map<String, dynamic> toApiRequest(String nickname) {
     return {
-      'device_uid': deviceUid,
       'nickname': nickname,
       'pet_name': name!,
       'species': species!,

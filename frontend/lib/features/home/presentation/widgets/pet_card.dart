@@ -4,6 +4,8 @@ import '../../../../../app/router/route_paths.dart';
 import '../../../../../ui/theme/app_colors.dart';
 import '../../../../../ui/theme/app_typography.dart';
 import '../../../../data/models/pet_summary_dto.dart';
+import '../../../../utils/formatters.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 내 아이 섹션 (토스 스타일 - 카드 없음)
 class PetCard extends StatelessWidget {
@@ -28,7 +30,7 @@ class PetCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '· ${pet.ageSummary} · ${pet.weightKg}kg',
+              '· ${pet.ageSummary} · ${Formatters.weightLb(pet.weightKg)}',
               style: AppTypography.sub,
             ),
           ],
@@ -50,7 +52,7 @@ class PetCard extends StatelessWidget {
             context.push(RoutePaths.petProfile);
           },
           child: Text(
-            '프로필 수정',
+            AppLocalizations.of(context)!.home_editProfile,
             style: AppTypography.sub.copyWith(
               color: AppColors.textSecondary, // 중성 회색 텍스트
               decoration: TextDecoration.underline,

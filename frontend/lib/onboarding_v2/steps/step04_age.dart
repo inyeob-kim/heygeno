@@ -7,6 +7,7 @@ import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 4: Age - matches React Step4Age
 class Step04Age extends StatelessWidget {
@@ -43,8 +44,8 @@ class Step04Age extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🎂',
-      title: '나이를 어떻게 알려주실래요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step4_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: onNext,
       child: Column(
@@ -57,7 +58,7 @@ class Step04Age extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '생년월일 알아요',
+                  AppLocalizations.of(context)!.onboarding_step4_birthdate,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -81,7 +82,7 @@ class Step04Age extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '대략 나이만',
+                  AppLocalizations.of(context)!.onboarding_step4_approximate,
                   style: AppTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -96,7 +97,7 @@ class Step04Age extends StatelessWidget {
               child: TossTextInput(
                 value: approximateAge,
                 onChanged: (val) => onUpdate({'approximateAge': val}),
-                placeholder: '예: 2살 3개월',
+                placeholder: AppLocalizations.of(context)!.onboarding_step4_approximatePlaceholder,
               ),
             ),
           ],
@@ -164,7 +165,7 @@ class Step04Age extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               onPressed: () => Navigator.pop(context),
                               child: Text(
-                                '취소',
+                                AppLocalizations.of(context)!.common_cancel,
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
@@ -172,7 +173,7 @@ class Step04Age extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '생년월일 선택',
+                              AppLocalizations.of(context)!.onboarding_step4_datePickerTitle,
                               style: AppTypography.h3.copyWith(
                                 color: AppColors.textPrimary,
                               ),
@@ -186,7 +187,7 @@ class Step04Age extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                               child: Text(
-                                '완료',
+                                AppLocalizations.of(context)!.common_done,
                                 style: AppTypography.body.copyWith(
                                   color: AppColors.primaryBlue,
                                   fontWeight: FontWeight.w600,
@@ -238,7 +239,7 @@ class Step04Age extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                birthdate.isEmpty ? '생년월일을 선택해주세요' : birthdate,
+                birthdate.isEmpty ? AppLocalizations.of(context)!.onboarding_step4_datePickerPlaceholder : birthdate,
                 style: AppTypography.body.copyWith(
                   color: birthdate.isEmpty
                       ? AppColors.textSecondary

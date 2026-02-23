@@ -6,20 +6,24 @@ import '../../app/theme/app_typography.dart';
 /// 공통 Top Bar 위젯 (쿠팡 스타일)
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final Widget? titleWidget; // 커스텀 title 위젯 (펫 선택기 등)
   final VoidCallback? onNotificationTap;
   final VoidCallback? onSettingsTap;
   final List<Widget>? actions;
   final bool showBackButton;
   final Color? backgroundColor;
+  final Widget? leadingWidget; // 펫 선택기 등 커스텀 leading 위젯
 
   const AppTopBar({
     super.key,
     required this.title,
+    this.titleWidget, // 커스텀 title 위젯
     this.onNotificationTap,
     this.onSettingsTap,
     this.actions,
     this.showBackButton = true, // 기본값은 true (뒤로가기 버튼 표시)
     this.backgroundColor, // null이면 기본값(AppColors.background) 사용
+    this.leadingWidget, // 펫 선택기 등 커스텀 leading 위젯
   });
 
   @override
@@ -31,8 +35,10 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.only(left: 15), // 왼쪽 패딩 15px
         child: Row(
           children: [
-            // 뒤로가기 버튼 (조건부 표시)
-            if (showBackButton)
+            // 뒤로가기 버튼 또는 커스텀 leading 위젯
+            if (leadingWidget != null)
+              leadingWidget!
+            else if (showBackButton)
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: AppColors.textPrimary,
@@ -40,17 +46,22 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                   Navigator.of(context).pop();
                 },
               ),
-            // 타이틀
-            Expanded(
-        child: Text(
-          title,
-                style: AppTypography.body.copyWith(
-            color: AppColors.textPrimary, // #0F172A
-                  fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+            // 타이틀 (커스텀 위젯 또는 기본 텍스트)
+            if (titleWidget != null)
+              titleWidget!
+            else
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.textPrimary, // #0F172A
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            // 타이틀과 액션 사이 공간
+            if (titleWidget != null) const Spacer(),
           // 액션 버튼들
           ...(actions ??
           [

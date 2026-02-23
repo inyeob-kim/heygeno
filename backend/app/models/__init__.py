@@ -1,5 +1,12 @@
 # 모든 모델을 import하여 Alembic이 인식할 수 있도록 함
-from app.models.user import User
+from app.models.user import User, AuthProvider, UserStatus, PlanType
+from app.models.user_token import UserToken
+from app.models.withdrawal_log import WithdrawalLog
+from app.models.subscription_payment import (
+    SubscriptionPayment,
+    PaymentPlatform,
+    SubscriptionPaymentStatus,
+)
 from app.models.pet import (
     Pet, PetSpecies, PetSex, AgeInputMode, AgeStage,
     HealthConcernCode, PetHealthConcern,
@@ -16,6 +23,8 @@ from app.models.product import (
     ClaimCode,
     ProductClaim
 )
+from app.models.product_review import ProductReview
+from app.models.product_availability import ProductAvailability, StockStatus
 from app.models.offer import ProductOffer, Merchant
 from app.models.price import PriceSnapshot, PriceSummary
 from app.models.tracking import Tracking, TrackingStatus
@@ -35,6 +44,14 @@ from app.models.ingredient_config import HarmfulIngredient, AllergenKeyword
 
 __all__ = [
     "User",
+    "AuthProvider",
+    "UserStatus",
+    "PlanType",
+    "UserToken",
+    "WithdrawalLog",
+    "SubscriptionPayment",
+    "PaymentPlatform",
+    "SubscriptionPaymentStatus",
     "Pet", "PetSpecies", "PetSex", "AgeInputMode", "AgeStage",
     "HealthConcernCode", "PetHealthConcern",
     "AllergenCode", "PetFoodAllergy", "PetOtherAllergy",
@@ -45,6 +62,9 @@ __all__ = [
     "ProductAllergen",
     "ClaimCode",
     "ProductClaim",
+    "ProductReview",
+    "ProductAvailability",
+    "StockStatus",
     "ProductOffer", "Merchant",
     "PriceSnapshot",
     "PriceSummary",

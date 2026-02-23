@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_spacing.dart';
-import '../../../../../ui/widgets/card_container.dart';
+import '../../../../../design_system/components/app_card.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 진행 힌트 카드 (로딩 중 신뢰 구축)
 class ProgressHintCard extends StatelessWidget {
@@ -10,26 +11,26 @@ class ProgressHintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CardContainer(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '분석 중...',
+            AppLocalizations.of(context)!.home_analyzing,
             style: AppTypography.h3,
           ),
           const SizedBox(height: AppSpacing.md),
-          _buildHintItem('✔', '알레르기 제외 완료', true),
+          _buildHintItem(context, '✔', AppLocalizations.of(context)!.home_allergyExcluded, true),
           const SizedBox(height: AppSpacing.sm),
-          _buildHintItem('✔', '나이/체중 반영 완료', true),
+          _buildHintItem(context, '✔', AppLocalizations.of(context)!.home_ageWeightReflected, true),
           const SizedBox(height: AppSpacing.sm),
-          _buildHintItem('⏳', '최저가 트래킹 준비 중', false),
+          _buildHintItem(context, '⏳', AppLocalizations.of(context)!.home_priceTrackingPreparing, false),
         ],
       ),
     );
   }
 
-  Widget _buildHintItem(String icon, String text, bool isCompleted) {
+  Widget _buildHintItem(BuildContext context, String icon, String text, bool isCompleted) {
     return Row(
       children: [
         Text(

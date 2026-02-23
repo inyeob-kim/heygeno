@@ -12,6 +12,7 @@ import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart'
 import '../../features/pet_update/presentation/screens/pet_update_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/watch/presentation/screens/watch_screen.dart';
+import '../../features/find/presentation/screens/find_screen.dart';
 import '../../features/benefits/presentation/screens/benefits_screen.dart';
 import '../../features/market/presentation/screens/market_screen_v2.dart';
 import '../../features/me/presentation/screens/my_screen.dart';
@@ -25,6 +26,13 @@ import '../../features/me/presentation/screens/recommendation_history_screen.dar
 import '../../features/home/presentation/screens/recommendation_animation_screen.dart';
 import '../../features/home/presentation/screens/recommendation_detail_screen.dart';
 import '../../onboarding_v2/onboarding_flow.dart';
+import '../../features/auth/presentation/screens/start_screen.dart';
+import '../../features/auth/presentation/screens/sign_in_screen.dart';
+import '../../features/recommendation/presentation/screens/quick_profile_wizard.dart';
+import '../../features/recommendation/presentation/screens/quick_recommendation_list_screen.dart';
+import '../../data/repositories/recommendation_repository.dart';
+import '../../features/auth/presentation/screens/sign_up_screen.dart';
+import 'recommendation_animation_args.dart';
 import '../../data/models/pet_summary_dto.dart';
 import '../../data/models/recommendation_dto.dart';
 
@@ -37,12 +45,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 GoRouter _createRouter(Ref ref) {
-  // 각 탭별 NavigatorKey 생성
+  // 각 탭별 NavigatorKey 생성 (4탭 구조: Home, Match, Market, Alerts)
   final homeNavigatorKey = GlobalKey<NavigatorState>();
-  final watchNavigatorKey = GlobalKey<NavigatorState>();
+  final matchNavigatorKey = GlobalKey<NavigatorState>();
   final marketNavigatorKey = GlobalKey<NavigatorState>();
-  final benefitsNavigatorKey = GlobalKey<NavigatorState>();
-  final meNavigatorKey = GlobalKey<NavigatorState>();
+  final alertsNavigatorKey = GlobalKey<NavigatorState>();
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -54,6 +61,37 @@ GoRouter _createRouter(Ref ref) {
         path: RoutePaths.initialSplash,
         name: RoutePaths.initialSplash,
         builder: (context, state) => const InitialSplashScreen(),
+      ),
+      // 시작 화면 (게스트 우선)
+      GoRoute(
+        path: RoutePaths.start,
+        name: RoutePaths.start,
+        builder: (context, state) => const StartScreen(),
+      ),
+      // Quick recommendation flow (anonymous)
+      GoRoute(
+        path: RoutePaths.quickProfileWizard,
+        name: RoutePaths.quickProfileWizard,
+        builder: (context, state) => const QuickProfileWizard(),
+      ),
+      GoRoute(
+        path: RoutePaths.quickRecommendationList,
+        name: RoutePaths.quickRecommendationList,
+        builder: (context, state) {
+          final response = state.extra as QuickRecommendationResponseDto;
+          return QuickRecommendationListScreen(response: response);
+        },
+      ),
+      // 인증 라우트 (설정 화면 "계정 연결" 등에서 진입)
+      GoRoute(
+        path: RoutePaths.signIn,
+        name: RoutePaths.signIn,
+        builder: (context, state) => const SignInScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.signUp,
+        name: RoutePaths.signUp,
+        builder: (context, state) => const SignUpScreen(),
       ),
       // 온보딩 라우트 (V2)
       GoRoute(
@@ -95,13 +133,17 @@ GoRouter _createRouter(Ref ref) {
         path: RoutePaths.recommendationAnimation,
         name: RoutePaths.recommendationAnimation,
         builder: (context, state) {
-          // 데이터 검증
           final errorWidget = validateRecommendationAnimationRoute(state);
           if (errorWidget != null) {
             return errorWidget;
           }
-          final petSummary = state.extra as PetSummaryDto;
-          return RecommendationAnimationScreen(petSummary: petSummary);
+          final RecommendationAnimationArgs args = state.extra is RecommendationAnimationArgs
+              ? state.extra as RecommendationAnimationArgs
+              : RecommendationAnimationArgs(petSummary: state.extra as PetSummaryDto);
+          return RecommendationAnimationScreen(
+            petSummary: args.petSummary,
+            preloadedRecommendations: args.preloadedRecommendations,
+          );
         },
       ),
       GoRoute(
@@ -124,13 +166,13 @@ GoRouter _createRouter(Ref ref) {
         },
       ),
       
-      // 메인 탭 ShellRoute
+      // 메인 탭 ShellRoute (4탭 구조: Home, Match, Market, Alerts)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return BottomNavShell(navigationShell: navigationShell);
         },
         branches: [
-          // 홈 탭
+          // 0: Home 탭
           StatefulShellBranch(
             navigatorKey: homeNavigatorKey,
             routes: [
@@ -141,18 +183,23 @@ GoRouter _createRouter(Ref ref) {
               ),
             ],
           ),
-          // 관심 탭
+          // 1: Match 탭 (추천 엔진 + 성분 분석)
           StatefulShellBranch(
-            navigatorKey: watchNavigatorKey,
+            navigatorKey: matchNavigatorKey,
             routes: [
               GoRoute(
-                path: RoutePaths.watch,
-                name: RoutePaths.watch,
-                builder: (context, state) => const WatchScreen(),
+                path: RoutePaths.match,
+                name: RoutePaths.match,
+                builder: (context, state) => const FindScreen(), // TODO: MatchScreen으로 이름 변경
+              ),
+              // Legacy: /find → /match로 리다이렉트
+              GoRoute(
+                path: RoutePaths.find,
+                redirect: (context, state) => RoutePaths.match,
               ),
             ],
           ),
-          // 검색/마켓 탭
+          // 2: Market 탭 (멀티플랫폼 가격 비교)
           StatefulShellBranch(
             navigatorKey: marketNavigatorKey,
             routes: [
@@ -161,52 +208,63 @@ GoRouter _createRouter(Ref ref) {
                 name: RoutePaths.market,
                 builder: (context, state) => const MarketScreenV2(),
               ),
-            ],
-          ),
-          // 혜택 탭
-          StatefulShellBranch(
-            navigatorKey: benefitsNavigatorKey,
-            routes: [
+              // Legacy: /deals → /market로 리다이렉트
               GoRoute(
-                path: RoutePaths.benefits,
-                name: RoutePaths.benefits,
-                builder: (context, state) => const BenefitsScreen(),
+                path: RoutePaths.deals,
+                redirect: (context, state) => RoutePaths.market,
               ),
             ],
           ),
-          // 마이 탭
+          // 3: Alerts 탭 (알림, 기존 Watch)
           StatefulShellBranch(
-            navigatorKey: meNavigatorKey,
+            navigatorKey: alertsNavigatorKey,
             routes: [
               GoRoute(
-                path: RoutePaths.me,
-                name: RoutePaths.me,
-                builder: (context, state) => const MyScreen(),
-                routes: [
-                  // 설정 화면들 (중첩 라우트)
-                  GoRoute(
-                    path: 'privacy',
-                    builder: (context, state) => const PrivacySettingsScreen(),
-                  ),
-                  GoRoute(
-                    path: 'help',
-                    builder: (context, state) => const HelpScreen(),
-                  ),
-                  GoRoute(
-                    path: 'contact',
-                    builder: (context, state) => const ContactScreen(),
-                  ),
-                  GoRoute(
-                    path: 'app-info',
-                    builder: (context, state) => const AppInfoScreen(),
-                  ),
-                  GoRoute(
-                    path: 'recommendation-history',
-                    builder: (context, state) => const RecommendationHistoryScreen(),
-                  ),
-                ],
+                path: RoutePaths.alerts,
+                name: RoutePaths.alerts,
+                builder: (context, state) => const WatchScreen(),
+              ),
+              // Legacy: /watch → /alerts로 리다이렉트
+              GoRoute(
+                path: RoutePaths.watch,
+                redirect: (context, state) => RoutePaths.alerts,
               ),
             ],
+          ),
+        ],
+      ),
+      
+      // Legacy: Benefits와 More는 루트 라우트로 유지 (Home에서 접근)
+      GoRoute(
+        path: RoutePaths.benefits,
+        name: RoutePaths.benefits,
+        builder: (context, state) => const BenefitsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.me,
+        name: RoutePaths.me,
+        builder: (context, state) => const MyScreen(),
+        routes: [
+          // 설정 화면들 (중첩 라우트)
+          GoRoute(
+            path: 'privacy',
+            builder: (context, state) => const PrivacySettingsScreen(),
+          ),
+          GoRoute(
+            path: 'help',
+            builder: (context, state) => const HelpScreen(),
+          ),
+          GoRoute(
+            path: 'contact',
+            builder: (context, state) => const ContactScreen(),
+          ),
+          GoRoute(
+            path: 'app-info',
+            builder: (context, state) => const AppInfoScreen(),
+          ),
+          GoRoute(
+            path: 'recommendation-history',
+            builder: (context, state) => const RecommendationHistoryScreen(),
           ),
         ],
       ),

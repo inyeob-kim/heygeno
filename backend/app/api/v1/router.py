@@ -1,9 +1,12 @@
 from fastapi import APIRouter
 
-from app.api.v1 import users, pets, products, trackings, alerts, clicks, onboarding, admin, user_reco_prefs, missions, points, campaigns
+from app.api.v1 import users, pets, products, trackings, alerts, clicks, onboarding, admin, user_reco_prefs, missions, points, campaigns, auth, billing, recommendations
 
 api_router = APIRouter()
 
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
+api_router.include_router(billing.router, prefix="/billing", tags=["billing"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(pets.router, prefix="/pets", tags=["pets"])
 api_router.include_router(products.router, prefix="/products", tags=["products"])

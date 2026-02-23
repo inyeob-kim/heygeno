@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../data/models/onboarding_step.dart';
 import '../../data/models/pet_profile_draft.dart';
-import '../../data/repositories/onboarding_repository.dart';
-import '../../../../core/services/device_uid_service.dart';
+import '../../../../domain/services/onboarding_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/endpoints.dart';
 import 'onboarding_state.dart';
@@ -12,17 +11,17 @@ import 'onboarding_state.dart';
 final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, OnboardingState>((ref) {
   return OnboardingController(
-    OnboardingRepositoryImpl(),
+    ref.watch(onboardingServiceProvider),
     ref.watch(apiClientProvider),
   );
 });
 
 /// 온보딩 Controller
 class OnboardingController extends StateNotifier<OnboardingState> {
-  final OnboardingRepository _repository;
+  final OnboardingService _onboardingService;
   final ApiClient _apiClient;
 
-  OnboardingController(this._repository, this._apiClient)
+  OnboardingController(this._onboardingService, this._apiClient)
       : super(OnboardingState(currentStep: OnboardingStep.nickname)) {
     _loadSavedData();
   }
@@ -33,14 +32,14 @@ class OnboardingController extends StateNotifier<OnboardingState> {
 
     try {
       // 마지막 단계 로드
-      final lastStep = await _repository.getLastStep();
+      final lastStep = await _onboardingService.getLastStep();
       final step = lastStep ?? OnboardingStep.nickname;
 
       // 닉네임 로드
-      final nickname = await _repository.getDraftNickname();
+      final nickname = await _onboardingService.getDraftNickname();
 
       // 프로필 초안 로드
-      final profile = await _repository.getDraftProfile();
+      final profile = await _onboardingService.getDraftProfile();
 
       state = state.copyWith(
         currentStep: step,
@@ -61,14 +60,14 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     print('[OnboardingController] saveNickname() called, nickname: $nickname');
     state = state.copyWith(nickname: nickname);
     print('[OnboardingController] State updated, current step: ${state.currentStep}, nickname: ${state.nickname}');
-    await _repository.saveDraftNickname(nickname);
+    await _onboardingService.saveDraftNickname(nickname);
     print('[OnboardingController] Nickname saved to repository');
   }
 
   /// 프로필 초안 저장
   Future<void> saveProfile(PetProfileDraft profile) async {
     state = state.copyWith(profile: profile);
-    await _repository.saveDraftProfile(profile);
+    await _onboardingService.saveDraftProfile(profile);
   }
 
   /// 다음 단계로 이동
@@ -79,7 +78,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     if (next != null) {
       state = state.copyWith(currentStep: next);
       print('[OnboardingController] State updated to step: $next');
-      await _repository.saveLastStep(next);
+      await _onboardingService.saveLastStep(next);
       print('[OnboardingController] Last step saved to repository');
     } else {
       print('[OnboardingController] No next step available');
@@ -91,14 +90,14 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     final previous = state.currentStep.previous;
     if (previous != null) {
       state = state.copyWith(currentStep: previous);
-      await _repository.saveLastStep(previous);
+      await _onboardingService.saveLastStep(previous);
     }
   }
 
   /// 특정 단계로 이동
   Future<void> goToStep(OnboardingStep step) async {
     state = state.copyWith(currentStep: step);
-    await _repository.saveLastStep(step);
+    await _onboardingService.saveLastStep(step);
   }
 
   /// 온보딩 완료
@@ -106,16 +105,13 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      // Device UID 생성/확인
-      final deviceUid = await DeviceUidService.getOrCreate();
-
       // 프로필 검증
       if (!validateProfile()) {
         throw Exception('프로필 정보가 완전하지 않습니다.');
       }
 
-      // 서버에 업서트
-      final requestData = state.profile.toApiRequest(deviceUid, state.nickname!);
+      // 서버에 업서트 (Bearer 토큰으로 인증)
+      final requestData = state.profile.toApiRequest(state.nickname!);
       
       print('[OnboardingController] 요청 데이터: $requestData');
       print('[OnboardingController] Profile 상태: ${state.profile.toJson()}');
@@ -136,7 +132,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       }
 
       // 온보딩 완료 표시
-      await _repository.setOnboardingCompleted(true);
+      await _onboardingService.setOnboardingCompleted(true);
 
       state = state.copyWith(isLoading: false);
     } catch (e) {

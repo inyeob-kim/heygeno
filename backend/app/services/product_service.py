@@ -511,8 +511,12 @@ class ProductService:
             logger.info(f"[ProductService] ⏭️ max_daily_amount 없음 (기본값 사용)")
             
         if max_monthly_budget is not None:
-            user_prefs["max_monthly_budget"] = max_monthly_budget
-            logger.info(f"[ProductService] ✅ max_monthly_budget 추가: {max_monthly_budget}원")
+            # USD를 원화로 변환 (price_per_kg가 원/kg 단위이므로)
+            # 환율: 1 USD ≈ 1,330 KRW (2024년 기준)
+            USD_TO_KRW_RATE = 1330.0
+            max_monthly_budget_krw = int(max_monthly_budget * USD_TO_KRW_RATE)
+            user_prefs["max_monthly_budget"] = max_monthly_budget_krw
+            logger.info(f"[ProductService] ✅ max_monthly_budget 추가: {max_monthly_budget} USD (≈ {max_monthly_budget_krw}원)")
         else:
             logger.info(f"[ProductService] ⏭️ max_monthly_budget 없음 (기본값 사용)")
             
@@ -612,6 +616,25 @@ class ProductService:
         logger.info(f"[ProductService] ✅ 맞춤 점수 계산 완료 및 캐시 저장: product_id={product_id}, pet_id={pet_id}")
         
         return result
+
+    @staticmethod
+    async def get_active_products_with_parsed(db: AsyncSession) -> List[Product]:
+        """parsed JSON이 있는 활성 상품 목록 조회 (Quick 추천 / 풀 추천 공통 재사용)."""
+        result = await db.execute(
+            select(Product)
+            .options(
+                selectinload(Product.ingredient_profile),
+                selectinload(Product.nutrition_facts),
+                selectinload(Product.offers),
+            )
+            .where(
+                and_(
+                    Product.is_active == True,
+                    Product.ingredient_profile.has(ProductIngredientProfile.parsed.isnot(None)),
+                )
+            )
+        )
+        return list(result.scalars().all())
     
     @staticmethod
     async def get_recommendations(
@@ -839,22 +862,8 @@ class ProductService:
         
         logger.info(f"[ProductService] 사용자 선호도: {user_prefs.get('weights_preset', 'BALANCED')} 모드")
         
-        # 2. parsed JSON이 있는 활성 상품 조회 (eager load)
-        result = await db.execute(
-            select(Product)
-            .options(
-                selectinload(Product.ingredient_profile),
-                selectinload(Product.nutrition_facts),
-                selectinload(Product.offers)
-            )
-            .where(
-                and_(
-                    Product.is_active == True,
-                    Product.ingredient_profile.has(ProductIngredientProfile.parsed.isnot(None))
-                )
-            )
-        )
-        products = list(result.scalars().all())
+        # 2. parsed JSON이 있는 활성 상품 조회 (재사용 메서드)
+        products = await ProductService.get_active_products_with_parsed(db)
         logger.info(f"[ProductService] parsed JSON이 있는 상품 수: {len(products)}")
         
         if not products:
@@ -1028,6 +1037,7 @@ class ProductService:
                 monthly_budget_exceeded = False
                 if max_monthly_budget is not None and daily_amount_g is not None and product.price_per_kg is not None:
                     # 월 비용 계산: daily_amount_g (g) * 30일 * (price_per_kg / 1000) (원/g)
+                    # price_per_kg는 원/kg 단위, max_monthly_budget은 원화로 변환된 값
                     monthly_cost = daily_amount_g * 30 * (float(product.price_per_kg) / 1000)
                     logger.debug(f"[ProductService] [{idx}/{len(products)}] 💰 월 예산 체크: max_budget={max_monthly_budget}원, monthly_cost={monthly_cost:.0f}원, daily_amount_g={daily_amount_g:.1f}g, price_per_kg={product.price_per_kg}원/kg")
                     

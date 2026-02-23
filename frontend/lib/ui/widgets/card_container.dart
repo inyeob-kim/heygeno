@@ -5,12 +5,16 @@ import '../../app/theme/app_radius.dart';
 
 /// 카드 컨테이너 위젯 (HeyGeno Landing Style)
 /// 
+/// @deprecated Use `design_system/components/app_card.dart` AppCard instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+/// 
 /// 규칙:
 /// - padding: AppSpacing.xl (24px) 또는 p-6 sm:p-8 (24px-32px)
 /// - borderRadius: AppRadius.lg (16px) - rounded-2xl
 /// - backgroundColor: AppColors.surface (White)
 /// - border: border-2 border-gray-100 hover:border-gray-200
 /// - shadow: shadow-sm hover:shadow-md
+@Deprecated('Use design_system/components/app_card.dart AppCard instead')
 class CardContainer extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;

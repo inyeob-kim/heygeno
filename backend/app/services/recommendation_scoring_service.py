@@ -683,17 +683,17 @@ class RecommendationScoringService:
             reasons.append("사용자 지정 급여량 범위 적용")
             logger.debug(f"[ScoringService] ✅ 사용자 지정 급여량 범위 사용: {min_amount:.1f}g ~ {max_amount:.1f}g")
         else:
-            # 기존 체중 기반 범위 사용
+            # 기존 체중 기반 범위 사용 (weight_kg는 kg 단위)
             logger.debug(f"[ScoringService] ⏭️ 사용자 지정 범위 없음, 체중 기반 범위 사용")
-            if pet.weight_kg < 10:  # 소형견
-                min_amount = pet.weight_kg * 20  # 2% of body weight
-                max_amount = pet.weight_kg * 40  # 4% of body weight
-            elif pet.weight_kg < 25:  # 중형견
-                min_amount = pet.weight_kg * 18
-                max_amount = pet.weight_kg * 35
-            else:  # 대형견
-                min_amount = pet.weight_kg * 15
-                max_amount = pet.weight_kg * 30
+            if pet.weight_kg < 10:  # 소형견 (< 10kg, 약 22lb 미만)
+                min_amount = pet.weight_kg * 20  # 2% of body weight (kg 기준)
+                max_amount = pet.weight_kg * 40  # 4% of body weight (kg 기준)
+            elif pet.weight_kg < 25:  # 중형견 (10-25kg, 약 22-55lb)
+                min_amount = pet.weight_kg * 18  # kg 기준
+                max_amount = pet.weight_kg * 35  # kg 기준
+            else:  # 대형견 (≥ 25kg, 약 55lb 이상)
+                min_amount = pet.weight_kg * 15  # kg 기준
+                max_amount = pet.weight_kg * 30  # kg 기준
         
         # 5. 점수 계산
         if min_amount <= daily_amount_g <= max_amount:
@@ -730,10 +730,10 @@ class RecommendationScoringService:
     ) -> float:
         """
         DER (Daily Energy Requirement) 계산
-        RER = 70 * (weight_kg ** 0.75)
+        RER = 70 * (weight_kg ** 0.75)  # weight_kg는 kg 단위 (DB의 lb가 자동 변환됨)
         DER = RER * multiplier
         """
-        rer = 70 * (weight_kg ** 0.75)
+        rer = 70 * (weight_kg ** 0.75)  # kg 기준 공식
         
         if age_stage == "PUPPY":
             multiplier = 2.5  # 성장기
@@ -805,3 +805,64 @@ class RecommendationScoringService:
         
         # 최종 점수는 0 이상으로 제한
         return max(total, 0.0)
+
+    # -------------------------------------------------------------------------
+    # 재사용: PetSummary + 상품 리스트로 스코링 (Quick 추천 / 풀 추천 공통)
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    async def score_products(
+        db: AsyncSession,
+        pet_summary: PetSummaryResponse,
+        products: List[Product],
+        user_prefs: Optional[Dict] = None,
+    ) -> List[Tuple[Product, float, float, float, List[str]]]:
+        """
+        상품 리스트에 대해 안전성·적합성 점수를 계산해 (product, total, safety, fitness, reasons) 리스트 반환.
+        Quick 추천 / 풀 추천 모두 이 메서드를 재사용.
+        """
+        if user_prefs is None:
+            user_prefs = {}
+        harmful_ingredients_cache = await RecommendationScoringService._get_harmful_ingredients(db)
+        pet_allergies = set(pet_summary.food_allergies or [])
+        allergen_keywords_cache = {}
+        for code in pet_allergies:
+            kw = await RecommendationScoringService._get_allergen_keywords(db, code)
+            if kw:
+                allergen_keywords_cache[code] = kw
+
+        scored: List[Tuple[Product, float, float, float, List[str]]] = []
+        for product in products:
+            try:
+                parsed = product.ingredient_profile.parsed if product.ingredient_profile else None
+                if isinstance(parsed, str):
+                    parsed = json.loads(parsed)
+                if not parsed:
+                    continue
+                ingredients_text = (
+                    product.ingredient_profile.ingredients_text
+                    if product.ingredient_profile
+                    else ""
+                )
+                species_score, _ = RecommendationScoringService._match_species(pet_summary, product)
+                if species_score <= 0:
+                    continue
+                safety_score, safety_reasons = await RecommendationScoringService.calculate_safety_score(
+                    pet_summary, product, parsed, ingredients_text, user_prefs, db, harmful_ingredients_cache
+                )
+                if safety_score <= 0:
+                    continue
+                fitness_score, fitness_reasons, _ = RecommendationScoringService.calculate_fitness_score(
+                    pet_summary, product, parsed,
+                    nutrition_facts=product.nutrition_facts,
+                    user_prefs=user_prefs,
+                )
+                total_score = 0.6 * safety_score + 0.4 * fitness_score
+                if total_score < 0:
+                    continue
+                all_reasons = (safety_reasons or []) + (fitness_reasons or [])
+                scored.append((product, total_score, safety_score, fitness_score, all_reasons))
+            except Exception as e:
+                logger.debug("score_products skip product %s: %s", product.id, e)
+                continue
+        return scored

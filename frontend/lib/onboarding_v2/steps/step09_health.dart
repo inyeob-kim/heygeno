@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../onboarding_shell.dart';
 import '../widgets/pill_chip.dart';
 import '../../app/theme/app_spacing.dart';
+import '../../core/constants/pet_constants.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 9: Health Concerns - DESIGN_GUIDE v1.0 준수
 class Step09Health extends StatelessWidget {
@@ -22,28 +24,31 @@ class Step09Health extends StatelessWidget {
     required this.totalSteps,
   });
 
-  static const List<String> healthOptions = [
-    '없어요',
-    '알레르기',
-    '장/소화',
-    '치아/구강',
-    '비만',
-    '호흡기',
-    '피부/털',
-    '관절',
-    '눈/눈물',
-    '신장/요로',
-    '심장',
-    '노령',
-  ];
+  List<String> getHealthOptions(BuildContext context) {
+    return [
+      AppLocalizations.of(context)!.onboarding_step9_none,
+      PetConstants.getHealthConcernName(context, 'allergy'),
+      PetConstants.getHealthConcernName(context, 'digestive'),
+      PetConstants.getHealthConcernName(context, 'dental'),
+      PetConstants.getHealthConcernName(context, 'obesity'),
+      PetConstants.getHealthConcernName(context, 'respiratory'),
+      PetConstants.getHealthConcernName(context, 'skin'),
+      PetConstants.getHealthConcernName(context, 'joint'),
+      PetConstants.getHealthConcernName(context, 'eye'),
+      PetConstants.getHealthConcernName(context, 'kidney'),
+      PetConstants.getHealthConcernName(context, 'heart'),
+      PetConstants.getHealthConcernName(context, 'senior'),
+    ];
+  }
 
-  void handleToggle(String concern) {
-    if (concern == '없어요') {
-      // "없어요" is exclusive
-      onUpdate(value.contains('없어요') ? [] : ['없어요']);
+  void handleToggle(BuildContext context, String concern) {
+    final noneOption = AppLocalizations.of(context)!.onboarding_step9_none;
+    if (concern == noneOption) {
+      // "None" is exclusive
+      onUpdate(value.contains(noneOption) ? [] : [noneOption]);
     } else {
-      // Remove "없어요" if selecting anything else
-      final filtered = value.where((v) => v != '없어요').toList();
+      // Remove "None" if selecting anything else
+      final filtered = value.where((v) => v != noneOption).toList();
       if (filtered.contains(concern)) {
         onUpdate(filtered.where((v) => v != concern).toList());
       } else {
@@ -64,14 +69,14 @@ class Step09Health extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🩺',
-      title: '요즘 신경 쓰이는 건강 고민이 있나요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step9_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: onNext,
       child: Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.sm,
-        children: healthOptions.asMap().entries.map((entry) {
+        children: getHealthOptions(context).asMap().entries.map((entry) {
           final index = entry.key;
           final option = entry.value;
           return TweenAnimationBuilder<double>(
@@ -86,7 +91,7 @@ class Step09Health extends StatelessWidget {
                   child: PillChip(
                     label: option,
                     selected: this.value.contains(option),
-                    onTap: () => handleToggle(option),
+                    onTap: () => handleToggle(context, option),
                   ),
                 ),
               );

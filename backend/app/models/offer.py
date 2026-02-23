@@ -22,9 +22,15 @@ from app.db.base import Base, TimestampMixin
 
 
 class Merchant(str, enum.Enum):
+    AMAZON = "AMAZON"
+    CHEWY = "CHEWY"
+    PETCO = "PETCO"
+    PETSMART = "PETSMART"
+    WALMART = "WALMART"
+    TARGET = "TARGET"
+    BRAND = "BRAND"
     COUPANG = "COUPANG"
     NAVER = "NAVER"
-    BRAND = "BRAND"
 
 
 class OfferFetchStatus(str, enum.Enum):

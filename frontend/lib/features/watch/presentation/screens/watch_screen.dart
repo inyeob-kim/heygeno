@@ -3,14 +3,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
+import '../../../../../ui/widgets/pet_selector.dart';
 import '../../../../../ui/widgets/figma_pill_chip.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_spacing.dart';
-import '../../../../../app/theme/app_radius.dart';
 import '../../../../../core/widgets/loading.dart';
+import '../../../../../design_system/components/index.dart';
+import '../../../../../design_system/tokens/index.dart' as DesignTokens;
+import '../../../../../app/router/route_paths.dart';
 import '../controllers/watch_controller.dart';
 import '../widgets/tracking_product_card.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 실제 API 데이터를 사용하는 Watch Screen (관심 화면)
 class WatchScreen extends ConsumerStatefulWidget {
@@ -48,9 +52,10 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
         child: Column(
           children: [
             AppTopBar(
-              title: '찜한 사료',
+              title: AppLocalizations.of(context)!.watch_title,
               showBackButton: false,
               backgroundColor: Colors.white,
+              titleWidget: const PetSelector(),
             ),
             Expanded(
               child: _buildBody(state),
@@ -71,61 +76,33 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
     if (state.error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                state.error!,
-                style: AppTypography.body.copyWith(color: AppColors.dangerRed),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              CupertinoButton(
-                color: AppColors.primary, // Emerald Green (DESIGN_GUIDE v2.3)
-                borderRadius: BorderRadius.circular(AppRadius.md), // 12px
-                onPressed: () {
-                  ref.read(watchControllerProvider.notifier).loadTrackingProducts();
-                },
-                child: Text(
-                  '다시 시도',
-                  style: AppTypography.button.copyWith(color: Colors.white),
-                ),
-              ),
-            ],
+          padding: EdgeInsets.all(DesignTokens.Spacing.base),
+          child: EmptyState(
+            icon: Icons.error_outline,
+            title: state.error!,
+            buttonText: AppLocalizations.of(context)!.action_tryAgain,
+            onButtonPressed: () {
+              ref.read(watchControllerProvider.notifier).loadTrackingProducts();
+            },
           ),
         ),
       );
     }
 
-    // 빈 상태 - "+" 카드 표시
+    // 빈 상태 - EmptyState 표시
     if (state.trackingProducts.isEmpty) {
-      return CupertinoScrollbar(
-        controller: _scrollController,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              // "+" 카드 그리드
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSpacing.lg,
-                  mainAxisSpacing: AppSpacing.lg,
-                  childAspectRatio: 0.65,
-                ),
-                itemCount: 1, // "+" 카드 하나만 표시
-                itemBuilder: (context, index) {
-                  return _buildAddProductCard();
-        },
-              ),
-              const SizedBox(height: AppSpacing.xl * 2),
-            ],
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(DesignTokens.Spacing.base),
+          child: EmptyState(
+            icon: Icons.notifications_none,
+            title: 'No alerts yet',
+            message: 'Start tracking products to get price drop and stock alerts.',
+            buttonText: 'Browse deals',
+            onButtonPressed: () {
+              // Market 화면으로 이동
+              context.go(RoutePaths.market);
+            },
           ),
         ),
       );
@@ -133,35 +110,19 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
 
     final sortedProducts = state.sortedProducts;
     
-    // sortedProducts가 비어있는 경우 추가 체크 - "+" 카드 표시
+    // sortedProducts가 비어있는 경우 EmptyState 표시
     if (sortedProducts.isEmpty) {
-      return CupertinoScrollbar(
-        controller: _scrollController,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              // "+" 카드 그리드
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSpacing.lg,
-                  mainAxisSpacing: AppSpacing.lg,
-                  childAspectRatio: 0.65,
-                ),
-                itemCount: 1, // "+" 카드 하나만 표시
-                itemBuilder: (context, index) {
-                  return _buildAddProductCard();
-        },
-              ),
-              const SizedBox(height: AppSpacing.xl * 2),
-            ],
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(DesignTokens.Spacing.base),
+          child: EmptyState(
+            icon: Icons.notifications_none,
+            title: 'No alerts yet',
+            message: 'Start tracking products to get price drop and stock alerts.',
+            buttonText: 'Browse deals',
+            onButtonPressed: () {
+              context.go(RoutePaths.market);
+            },
           ),
         ),
       );
@@ -184,7 +145,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
               child: Row(
                 children: [
                   FigmaPillChip(
-                    label: '저렴한 순',
+                    label: AppLocalizations.of(context)!.watch_sortPriceLow,
                     selected: state.sortOption == SortOption.priceLow,
                     onTap: () => ref
                         .read(watchControllerProvider.notifier)
@@ -192,7 +153,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   FigmaPillChip(
-                    label: '가격 변동 낮은 순',
+                    label: AppLocalizations.of(context)!.watch_sortPriceStable,
                     selected: state.sortOption == SortOption.priceStable,
                     onTap: () => ref
                         .read(watchControllerProvider.notifier)
@@ -200,7 +161,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   FigmaPillChip(
-                    label: '인기순',
+                    label: AppLocalizations.of(context)!.watch_sortPopular,
                     selected: state.sortOption == SortOption.popular,
                     onTap: () => ref
                         .read(watchControllerProvider.notifier)
@@ -247,7 +208,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
   Widget _buildAddProductCard() {
     return InkWell(
       onTap: () {
-        context.go('/market');
+        context.go(RoutePaths.market);
       },
       child: ClipRect(
         child: Column(
@@ -271,7 +232,7 @@ class _WatchScreenState extends ConsumerState<WatchScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '사료 추가하기',
+                        AppLocalizations.of(context)!.watch_addFood,
                         style: AppTypography.body2.copyWith(
                           fontWeight: FontWeight.w500,
                           fontSize: 12,

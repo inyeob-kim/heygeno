@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_typography.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Figma 디자인 기반 Section Header 위젯
+/// 
+/// @deprecated Use `design_system/components/section_header.dart` SectionHeader instead.
+/// This widget is kept for backward compatibility and will be removed in a future version.
+@Deprecated('Use design_system/components/section_header.dart SectionHeader instead')
 class FigmaSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -75,7 +80,7 @@ class FigmaSectionHeader extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '전체보기',
+                      AppLocalizations.of(context)!.action_viewAll,
                       style: AppTypography.small.copyWith(
                         color: const Color(0xFF6B7280),
                       ),

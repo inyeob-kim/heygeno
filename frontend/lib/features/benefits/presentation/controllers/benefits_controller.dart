@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../domain/services/mission_service.dart';
+import '../../../../domain/services/pet_service.dart';
 import '../../../../data/models/mission_dto.dart';
 
 /// 혜택 화면 상태
@@ -50,8 +51,9 @@ class BenefitsState {
 /// 단일 책임: 포인트 및 미션 데이터 관리
 class BenefitsController extends StateNotifier<BenefitsState> {
   final MissionService _missionService;
+  final PetService _petService;
 
-  BenefitsController(this._missionService) : super(BenefitsState()) {
+  BenefitsController(this._missionService, this._petService) : super(BenefitsState()) {
     _initialize();
   }
 
@@ -103,10 +105,23 @@ class BenefitsController extends StateNotifier<BenefitsState> {
   Future<void> refresh() async {
     await _initialize();
   }
+
+  /// 펫 업데이트 미션용 petId 조회 (primary pet 우선, 없으면 첫 번째 펫)
+  Future<String?> getPetIdForPetUpdateMission() async {
+    try {
+      final primaryPet = await _petService.getPrimaryPetSummary();
+      if (primaryPet != null) return primaryPet.petId;
+      final pets = await _petService.getAllPetSummaries();
+      return pets.isNotEmpty ? pets.first.petId : null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 final benefitsControllerProvider =
     StateNotifierProvider<BenefitsController, BenefitsState>((ref) {
   final missionService = ref.watch(missionServiceProvider);
-  return BenefitsController(missionService);
+  final petService = ref.watch(petServiceProvider);
+  return BenefitsController(missionService, petService);
 });

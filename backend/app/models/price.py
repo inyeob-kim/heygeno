@@ -22,11 +22,11 @@ class PriceSnapshot(Base):
     
     # 최종 가격 (표준 "비교값")
     final_price = Column(Integer, nullable=False)  # listed + shipping - discounts
-    currency = Column(String(3), default='KRW', nullable=False)
+    currency = Column(String(3), default='USD', nullable=False)  # US 기본
     
     is_sold_out = Column(Boolean, nullable=False, server_default='false')
     captured_at = Column(DateTime(timezone=True), nullable=False)
-    captured_source = Column(String(50), nullable=False, server_default='COUPANG_API')  # 가격 스냅샷 출처
+    captured_source = Column(String(50), nullable=False, server_default='AMAZON_API')  # US 중심
     meta = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/repositories/pet_repository.dart';
+import '../../../../domain/services/pet_service.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/providers/pet_id_provider.dart';
@@ -30,10 +30,10 @@ class PetProfileState {
 }
 
 class PetProfileController extends StateNotifier<PetProfileState> {
-  final PetRepository _petRepository;
+  final PetService _petService;
   final Ref _ref;
 
-  PetProfileController(this._petRepository, this._ref) : super(PetProfileState());
+  PetProfileController(this._petService, this._ref) : super(PetProfileState());
 
   Future<void> createPet({
     required String breedCode,
@@ -44,7 +44,7 @@ class PetProfileController extends StateNotifier<PetProfileState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final pet = await _petRepository.createPet(
+      final pet = await _petService.createPet(
         breedCode: breedCode,
         weightBucket: weightBucket,
         ageStage: ageStage,
@@ -61,7 +61,7 @@ class PetProfileController extends StateNotifier<PetProfileState> {
     } catch (e) {
       final failure = e is Exception
           ? handleException(e)
-          : ServerFailure('알 수 없는 오류가 발생했습니다: ${e.toString()}');
+          : ServerFailure('An unknown error occurred: ${e.toString()}');
       state = state.copyWith(
         isLoading: false,
         error: failure.message,
@@ -72,6 +72,6 @@ class PetProfileController extends StateNotifier<PetProfileState> {
 
 final petProfileControllerProvider =
     StateNotifierProvider<PetProfileController, PetProfileState>((ref) {
-  final petRepository = ref.watch(petRepositoryProvider);
-  return PetProfileController(petRepository, ref);
+  final petService = ref.watch(petServiceProvider);
+  return PetProfileController(petService, ref);
 });

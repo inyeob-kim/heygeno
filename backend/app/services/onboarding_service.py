@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 import logging
-from app.models.user import User, AuthProvider
+from app.models.user import User
 from app.models.pet import (
     Pet, PetSpecies, AgeInputMode, AgeStage, PetSex,
     PetHealthConcern, PetFoodAllergy, PetOtherAllergy, AllergenCode
@@ -35,40 +35,26 @@ def calculate_age_stage(age_months: Optional[int], birthdate: Optional[date]) ->
 
 async def complete_onboarding(
     db: AsyncSession,
-    request: OnboardingCompleteRequest
+    user_id: UUID,
+    request: OnboardingCompleteRequest,
 ) -> OnboardingCompleteResponse:
     """
-    온보딩 완료 트랜잭션
+    온보딩 완료 트랜잭션. user_id는 Bearer 토큰에서 확인된 로그인 사용자.
     """
     try:
-        logger.info(f"[OnboardingService] 시작: device_uid={request.device_uid}")
+        logger.info(f"[OnboardingService] 시작: user_id={user_id}")
         
-        # 1. Users UPSERT
-        logger.info("[OnboardingService] 1. Users UPSERT 시작")
-        result = await db.execute(
-            select(User).where(
-                User.provider == AuthProvider.DEVICE,
-                User.provider_user_id == request.device_uid
-            )
-        )
+        # 1. User 조회 (Bearer로 인증된 사용자)
+        result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-        logger.info(f"[OnboardingService] User 조회 결과: {user is not None}")
+        if not user:
+            raise ValueError("User not found")
         
-        if user:
-            # 기존 사용자가 있으면 닉네임이 제공된 경우에만 업데이트 (펫 추가 모드 대응)
-            if request.nickname and request.nickname.strip():
-                user.nickname = request.nickname
-            user.updated_at = datetime.utcnow()
-        else:
-            user = User(
-                provider=AuthProvider.DEVICE,
-                provider_user_id=request.device_uid,
-                nickname=request.nickname,
-                timezone='Asia/Seoul'
-            )
-            db.add(user)
+        if request.nickname and request.nickname.strip():
+            user.nickname = request.nickname
+        user.updated_at = datetime.utcnow()
         
-        await db.flush()  # user.id를 얻기 위해
+        await db.flush()
         logger.info(f"[OnboardingService] User ID: {user.id}")
         
         # 2. Pets CREATE/UPDATE

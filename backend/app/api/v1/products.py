@@ -113,7 +113,7 @@ async def get_recommendations(
     generate_explanation_only: bool = Query(False, description="기존 추천 결과에 RAG 설명만 생성 (전체 재계산 없음)"),
     min_daily_amount: Optional[int] = Query(None, description="최소 하루 급여량 (g)"),
     max_daily_amount: Optional[int] = Query(None, description="최대 하루 급여량 (g)"),
-    max_monthly_budget: Optional[int] = Query(None, description="최대 월 예산 (원)"),
+    max_monthly_budget: Optional[int] = Query(None, description="최대 월 예산 (USD)"),
     emphasized_concerns: Optional[str] = Query(None, description="강조 건강 고민 (콤마로 구분, 예: '관절,피부')"),
     health_concern_priority: bool = Query(False, description="건강 고민 우선 모드"),
     db: AsyncSession = Depends(get_db)
@@ -126,7 +126,7 @@ async def get_recommendations(
     logger.info(f"[Products API]   - generate_explanation_only: {generate_explanation_only}")
     logger.info(f"[Products API]   - min_daily_amount: {min_daily_amount}g" if min_daily_amount else "[Products API]   - min_daily_amount: None")
     logger.info(f"[Products API]   - max_daily_amount: {max_daily_amount}g" if max_daily_amount else "[Products API]   - max_daily_amount: None")
-    logger.info(f"[Products API]   - max_monthly_budget: {max_monthly_budget}원" if max_monthly_budget else "[Products API]   - max_monthly_budget: None")
+    logger.info(f"[Products API]   - max_monthly_budget: ${max_monthly_budget} USD" if max_monthly_budget else "[Products API]   - max_monthly_budget: None")
     logger.info(f"[Products API]   - emphasized_concerns: {emphasized_concerns}" if emphasized_concerns else "[Products API]   - emphasized_concerns: None")
     logger.info(f"[Products API]   - health_concern_priority: {health_concern_priority}")
     

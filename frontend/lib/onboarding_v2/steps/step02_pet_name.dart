@@ -3,6 +3,7 @@ import '../onboarding_shell.dart';
 import '../widgets/toss_text_input.dart';
 import '../../app/theme/app_typography.dart';
 import '../../app/theme/app_spacing.dart';
+import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// Step 2: Pet Name - matches React Step2PetName
 class Step02PetName extends StatelessWidget {
@@ -32,15 +33,15 @@ class Step02PetName extends StatelessWidget {
       totalSteps: totalSteps,
       onBack: onBack,
       emoji: '🐾',
-      title: '우리 아이 이름은요?',
-      ctaText: '다음',
+      title: AppLocalizations.of(context)!.onboarding_step2_title,
+      ctaText: AppLocalizations.of(context)!.common_next,
       ctaDisabled: !isValid,
       onCTAClick: onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '이름',
+            AppLocalizations.of(context)!.onboarding_step2_label,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -49,12 +50,12 @@ class Step02PetName extends StatelessWidget {
           TossTextInput(
             value: value,
             onChanged: onUpdate,
-            placeholder: '이름을 입력해주세요',
+            placeholder: AppLocalizations.of(context)!.onboarding_step2_placeholder,
             maxLength: 20,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '1~20자',
+            AppLocalizations.of(context)!.onboarding_step2_hint,
             style: AppTypography.small,
           ),
         ],
