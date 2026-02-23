@@ -99,6 +99,35 @@ async def get_user_by_firebase_uid(db: AsyncSession, firebase_uid: str) -> User 
     return result.scalar_one_or_none()
 
 
+async def get_or_create_user_by_firebase_uid(
+    db: AsyncSession,
+    firebase_uid: str,
+    *,
+    email: str | None = None,
+    nickname: str | None = None,
+) -> User:
+    """Firebase uid로 사용자 조회 또는 생성 (Google 등 Firebase 로그인용)"""
+    existing = await get_user_by_firebase_uid(db, firebase_uid)
+    if existing:
+        if existing.status == UserStatus.WITHDRAWN.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account withdrawn",
+            )
+        return existing
+    user = await create_user_social(
+        db,
+        provider="GOOGLE",
+        oauth_id=firebase_uid,
+        firebase_uid=firebase_uid,
+        email=email,
+        nickname=nickname or "User",
+    )
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
 async def get_or_create_user_by_device_uid(
     db: AsyncSession,
     device_uid: str,

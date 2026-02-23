@@ -1,5 +1,11 @@
+import os
+
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+# backend/.env 를 실행 위치와 관계없이 로드 (config.py 기준 backend 루트)
+_BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_ENV_FILE = os.path.join(_BACKEND_ROOT, ".env")
 
 
 class Settings(BaseSettings):
@@ -53,8 +59,11 @@ class Settings(BaseSettings):
     # Auth (OAuth client IDs for id_token verification)
     GOOGLE_CLIENT_ID: Optional[str] = None
 
+    # Firebase (for firebase-login; path to service account JSON)
+    FIREBASE_CREDENTIALS_PATH: Optional[str] = None
+
     class Config:
-        env_file = ".env"
+        env_file = _ENV_FILE
         case_sensitive = True
 
 

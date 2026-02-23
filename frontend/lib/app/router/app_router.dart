@@ -8,6 +8,7 @@ import 'route_validators.dart';
 import '../../ui/widgets/bottom_nav_shell.dart';
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/onboarding/presentation/screens/initial_splash_screen.dart';
+import '../../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../../features/pet_profile/presentation/screens/pet_profile_screen.dart';
 import '../../features/pet_update/presentation/screens/pet_update_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -25,7 +26,7 @@ import '../../features/me/presentation/screens/app_info_screen.dart';
 import '../../features/me/presentation/screens/recommendation_history_screen.dart';
 import '../../features/home/presentation/screens/recommendation_animation_screen.dart';
 import '../../features/home/presentation/screens/recommendation_detail_screen.dart';
-import '../../onboarding_v2/onboarding_flow.dart';
+import '../../onboarding_chat_v3/onboarding_chat_flow.dart';
 import '../../features/auth/presentation/screens/start_screen.dart';
 import '../../features/auth/presentation/screens/sign_in_screen.dart';
 import '../../features/recommendation/presentation/screens/quick_profile_wizard.dart';
@@ -93,23 +94,28 @@ GoRouter _createRouter(Ref ref) {
         name: RoutePaths.signUp,
         builder: (context, state) => const SignUpScreen(),
       ),
-      // 온보딩 라우트 (V2)
+      // 온보딩 라우트 (채팅형만 사용)
       GoRoute(
         path: RoutePaths.onboarding,
         name: RoutePaths.onboarding,
-        builder: (context, state) => const OnboardingFlowV2(),
+        builder: (context, state) => const OnboardingChatFlow(),
       ),
-      // 펫 추가용 온보딩 라우트 (V2) - 온보딩 완료 후에도 접근 가능
+      // 펫 추가용 온보딩 (채팅형, 온보딩 완료 후에도 접근 가능)
       GoRoute(
         path: RoutePaths.onboardingV2,
         name: RoutePaths.onboardingV2,
         builder: (context, state) {
-          // 쿼리 파라미터를 위젯에 전달하기 위해 extra로 전달
           final isAddPetMode = state.uri.queryParameters['mode'] == 'add_pet';
-          return OnboardingFlowV2(isAddPetMode: isAddPetMode);
+          return OnboardingChatFlow(isAddPetMode: isAddPetMode);
         },
       ),
-      // 스플래시 스크린 (온보딩 완료 후)
+      // 환영 스크린 (온보딩 직후, 홈으로 이동)
+      GoRoute(
+        path: RoutePaths.welcome,
+        name: RoutePaths.welcome,
+        builder: (context, state) => const WelcomeScreen(),
+      ),
+      // 스플래시 스크린 (레거시)
       GoRoute(
         path: '/splash',
         name: 'splash',
@@ -143,6 +149,7 @@ GoRouter _createRouter(Ref ref) {
           return RecommendationAnimationScreen(
             petSummary: args.petSummary,
             preloadedRecommendations: args.preloadedRecommendations,
+            quickParams: args.quickParams,
           );
         },
       ),

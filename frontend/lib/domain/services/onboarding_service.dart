@@ -2,13 +2,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/onboarding/data/models/onboarding_step.dart';
 import '../../features/onboarding/data/models/pet_profile_draft.dart';
 import '../../features/onboarding/data/repositories/onboarding_repository.dart';
+import 'pet_service.dart';
 
 /// 온보딩 관련 비즈니스 로직 서비스
 /// 단일 책임: 온보딩 완료 여부 확인 및 중간 저장
 class OnboardingService {
   final OnboardingRepository _repository;
+  final PetService _petService;
 
-  OnboardingService(this._repository);
+  OnboardingService(this._repository, this._petService);
+
+  /// 로그인 직후: 서버에 펫 보유 여부를 조회해 로컬 온보딩 완료 상태를 동기화하고,
+  /// 홈으로 갈지(true) 온보딩으로 갈지(false) 반환.
+  Future<bool> shouldGoToHomeAfterLogin() async {
+    try {
+      final pets = await _petService.getAllPetSummaries();
+      final hasPets = pets.isNotEmpty;
+      await _repository.setOnboardingCompleted(hasPets);
+      return hasPets;
+    } catch (_) {
+      await _repository.setOnboardingCompleted(false);
+      return false;
+    }
+  }
 
   /// 온보딩 완료 여부 확인
   Future<bool> isOnboardingCompleted() async {
@@ -59,5 +75,6 @@ class OnboardingService {
 /// OnboardingService Provider
 final onboardingServiceProvider = Provider<OnboardingService>((ref) {
   final repository = OnboardingRepositoryImpl();
-  return OnboardingService(repository);
+  final petService = ref.read(petServiceProvider);
+  return OnboardingService(repository, petService);
 });

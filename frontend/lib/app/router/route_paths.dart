@@ -16,7 +16,8 @@ class RoutePaths {
   
   // 온보딩
   static const String onboarding = '/onboarding';
-  static const String onboardingV2 = '/onboarding_v2'; // Test route for new onboarding
+  static const String onboardingV2 = '/onboarding_v2'; // Add pet (chat onboarding)
+  static const String welcome = '/welcome'; // Post-onboarding welcome
   static const String petProfile = '/pet-profile';
   static String petUpdate(String petId) => '/pet-update/$petId';
   

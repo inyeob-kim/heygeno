@@ -20,7 +20,10 @@ from app.services.auth_service import (
     create_user_email,
     email_signin,
     get_or_create_user_by_device_uid,
+    get_or_create_user_by_firebase_uid,
 )
+from app.core.firebase import initialize_firebase, verify_firebase_token, get_firebase_app
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -86,6 +89,61 @@ class EmailSignInRequest(BaseModel):
 class GuestLoginRequest(BaseModel):
     device_uid: str
     nickname: str = "Guest"
+
+
+class FirebaseLoginRequest(BaseModel):
+    firebase_id_token: str
+
+
+@router.post("/firebase-login", response_model=SocialLoginResponse)
+async def post_firebase_login(
+    body: FirebaseLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Firebase id_token으로 로그인/회원가입.
+    토큰 검증 후 firebase_uid로 유저 조회 또는 생성, JWT 반환.
+    """
+    from fastapi import HTTPException, status
+    if get_firebase_app() is None:
+        initialize_firebase(settings.FIREBASE_CREDENTIALS_PATH)
+    if get_firebase_app() is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase is not configured (FIREBASE_CREDENTIALS_PATH)",
+        )
+    decoded = verify_firebase_token(body.firebase_id_token)
+    if not decoded:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Firebase token",
+        )
+    uid = decoded.get("uid")
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Firebase token: no uid",
+        )
+    email = decoded.get("email")
+    name = decoded.get("name") or (decoded.get("email") or "").split("@")[0][:50] or "User"
+    user = await get_or_create_user_by_firebase_uid(
+        db,
+        firebase_uid=uid,
+        email=email,
+        nickname=name,
+    )
+    await db.commit()
+    await db.refresh(user)
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return SocialLoginResponse(
+        access_token=access_token,
+        user_id=str(user.id),
+        provider=user.provider,
+        oauth_id=user.provider_user_id,
+        nickname=user.nickname,
+        status=user.status,
+        restored=False,
+    )
 
 
 @router.post("/social-login", response_model=SocialLoginResponse)

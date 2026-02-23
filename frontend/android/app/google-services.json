@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1024198340727",
+    "project_id": "heygeno-d8ab3",
+    "storage_bucket": "heygeno-d8ab3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1024198340727:android:27b6029a69992833aed672",
+        "android_client_info": {
+          "package_name": "com.example.pet_food_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1024198340727-sj45luaiml919df5jsaocr5rvi4apbv5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIFet0KJw9mVyy3cMMuTWmNcy-mtkgBDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1024198340727-sj45luaiml919df5jsaocr5rvi4apbv5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

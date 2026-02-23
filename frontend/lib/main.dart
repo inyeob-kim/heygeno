@@ -6,16 +6,19 @@ DTO 모델의 fromJson/toJson 메서드를 생성하기 위해 위 명령어를 
 모델 파일을 수정한 후에는 반드시 다시 실행해야 합니다.
 */
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'app/app.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // .env 파일 로드 (assets에서 로드)
   // pubspec.yaml에 .env 파일이 assets로 등록되어 있음
   try {

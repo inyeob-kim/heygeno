@@ -6,6 +6,7 @@ class Endpoints {
   static const String authGuestLogin = '/auth/guest-login';
   static const String authSocialLogin = '/auth/social-login';
   static const String authRegister = '/auth/register';
+  static const String authFirebaseLogin = '/auth/firebase-login';
   static const String authRefresh = '/auth/refresh';
   static const String authEmailSignUp = '/auth/email/signup';
   static const String authEmailSignIn = '/auth/email/signin';

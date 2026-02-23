@@ -12,9 +12,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import text
 from decimal import Decimal
+import re
 from app.models.product import (
-    Product, 
+    Product,
     PetSpecies,
+    SizeUnit,
     ProductAllergen,
     ProductIngredientProfile,
     ProductNutritionFacts,
@@ -22,6 +24,20 @@ from app.models.product import (
 )
 from app.models.offer import ProductOffer, Merchant
 from app.core.config import settings
+
+
+def _parse_size_label(size_label: str) -> tuple[Decimal | None, SizeUnit]:
+    """Parse size_label e.g. '3kg', '7.5kg', '2.27kg', '5 lb' -> (value, unit)."""
+    if not size_label:
+        return (None, SizeUnit.LB)
+    s = size_label.strip().upper().replace(" ", "")
+    match = re.match(r"^([\d.]+)(KG|LB|OZ|G)?$", s)
+    if not match:
+        return (None, SizeUnit.LB)
+    value = Decimal(match.group(1))
+    unit_str = (match.group(2) or "KG") if "KG" in s or s.endswith("K") else (match.group(2) or "LB")
+    unit = SizeUnit.KG if unit_str in ("KG", "G") else (SizeUnit.LB if unit_str == "LB" else SizeUnit.OZ if unit_str == "OZ" else SizeUnit.KG)
+    return (value, unit)
 
 
 def _get_default_allergens(brand_name: str, product_name: str) -> list[str]:
@@ -57,6 +73,58 @@ def _get_default_ingredients(brand_name: str, product_name: str, species: PetSpe
         "ingredients_text": ingredients,
         "additives_text": additives,
         "source": "테스트 데이터",
+    }
+
+
+def _get_default_parsed(
+    ingredients_text: str,
+    brand_name: str,
+    product_name: str,
+    species: PetSpecies,
+    kcal_per_100g: int,
+) -> dict:
+    """
+    Quick/일반 추천에서 사용하는 parsed JSONB.
+    get_active_products_with_parsed() 조건을 만족하고 스코어링에 필요한 최소 필드 포함.
+    """
+    ingredients_ordered = [s.strip() for s in ingredients_text.split(",") if s.strip()]
+    first = (ingredients_ordered[0] or "").lower()
+    meat_keywords = ("닭", "소", "양", "칠면조", "연어", "어분", "chicken", "beef", "lamb", "turkey", "salmon", "fish")
+    first_ingredient_is_meat = any(k in first for k in meat_keywords)
+    is_premium = "오리젠" in brand_name or "아카나" in brand_name
+    protein_source_quality = "high" if is_premium else ("medium" if first_ingredient_is_meat else "low")
+
+    if "퍼피" in product_name or "키튼" in product_name or "주니어" in product_name:
+        life_stage = "GROWTH"
+    elif "시니어" in product_name or "SENIOR" in product_name.upper():
+        life_stage = "SENIOR"
+    else:
+        life_stage = "ADULT_MAINTENANCE"
+
+    benefits = []
+    if "다이어트" in product_name or "라이트" in product_name or "웨이트" in product_name:
+        benefits.append("weight_management")
+    if "인도어" in product_name or "인도" in product_name:
+        benefits.append("urinary")
+    if "저알레르기" in product_name or "리미티드" in product_name:
+        benefits.append("hypoallergenic")
+    if not benefits:
+        benefits.append("digestive")
+
+    return {
+        "ingredients_ordered": ingredients_ordered,
+        "first_ingredient_is_meat": first_ingredient_is_meat,
+        "protein_source_quality": protein_source_quality,
+        "quality_score": 75 if is_premium else 65,
+        "potential_allergens": [],
+        "benefits_tags": benefits,
+        "life_stage": life_stage,
+        "is_grain_free": "그레인프리" in product_name or "grain free" in product_name.lower(),
+        "notes": "",
+        "nutritional_profile": {
+            "kcal_per_100g": kcal_per_100g,
+            "kcal_per_kg": kcal_per_100g * 10,
+        },
     }
 
 
@@ -788,11 +856,14 @@ async def seed_products():
                 product_name = product_data["product_name"]
                 species = product_data["species"]
                 
-                # 상품 생성
+                # 상품 생성 (unique: brand_name, product_name, size_value, size_unit)
+                size_value, size_unit = _parse_size_label(product_data["size_label"])
                 product = Product(
-                    category="FOOD",  # MVP는 FOOD만
+                    category="FOOD",
                     brand_name=brand_name,
                     product_name=product_name,
+                    size_value=size_value,
+                    size_unit=size_unit,
                     size_label=product_data["size_label"],
                     species=species,
                     is_active=True,
@@ -826,20 +897,27 @@ async def seed_products():
                     session.add(allergen)
                     allergen_count += 1
                 
-                # 성분 프로필 생성
+                # 성분 프로필 생성 (parsed 필수: Quick/일반 추천이 get_active_products_with_parsed 사용)
                 ingredient_profile_data = _get_default_ingredients(brand_name, product_name, species)
+                nutrition_data = _get_default_nutrition(brand_name, product_name, species)
+                parsed = _get_default_parsed(
+                    ingredients_text=ingredient_profile_data["ingredients_text"],
+                    brand_name=brand_name,
+                    product_name=product_name,
+                    species=species,
+                    kcal_per_100g=nutrition_data["kcal_per_100g"],
+                )
                 ingredient_profile = ProductIngredientProfile(
                     product_id=product.id,
                     ingredients_text=ingredient_profile_data["ingredients_text"],
                     additives_text=ingredient_profile_data["additives_text"],
-                    parsed=None,  # 파싱 결과는 나중에 추가
+                    parsed=parsed,
                     source=ingredient_profile_data["source"],
                 )
                 session.add(ingredient_profile)
                 ingredient_count += 1
                 
                 # 영양 정보 생성
-                nutrition_data = _get_default_nutrition(brand_name, product_name, species)
                 nutrition_facts = ProductNutritionFacts(
                     product_id=product.id,
                     protein_pct=nutrition_data["protein_pct"],
@@ -864,14 +942,18 @@ async def seed_products():
                         {"code": claim_code}
                     )
                     if result.scalar_one_or_none() is None:
-                        # claim_code가 없으면 생성
+                        # claim_code가 없으면 생성 (display_name_en NOT NULL)
                         await session.execute(
                             text("""
-                                INSERT INTO claim_codes (code, display_name)
-                                VALUES (:code, :display_name)
+                                INSERT INTO claim_codes (code, display_name, display_name_en)
+                                VALUES (:code, :display_name, :display_name_en)
                                 ON CONFLICT (code) DO NOTHING
                             """),
-                            {"code": claim_code, "display_name": _get_claim_display_name(claim_code)}
+                            {
+                                "code": claim_code,
+                                "display_name": _get_claim_display_name(claim_code),
+                                "display_name_en": _get_claim_display_name_en(claim_code),
+                            }
                         )
                     
                     claim = ProductClaim(
@@ -905,7 +987,7 @@ async def seed_products():
 
 
 def _get_claim_display_name(code: str) -> str:
-    """클레임 코드의 표시명 반환"""
+    """클레임 코드의 표시명 반환 (한국어)"""
     claim_names = {
         "DIGESTIVE": "장/소화 건강",
         "DENTAL": "치아/구강 건강",
@@ -919,6 +1001,23 @@ def _get_claim_display_name(code: str) -> str:
         "COAT": "털 관리",
     }
     return claim_names.get(code, code)
+
+
+def _get_claim_display_name_en(code: str) -> str:
+    """클레임 코드의 표시명 반환 (영어, claim_codes.display_name_en NOT NULL)"""
+    claim_names_en = {
+        "DIGESTIVE": "Digestive health",
+        "DENTAL": "Dental health",
+        "SKIN": "Skin & coat",
+        "JOINT": "Joint support",
+        "WEIGHT": "Weight management",
+        "URINARY": "Urinary health",
+        "SENIOR": "Senior care",
+        "PUPPY": "Puppy growth",
+        "IMMUNE": "Immune support",
+        "COAT": "Coat care",
+    }
+    return claim_names_en.get(code, code.replace("_", " ").title())
 
 
 if __name__ == "__main__":

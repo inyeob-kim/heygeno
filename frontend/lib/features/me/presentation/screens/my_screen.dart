@@ -19,6 +19,7 @@ import '../../../../../data/models/pet_summary_dto.dart';
 import '../../../../../app/router/route_paths.dart';
 import '../controllers/my_controller.dart';
 import '../../../../../features/benefits/presentation/controllers/benefits_controller.dart';
+import '../../../../../data/repositories/auth_repository.dart';
 import 'package:pet_food_app/l10n/app_localizations.dart';
 
 /// 실제 API 데이터를 사용하는 My Screen
@@ -143,6 +144,13 @@ class _MyScreenState extends ConsumerState<MyScreen> {
           context.push('/me/app-info');
         },
       ),
+      SettingData(
+        icon: Icons.logout,
+        label: AppLocalizations.of(context)!.me_logOut,
+        hasChevron: false,
+        isDestructive: true,
+        onTap: () => _showLogOutConfirm(context),
+      ),
     ];
 
     return Scaffold(
@@ -193,6 +201,35 @@ class _MyScreenState extends ConsumerState<MyScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogOutConfirm(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.me_logOutConfirmTitle),
+        content: Text(l10n.me_logOutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.common_cancel),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) context.go(RoutePaths.start);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.drop,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.me_logOut),
+          ),
+        ],
       ),
     );
   }
@@ -482,6 +519,18 @@ class _MyScreenState extends ConsumerState<MyScreen> {
       );
     }
 
+    if (setting.isDestructive) {
+      return SettingItem(
+        icon: setting.icon,
+        label: setting.label,
+        subtitle: setting.value,
+        onTap: setting.onTap,
+        trailing: trailing,
+        iconBackgroundColor: const Color(0xFFFEE2E2),
+        iconColor: const Color(0xFFDC2626),
+      );
+    }
+
     return SettingItem.withAutoColors(
       label: setting.label,
       subtitle: setting.value,
@@ -566,6 +615,7 @@ class SettingData {
   final String? value;
   final bool hasToggle;
   final bool hasChevron;
+  final bool isDestructive;
   final VoidCallback? onTap;
 
   SettingData({
@@ -574,6 +624,7 @@ class SettingData {
     this.value,
     this.hasToggle = false,
     this.hasChevron = false,
+    this.isDestructive = false,
     this.onTap,
   });
 }

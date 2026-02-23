@@ -68,6 +68,7 @@ et-xmlfile==1.1.0
 executing==2.0.1
 faiss-cpu==1.8.0.post1
 Faker==19.13.0
+firebase-admin==6.6.0
 fastapi==0.104.1
 fastapi-cli==0.0.4
 fastjsonschema==2.20.0
