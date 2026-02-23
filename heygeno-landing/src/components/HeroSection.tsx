@@ -8,7 +8,7 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ onOpenModal, onOpenPriceModal }: HeroSectionProps) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   
   return (
     <section className="pt-20 sm:pt-24 lg:pt-32 pb-16 sm:pb-20 lg:pb-28 px-4 sm:px-6 w-full overflow-x-hidden bg-white">
@@ -29,40 +29,19 @@ export function HeroSection({ onOpenModal, onOpenPriceModal }: HeroSectionProps)
             {/* Headline */}
             <div className="space-y-4">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight" style={{ color: '#0F172A' }}>
-                {language === 'KOR' ? (
-                  <>
-                    {t('hero.headline1')}{' '}
-                    <span style={{ color: '#2563EB' }}>{t('hero.headline2')}</span> {t('hero.headline3')}<br />
-                    {t('hero.headline4')}{' '}
-                    <span style={{ color: '#2563EB' }}>{t('hero.headline5')}</span>{t('hero.headline6')}
-                  </>
-                ) : (
-                  <>
-                    {t('hero.headline1')}{' '}
-                    <span style={{ color: '#2563EB' }}>{t('hero.headline2')}</span>{t('hero.headline3')}<br />
-                    {t('hero.headline4')}{' '}
-                    <span style={{ color: '#2563EB' }}>{t('hero.headline5')}</span>{t('hero.headline6')}
-                  </>
-                )}
+                {t('hero.headline1')}{' '}
+                <span style={{ color: '#2563EB' }}>{t('hero.headline2')}</span>{t('hero.headline3')}<br />
+                {t('hero.headline4')}{' '}
+                <span style={{ color: '#2563EB' }}>{t('hero.headline5')}</span>{t('hero.headline6')}
               </h1>
             </div>
 
             {/* Subheadline */}
             <div className="space-y-3">
               <p className="text-lg sm:text-xl leading-relaxed" style={{ color: '#475569' }}>
-                {language === 'KOR' ? (
-                  <>
-                    {t('hero.subheadline1')}<br />
-                    {t('hero.subheadline2')}<br />
-                    {t('hero.subheadline3')}
-                  </>
-                ) : (
-                  <>
-                    {t('hero.subheadline1')}<br />
-                    {t('hero.subheadline2')}<br />
-                    {t('hero.subheadline3')}
-                  </>
-                )}
+                {t('hero.subheadline1')}<br />
+                {t('hero.subheadline2')}<br />
+                {t('hero.subheadline3')}
               </p>
             </div>
 

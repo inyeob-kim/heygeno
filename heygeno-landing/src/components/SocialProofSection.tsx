@@ -3,6 +3,22 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export function SocialProofSection() {
   const { t } = useLanguage();
+  const affiliatePartners = [
+    'Amazon',
+    'Chewy',
+    'Petco',
+    'PetSmart',
+    'Walmart',
+    'Target',
+    'Tractor Supply',
+    'PetFlow',
+    'The Farmer\'s Dog',
+    'Ollie',
+    'Nom Nom',
+    'Spot & Tango',
+    'Open Farm',
+    'iHeartDogs',
+  ];
   
   const targetUsers = [
     {
@@ -54,6 +70,29 @@ export function SocialProofSection() {
               </p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 sm:mt-16 bg-white rounded-2xl p-6 sm:p-8 border-2 border-gray-100">
+          <div className="text-center mb-5 sm:mb-6">
+            <h3 className="text-lg sm:text-xl font-bold mb-2" style={{ color: '#0F172A' }}>
+              U.S. Affiliate Retail & Brand Partners
+            </h3>
+            <p className="text-sm sm:text-base" style={{ color: '#475569' }}>
+              We are building integrations across major partner programs to track pet food deals in one place.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+            {affiliatePartners.map((partner) => (
+              <span
+                key={partner}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border"
+                style={{ borderColor: '#DBEAFE', color: '#2563EB', backgroundColor: '#EFF6FF' }}
+              >
+                {partner}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </section>

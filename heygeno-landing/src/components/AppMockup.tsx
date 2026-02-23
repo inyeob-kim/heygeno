@@ -22,10 +22,10 @@ export function AppMockup() {
               {/* Header */}
               <div>
                 <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                  로얄캐닌 미니 어덜트
+                  Royal Canin Mini Adult
                 </div>
                 <div className="text-2xl font-bold" style={{ color: '#0F172A' }}>
-                  종합 점수
+                  Overall Score
                 </div>
               </div>
 
@@ -35,7 +35,7 @@ export function AppMockup() {
                   72
                 </div>
                 <div className="text-sm font-medium" style={{ color: '#475569' }}>
-                  100점 만점
+                  out of 100
                 </div>
               </div>
 
@@ -45,10 +45,10 @@ export function AppMockup() {
                   <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#EF4444' }} />
                   <div>
                     <div className="text-sm font-semibold mb-1" style={{ color: '#EF4444' }}>
-                      위험 성분 감지
+                      Harmful Ingredients Detected
                     </div>
                     <div className="text-xs" style={{ color: '#475569' }}>
-                      BHA, Ethoxyquin 포함
+                      Contains BHA and ethoxyquin
                     </div>
                   </div>
                 </div>
@@ -57,21 +57,21 @@ export function AppMockup() {
               {/* Price Comparison */}
               <div className="space-y-2">
                 <div className="text-sm font-semibold" style={{ color: '#0F172A' }}>
-                  최저가 비교
+                  Best Price
                 </div>
                 
                 <div className="bg-teal-50 rounded-lg p-3 border" style={{ borderColor: '#14B8A6' }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                        쿠팡
+                        Amazon
                       </div>
                       <div className="text-lg font-bold" style={{ color: '#14B8A6' }}>
-                        ₩42,900
+                        $42.90
                       </div>
                     </div>
                     <div className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#14B8A6' }}>
-                      최저가
+                      Lowest
                     </div>
                   </div>
                 </div>
@@ -80,10 +80,10 @@ export function AppMockup() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                        네이버
+                        Petco
                       </div>
                       <div className="text-lg font-bold" style={{ color: '#0F172A' }}>
-                        ₩46,500
+                        $46.50
                       </div>
                     </div>
                   </div>
@@ -95,7 +95,7 @@ export function AppMockup() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs opacity-90 mb-1">
-                      보유 포인트
+                      Current Points
                     </div>
                     <div className="text-2xl font-bold">
                       12,850P

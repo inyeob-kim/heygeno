@@ -17,7 +17,7 @@ export function FinalReinforcementCTA() {
           {t('final.title')}
         </h2>
 
-        {/* CTA 버튼 */}
+        {/* CTA button */}
         <div className="mb-6 sm:mb-8 px-4">
           <a
             href="https://forms.gle/sniAUJaSQktvAjzH6"

@@ -45,7 +45,7 @@ export function PremiumPhoneMockup({ onOpenModal, onOpenPriceModal }: PremiumPho
               {/* Header */}
               <div>
                 <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                  로얄캐닌 미니 어덜트
+                  Royal Canin Mini Adult
                 </div>
                 <div className="text-xl sm:text-2xl font-bold" style={{ color: '#0F172A' }}>
                   {t('hero.phone.score')}
@@ -83,7 +83,7 @@ export function PremiumPhoneMockup({ onOpenModal, onOpenPriceModal }: PremiumPho
                       {t('hero.phone.warning')}
                     </div>
                     <div className="text-xs" style={{ color: '#475569' }}>
-                      BHA, Ethoxyquin 포함
+                      Contains BHA and ethoxyquin
                     </div>
                   </div>
                 </div>
@@ -106,10 +106,10 @@ export function PremiumPhoneMockup({ onOpenModal, onOpenPriceModal }: PremiumPho
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                        쿠팡
+                        Amazon
                       </div>
                       <div className="text-base sm:text-lg font-bold" style={{ color: '#14B8A6' }}>
-                        ₩42,900
+                        $42.90
                       </div>
                     </div>
                     <div className="px-2 sm:px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#14B8A6' }}>
@@ -127,10 +127,10 @@ export function PremiumPhoneMockup({ onOpenModal, onOpenPriceModal }: PremiumPho
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs font-medium mb-1" style={{ color: '#475569' }}>
-                        네이버
+                        Chewy
                       </div>
                       <div className="text-base sm:text-lg font-bold" style={{ color: '#0F172A' }}>
-                        ₩46,500
+                        $46.50
                       </div>
                     </div>
                   </div>

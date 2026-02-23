@@ -27,7 +27,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
       return;
     }
 
-    // 초기화
+    // Reset state on open
     setCurrentStep(0);
     setIngredientCount(0);
 
@@ -120,7 +120,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
               isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
             }`}
           >
-            {/* Step 0: 시작 화면 */}
+            {/* Step 0: start screen */}
             {currentStep === 0 && (
               <div className="h-full flex flex-col items-center justify-center p-4 sm:p-8 text-center">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-4 sm:mb-6 animate-pulse" style={{ backgroundColor: '#EFF6FF' }}>
@@ -128,10 +128,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                 </div>
                 
                 <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4" style={{ color: '#0F172A' }}>
-                  제노에게 맞는 사료 분석 중
+                  Analyzing the best food for Zeno
                 </h2>
                 <p className="text-sm sm:text-lg mb-6 sm:mb-8" style={{ color: '#475569' }}>
-                  말티즈, 3세 · 3.2kg
+                  Maltese, 3 years old · 7.1 lb
                 </p>
 
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl p-3 sm:p-6 mb-6 sm:mb-8 max-w-md w-full">
@@ -139,16 +139,16 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                     <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg sm:rounded-xl overflow-hidden shadow-md bg-white flex-shrink-0">
                       <img
                         src={productImage}
-                        alt="사료"
+                        alt="dog food"
                         className="w-full h-full object-contain"
                       />
                     </div>
                     <div className="flex-1 text-left">
                       <h3 className="text-sm sm:text-lg font-bold mb-1" style={{ color: '#0F172A' }}>
-                        헤이제노 강아지 사료
+                        KibbleWise Adult Dog Food
                       </h3>
                       <p className="text-xs sm:text-sm" style={{ color: '#475569' }}>
-                        소형견 성견용 · 2kg
+                        Small Breed Adult · 4.4 lb
                       </p>
                     </div>
                   </div>
@@ -156,12 +156,12 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
 
                 <div className="flex items-center gap-2 text-xs sm:text-sm" style={{ color: '#475569' }}>
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" style={{ color: '#2563EB' }} />
-                  <span>분석을 시작합니다...</span>
+                  <span>Starting analysis...</span>
                 </div>
               </div>
             )}
 
-            {/* Step 1: 성분 스캔 */}
+            {/* Step 1: ingredient scan */}
             {currentStep === 1 && (
               <div className="h-full flex flex-col items-center justify-center p-4 sm:p-8">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-4 sm:mb-6" style={{ backgroundColor: '#EFF6FF' }}>
@@ -169,10 +169,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                 </div>
                 
                 <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center" style={{ color: '#0F172A' }}>
-                  성분 스캔 완료
+                  Ingredient Scan Complete
                 </h2>
                 <p className="text-sm sm:text-lg mb-6 sm:mb-8 text-center" style={{ color: '#475569' }}>
-                  총 {ingredientCount}개의 원재료 검출
+                  Found {ingredientCount} total ingredients
                 </p>
 
                 <div className="w-full max-w-md space-y-3 sm:space-y-4 px-2">
@@ -181,16 +181,16 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                       {ingredientCount}
                     </div>
                     <div className="text-sm sm:text-base font-semibold" style={{ color: '#475569' }}>
-                      검출된 성분
+                      Detected Ingredients
                     </div>
                   </div>
 
                   <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-5 border-2" style={{ borderColor: '#E5E7EB' }}>
                     <div className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3" style={{ color: '#0F172A' }}>
-                      주요 성분
+                      Key Ingredients
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {['닭고기', '쌀', '옥수수', '비트펄프', '닭지방', '밀'].map((ing) => (
+                      {['Chicken', 'Brown Rice', 'Corn', 'Beet Pulp', 'Chicken Fat', 'Wheat'].map((ing) => (
                         <span key={ing} className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium bg-gray-100" style={{ color: '#475569' }}>
                           {ing}
                         </span>
@@ -201,7 +201,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
               </div>
             )}
 
-            {/* Step 2: 알레르기 검사 */}
+            {/* Step 2: allergen check */}
             {currentStep === 2 && (
               <div className="h-full flex flex-col items-center justify-center p-4 sm:p-8">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-4 sm:mb-6" style={{ backgroundColor: '#ECFDF5' }}>
@@ -209,10 +209,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                 </div>
                 
                 <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center" style={{ color: '#0F172A' }}>
-                  알레르기 검사 통과
+                  Allergen Check Passed
                 </h2>
                 <p className="text-sm sm:text-lg mb-6 sm:mb-8 text-center" style={{ color: '#475569' }}>
-                  제노에게 안전한 성분으로 구성되어 있습니다
+                  Ingredients look safe for Zeno
                 </p>
 
                 <div className="w-full max-w-md space-y-3 sm:space-y-4 px-2">
@@ -223,10 +223,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                       </div>
                       <div className="text-left">
                         <div className="text-xs sm:text-sm font-semibold" style={{ color: '#14B8A6' }}>
-                          알레르기 성분
+                          Allergen Hits
                         </div>
                         <div className="text-xs" style={{ color: '#475569' }}>
-                          검출되지 않음
+                          None detected
                         </div>
                       </div>
                     </div>
@@ -235,15 +235,15 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                       <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: '#14B8A6' }} />
                         <div>
-                          <div className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1" style={{ color: '#0F172A' }}>닭고기 단백질</div>
-                          <div className="text-xs" style={{ color: '#475569' }}>제노에게 안전한 주성분</div>
+                          <div className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1" style={{ color: '#0F172A' }}>Chicken Protein</div>
+                          <div className="text-xs" style={{ color: '#475569' }}>Safe core protein for Zeno</div>
                         </div>
                       </div>
                       <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: '#14B8A6' }} />
                         <div>
-                          <div className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1" style={{ color: '#0F172A' }}>현미 & 귀리</div>
-                          <div className="text-xs" style={{ color: '#475569' }}>소화가 잘 되는 곡물</div>
+                          <div className="font-semibold text-xs sm:text-sm mb-0.5 sm:mb-1" style={{ color: '#0F172A' }}>Brown Rice & Oats</div>
+                          <div className="text-xs" style={{ color: '#475569' }}>Digestible grain blend</div>
                         </div>
                       </div>
                     </div>
@@ -252,7 +252,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
               </div>
             )}
 
-            {/* Step 3: 유해 성분 분석 */}
+            {/* Step 3: risk ingredient analysis */}
             {currentStep === 3 && (
               <div className="h-full flex flex-col items-center justify-center p-4 sm:p-8">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-4 sm:mb-6" style={{ backgroundColor: '#FFF7ED' }}>
@@ -260,10 +260,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                 </div>
                 
                 <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center" style={{ color: '#0F172A' }}>
-                  주의 성분 검출
+                  Caution Ingredient Found
                 </h2>
                 <p className="text-sm sm:text-lg mb-6 sm:mb-8 text-center" style={{ color: '#475569' }}>
-                  보존제 및 첨가물 분석 결과
+                  Preservative and additive review
                 </p>
 
                 <div className="w-full max-w-md px-2">
@@ -275,13 +275,13 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                         </div>
                         <div className="flex-1">
                           <div className="font-bold text-sm sm:text-base mb-1 sm:mb-2" style={{ color: '#0F172A' }}>
-                            BHA (부틸화 하이드록시아니솔)
+                            BHA (Butylated Hydroxyanisole)
                           </div>
                           <div className="text-xs sm:text-sm leading-relaxed" style={{ color: '#475569' }}>
-                            장기 섭취 시 주의가 필요한 합성 보존제입니다
+                            A synthetic preservative that should be limited in long-term use
                           </div>
                           <div className="mt-3 sm:mt-4 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg inline-block text-xs font-semibold" style={{ backgroundColor: '#FFF7ED', color: '#F97316' }}>
-                            ⚠️ 장기 섭취 주의
+                            Long-term use caution
                           </div>
                         </div>
                       </div>
@@ -291,7 +291,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
               </div>
             )}
 
-            {/* Step 4: 품질 평가 */}
+            {/* Step 4: quality scoring */}
             {currentStep === 4 && (
               <div className="h-full flex flex-col items-center justify-center p-4 sm:p-8">
                 <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-4 sm:mb-6" style={{ backgroundColor: '#EFF6FF' }}>
@@ -299,10 +299,10 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                 </div>
                 
                 <h2 className="text-xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center" style={{ color: '#0F172A' }}>
-                  품질 평가 완료
+                  Quality Review Complete
                 </h2>
                 <p className="text-sm sm:text-lg mb-6 sm:mb-8 text-center" style={{ color: '#475569' }}>
-                  영양 균형 및 품질 분석
+                  Nutrition balance and quality check
                 </p>
 
                 <div className="w-full max-w-md px-2">
@@ -312,7 +312,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: '#14B8A6' }} />
                         <div>
                           <div className="font-semibold text-xs sm:text-sm" style={{ color: '#0F172A' }}>
-                            첫 성분: 동물성 단백질 (닭고기)
+                            First ingredient: animal protein (chicken)
                           </div>
                         </div>
                       </div>
@@ -320,7 +320,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: '#14B8A6' }} />
                         <div>
                           <div className="font-semibold text-xs sm:text-sm" style={{ color: '#0F172A' }}>
-                            단백질 함량: 적정 수준
+                            Protein level: within target range
                           </div>
                         </div>
                       </div>
@@ -328,7 +328,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" style={{ color: '#14B8A6' }} />
                         <div>
                           <div className="font-semibold text-xs sm:text-sm" style={{ color: '#0F172A' }}>
-                            하루 권장 급여량: 약 68g
+                            Daily suggested serving: about 2.4 oz
                           </div>
                         </div>
                       </div>
@@ -338,34 +338,34 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
               </div>
             )}
 
-            {/* Step 5: 종합 판정 */}
+            {/* Step 5: final assessment */}
             {currentStep === 5 && (
               <div className="h-full flex flex-col overflow-y-auto pt-14 sm:pt-20">
                 <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-8">
                   <div className="w-full max-w-md">
-                    {/* 점수 카드 */}
+                    {/* Score card */}
                     <div className="bg-gradient-to-br from-blue-500 to-teal-500 rounded-xl sm:rounded-2xl p-5 sm:p-8 text-white text-center mb-4 sm:mb-6">
                       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                         <Award className="w-8 h-8 sm:w-12 sm:h-12" />
                         <div className="text-left">
-                          <h3 className="text-lg sm:text-2xl font-bold">종합 판정</h3>
-                          <p className="text-xs sm:text-sm opacity-90">AI 기반 맞춤 분석</p>
+                          <h3 className="text-lg sm:text-2xl font-bold">Final Assessment</h3>
+                          <p className="text-xs sm:text-sm opacity-90">AI-powered personalized analysis</p>
                         </div>
                       </div>
                       
                       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6">
-                        <div className="text-5xl sm:text-7xl font-bold mb-1 sm:mb-2">85점</div>
-                        <div className="text-sm sm:text-lg font-semibold mb-3 sm:mb-4">100점 만점</div>
+                        <div className="text-5xl sm:text-7xl font-bold mb-1 sm:mb-2">85</div>
+                        <div className="text-sm sm:text-lg font-semibold mb-3 sm:mb-4">out of 100</div>
                         <div className="inline-block px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold bg-white/20">
-                          ✅ 제노에게 적합합니다
+                          Great fit for Zeno
                         </div>
                       </div>
                     </div>
 
-                    {/* 긍정적인 포인트 */}
+                    {/* Positive highlights */}
                     <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
                       <div className="font-bold text-base sm:text-lg mb-3 sm:mb-4" style={{ color: '#0F172A' }}>
-                        제노에게 좋은 이유
+                        Why this works for Zeno
                       </div>
                       <div className="space-y-2 sm:space-y-3">
                         <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-lg sm:rounded-xl">
@@ -373,7 +373,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                             <span className="text-xs font-bold" style={{ color: '#2563EB' }}>1</span>
                           </div>
                           <p className="text-xs sm:text-sm" style={{ color: '#475569' }}>
-                            알레르기 성분이 <strong>전혀 없어</strong> 안전합니다
+                            No known allergen triggers detected for Zeno
                           </p>
                         </div>
                         <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-lg sm:rounded-xl">
@@ -381,7 +381,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                             <span className="text-xs font-bold" style={{ color: '#2563EB' }}>2</span>
                           </div>
                           <p className="text-xs sm:text-sm" style={{ color: '#475569' }}>
-                            <strong>동물성 단백질</strong>이 주성분으로 영양이 풍부합니다
+                            Animal protein is the first ingredient
                           </p>
                         </div>
                         <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-lg sm:rounded-xl">
@@ -389,7 +389,7 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                             <span className="text-xs font-bold" style={{ color: '#2563EB' }}>3</span>
                           </div>
                           <p className="text-xs sm:text-sm" style={{ color: '#475569' }}>
-                            소형견 성견에 <strong>최적화된 영양 밸런스</strong>
+                            Nutrition profile suits small adult dogs
                           </p>
                         </div>
                       </div>
@@ -403,11 +403,11 @@ export function AnalysisSimulationModal({ isOpen, onClose }: AnalysisSimulationM
                       className="flex items-center justify-center gap-2 w-full py-3 sm:py-4 rounded-lg sm:rounded-xl text-white font-semibold text-center shadow-lg hover:shadow-xl transition-all text-sm sm:text-lg group"
                       style={{ backgroundColor: '#2563EB' }}
                     >
-                      더 많은 사료 석 받아보기
+                      Get More Food Insights
                       <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <p className="text-xs text-center mt-2 sm:mt-3" style={{ color: '#94A3B8' }}>
-                      사전 등록 시 1,000P 리워드 제공
+                      Join early access and get 1,000 bonus points
                     </p>
                   </div>
                 </div>

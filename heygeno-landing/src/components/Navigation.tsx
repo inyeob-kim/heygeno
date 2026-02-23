@@ -1,8 +1,7 @@
-import { Globe } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export function Navigation() {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-gray-200 z-50 w-full">
@@ -27,15 +26,8 @@ export function Navigation() {
               </a>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4" style={{ color: '#475569' }} />
-              <button
-                onClick={() => setLanguage(language === 'KOR' ? 'ENG' : 'KOR')}
-                className="text-sm font-medium whitespace-nowrap hover:opacity-70 transition-opacity"
-                style={{ color: '#0F172A' }}
-              >
-                {language === 'KOR' ? 'KOR | ENG' : 'ENG | KOR'}
-              </button>
+            <div className="text-sm font-semibold" style={{ color: '#0F172A' }}>
+              EN
             </div>
           </div>
         </div>

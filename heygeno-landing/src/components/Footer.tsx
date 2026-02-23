@@ -5,10 +5,10 @@ export function Footer() {
         <div className="flex flex-col items-center gap-6 md:gap-8">
           <div className="text-center">
             <h3 className="text-xl font-bold" style={{ color: '#0F172A' }}>
-              헤이제노
+              KibbleWise
             </h3>
             <p className="text-sm" style={{ color: '#64748B' }}>
-              © 2026 헤이제노. All rights reserved.
+              © 2026 KibbleWise. All rights reserved.
             </p>
           </div>
 

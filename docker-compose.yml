@@ -1,4 +1,4 @@
-name: heygeno
+name: kibblewise
 
 services:
   postgres:

@@ -48,15 +48,15 @@ export function FinalCTA() {
           <div className="mt-12 sm:mt-16 flex flex-wrap justify-center gap-6 sm:gap-8 text-white/80">
             <div className="text-center min-w-[100px]">
               <div className="text-2xl sm:text-3xl font-bold text-white mb-1">10,000+</div>
-              <div className="text-xs sm:text-sm">분석 완료</div>
+              <div className="text-xs sm:text-sm">Analyses Completed</div>
             </div>
             <div className="text-center min-w-[100px]">
               <div className="text-2xl sm:text-3xl font-bold text-white mb-1">500+</div>
-              <div className="text-xs sm:text-sm">등록 제품</div>
+              <div className="text-xs sm:text-sm">Products Tracked</div>
             </div>
             <div className="text-center min-w-[100px]">
               <div className="text-2xl sm:text-3xl font-bold text-white mb-1">4.8/5.0</div>
-              <div className="text-xs sm:text-sm">사용자 평점</div>
+              <div className="text-xs sm:text-sm">User Rating</div>
             </div>
           </div>
         </div>

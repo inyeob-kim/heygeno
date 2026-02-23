@@ -21,16 +21,16 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
       return;
     }
 
-    // 초기화
+    // Reset state on open
     setCurrentStep(0);
     setShowNotification(false);
     setChartProgress(0);
 
     // Step transitions
     const stepTimers = [
-      setTimeout(() => goToStep(1), 2000),  // Step 1: 그래프 표시
-      setTimeout(() => goToStep(2), 5000),  // Step 2: 가격 하락
-      setTimeout(() => goToStep(3), 7500),  // Step 3: 알림 발송
+      setTimeout(() => goToStep(1), 2000),  // Step 1: show chart
+      setTimeout(() => goToStep(2), 5000),  // Step 2: price drop detected
+      setTimeout(() => goToStep(3), 7500),  // Step 3: send notification
     ];
 
     return () => {
@@ -72,12 +72,12 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
 
   if (!isOpen) return null;
 
-  // Price data for graph (30 days)
+  // Price data for graph (30 days, in USD cents)
   const priceData = [
-    45900, 45500, 46200, 45800, 46500, 46100, 45700, 45900,
-    46300, 46000, 45600, 45800, 46400, 46200, 45900, 46100,
-    45700, 45500, 46000, 45800, 45400, 45600, 45200, 44900,
-    44700, 44500, 44200, 43900, 43600, 43200
+    4999, 4950, 5020, 4980, 5050, 5010, 4970, 4990,
+    5030, 5000, 4960, 4980, 5040, 5020, 4990, 5010,
+    4970, 4950, 5000, 4980, 4940, 4960, 4920, 4890,
+    4870, 4850, 4820, 4790, 4760, 4729
   ];
 
   const maxPrice = Math.max(...priceData);
@@ -85,6 +85,7 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
   const currentPrice = priceData[priceData.length - 1];
   const originalPrice = priceData[0];
   const discount = ((originalPrice - currentPrice) / originalPrice * 100).toFixed(0);
+  const formatUsd = (valueInCents: number) => `$${(valueInCents / 100).toFixed(2)}`;
 
   const totalSteps = 4;
   const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -140,7 +141,7 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
               isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
             }`}
           >
-            {/* Step 0: 시작 화면 */}
+            {/* Step 0: start screen */}
             {currentStep === 0 && (
               <div className="h-full flex flex-col items-center justify-center p-6 sm:p-12 text-center">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-6 sm:mb-8 animate-pulse" style={{ backgroundColor: '#EFF6FF' }}>
@@ -148,10 +149,10 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                 </div>
                 
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#0F172A' }}>
-                  최저가 추적 시작
+                  Best Price Tracking Started
                 </h2>
                 <p className="text-base sm:text-lg mb-8" style={{ color: '#475569' }}>
-                  헤이제노가 자동으로 가격을 모니터링합니다
+                  KibbleWise is now monitoring prices automatically
                 </p>
 
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl sm:rounded-2xl p-6 mb-8 max-w-md">
@@ -159,51 +160,51 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shadow-md bg-white flex-shrink-0">
                       <img
                         src={productImage}
-                        alt="사료"
+                        alt="dog food"
                         className="w-full h-full object-contain"
                       />
                     </div>
                     <div className="flex-1 text-left">
                       <h3 className="text-base sm:text-lg font-bold mb-1" style={{ color: '#0F172A' }}>
-                        헤이제노 강아지 사료
+                        KibbleWise Adult Dog Food
                       </h3>
                       <p className="text-xs sm:text-sm mb-2" style={{ color: '#475569' }}>
-                        소형견 성견용 · 2kg
+                        Small Breed Adult · 4.4 lb
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="bg-white rounded-lg p-3 text-center">
-                      <div className="text-xs mb-1" style={{ color: '#475569' }}>쿠팡</div>
-                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>45,900원</div>
+                      <div className="text-xs mb-1" style={{ color: '#475569' }}>Amazon</div>
+                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>$49.99</div>
                     </div>
                     <div className="bg-white rounded-lg p-3 text-center">
-                      <div className="text-xs mb-1" style={{ color: '#475569' }}>네이버</div>
-                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>46,200원</div>
+                      <div className="text-xs mb-1" style={{ color: '#475569' }}>Chewy</div>
+                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>$50.49</div>
                     </div>
                     <div className="bg-white rounded-lg p-3 text-center">
-                      <div className="text-xs mb-1" style={{ color: '#475569' }}>마켓컬리</div>
-                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>46,500원</div>
+                      <div className="text-xs mb-1" style={{ color: '#475569' }}>Petco</div>
+                      <div className="text-sm font-bold" style={{ color: '#0F172A' }}>$50.99</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm" style={{ color: '#475569' }}>
                   <TrendingDown className="w-4 h-4" style={{ color: '#2563EB' }} />
-                  <span>가격 변동 추적 중...</span>
+                  <span>Tracking price movement...</span>
                 </div>
               </div>
             )}
 
-            {/* Step 1: 가격 그래프 */}
+            {/* Step 1: price graph */}
             {currentStep === 1 && (
               <div className="h-full flex flex-col items-center justify-center p-6 sm:p-12">
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-center" style={{ color: '#0F172A' }}>
-                  30일 가격 추이
+                  30-Day Price Trend
                 </h2>
                 <p className="text-base sm:text-lg mb-8 text-center" style={{ color: '#475569' }}>
-                  쿠팡 기준 가격 변동 그래프
+                  Amazon pricing trend over the past month
                 </p>
 
                 <div className="w-full max-w-md">
@@ -211,13 +212,13 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                     {/* Price Info */}
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <div className="text-xs mb-1" style={{ color: '#475569' }}>현재가</div>
+                        <div className="text-xs mb-1" style={{ color: '#475569' }}>Current Price</div>
                         <div className="text-2xl sm:text-3xl font-bold" style={{ color: '#2563EB' }}>
-                          {currentPrice.toLocaleString()}원
+                          {formatUsd(currentPrice)}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs mb-1" style={{ color: '#475569' }}>30일 전 대비</div>
+                        <div className="text-xs mb-1" style={{ color: '#475569' }}>vs 30 Days Ago</div>
                         <div className="text-xl sm:text-2xl font-bold" style={{ color: '#EF4444' }}>
                           -{discount}%
                         </div>
@@ -282,15 +283,15 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
 
                     {/* Timeline */}
                     <div className="flex justify-between text-xs" style={{ color: '#94A3B8' }}>
-                      <span>30일 전</span>
-                      <span>오늘</span>
+                      <span>30 days ago</span>
+                      <span>Today</span>
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 2: 가격 하락 감지 */}
+            {/* Step 2: price drop detected */}
             {currentStep === 2 && (
               <div className="h-full flex flex-col items-center justify-center p-6 sm:p-12">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-6 sm:mb-8 animate-bounce" style={{ backgroundColor: '#FEF2F2' }}>
@@ -298,28 +299,28 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                 </div>
                 
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-center" style={{ color: '#0F172A' }}>
-                  가격 하락 감지!
+                  Price Drop Detected!
                 </h2>
                 <p className="text-base sm:text-lg mb-8 text-center" style={{ color: '#475569' }}>
-                  설정한 가격보다 낮아졌습니다
+                  The price is now below your target
                 </p>
 
                 <div className="w-full max-w-md">
                   <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6">
                     <div className="bg-white rounded-xl p-6 text-center mb-4">
                       <div className="text-sm mb-2" style={{ color: '#475569' }}>
-                        쿠팡 최저가
+                        Amazon Best Price
                       </div>
                       <div className="flex items-center justify-center gap-2 mb-3">
                         <div className="text-2xl line-through" style={{ color: '#94A3B8' }}>
-                          45,900원
+                          $49.99
                         </div>
                         <div className="text-4xl font-bold" style={{ color: '#EF4444' }}>
-                          43,200원
+                          $47.29
                         </div>
                       </div>
                       <div className="inline-block px-4 py-2 rounded-full text-sm font-bold" style={{ backgroundColor: '#FEE2E2', color: '#EF4444' }}>
-                        2,700원 할인 (6% ↓)
+                        Save $2.70 (5% off)
                       </div>
                     </div>
 
@@ -327,19 +328,19 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                       <div className="bg-white rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <TrendingDown className="w-4 h-4" style={{ color: '#EF4444' }} />
-                          <div className="text-xs font-semibold" style={{ color: '#475569' }}>최저가</div>
+                          <div className="text-xs font-semibold" style={{ color: '#475569' }}>Lowest Price</div>
                         </div>
                         <div className="text-lg font-bold" style={{ color: '#0F172A' }}>
-                          43,200원
+                          $47.29
                         </div>
                       </div>
                       <div className="bg-white rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <ShoppingCart className="w-4 h-4" style={{ color: '#2563EB' }} />
-                          <div className="text-xs font-semibold" style={{ color: '#475569' }}>판매처</div>
+                          <div className="text-xs font-semibold" style={{ color: '#475569' }}>Retailer</div>
                         </div>
                         <div className="text-lg font-bold" style={{ color: '#0F172A' }}>
-                          쿠팡
+                          Amazon
                         </div>
                       </div>
                     </div>
@@ -348,7 +349,7 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
               </div>
             )}
 
-            {/* Step 3: 알림 전송 */}
+            {/* Step 3: notification sent */}
             {currentStep === 3 && (
               <div className="h-full flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
                 {/* Notification Animation */}
@@ -365,31 +366,31 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                           <Bell className="w-5 h-5 text-white animate-pulse" />
                         </div>
                         <div className="flex-1 text-white">
-                          <div className="font-bold text-sm">헤이제노</div>
-                          <div className="text-xs opacity-90">지금 · 가격 알림</div>
+                          <div className="font-bold text-sm">KibbleWise</div>
+                          <div className="text-xs opacity-90">Now · Price Alert</div>
                         </div>
                       </div>
                       <div className="p-4">
                         <div className="font-bold text-base mb-2" style={{ color: '#0F172A' }}>
-                          🎉 설정한 가격보다 낮아졌어요!
+                          Price just dropped below your target!
                         </div>
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <img src={productImage} alt="사료" className="w-full h-full object-contain" />
+                            <img src={productImage} alt="dog food" className="w-full h-full object-contain" />
                           </div>
                           <div className="flex-1">
                             <div className="text-sm font-semibold mb-1" style={{ color: '#0F172A' }}>
-                              헤이제노 강아지 사료
+                              KibbleWise Adult Dog Food
                             </div>
                             <div className="text-lg font-bold" style={{ color: '#EF4444' }}>
-                              43,200원
+                              $47.29
                             </div>
                           </div>
                         </div>
                         <div className="bg-blue-50 rounded-lg p-3 text-xs" style={{ color: '#2563EB' }}>
                           <div className="flex items-center gap-1">
                             <Check className="w-3 h-3" />
-                            <span className="font-semibold">쿠팡에서 2,700원 할인 중</span>
+                            <span className="font-semibold">Now $2.70 lower on Amazon</span>
                           </div>
                         </div>
                       </div>
@@ -400,10 +401,10 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                 <div className="mt-80 sm:mt-96 w-full max-w-md">
                   <div className="text-center mb-6">
                     <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: '#0F172A' }}>
-                      실시간 알림 발송 완료
+                      Real-Time Alert Sent
                     </h2>
                     <p className="text-base" style={{ color: '#475569' }}>
-                      앱 푸시, 카카오톡으로 즉시 알림을 보냈어요
+                      Instant alerts were sent via app push and SMS
                     </p>
                   </div>
 
@@ -415,10 +416,10 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                         </div>
                         <div className="flex-1">
                           <div className="font-semibold text-sm" style={{ color: '#0F172A' }}>
-                            앱 푸시 알림
+                            App Push Notification
                           </div>
                           <div className="text-xs" style={{ color: '#475569' }}>
-                            실시간 알림 발송 완료
+                            Sent successfully
                           </div>
                         </div>
                       </div>
@@ -428,10 +429,10 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                         </div>
                         <div className="flex-1">
                           <div className="font-semibold text-sm" style={{ color: '#0F172A' }}>
-                            카카오톡 알림
+                            SMS Alert
                           </div>
                           <div className="text-xs" style={{ color: '#475569' }}>
-                            메시지 전송 완료
+                            Message delivered
                           </div>
                         </div>
                       </div>
@@ -445,11 +446,11 @@ export function PriceAlertModal({ isOpen, onClose }: PriceAlertModalProps) {
                         className="flex items-center justify-center gap-2 w-full py-4 rounded-xl text-white font-semibold text-center shadow-lg hover:shadow-xl transition-all text-base sm:text-lg group"
                         style={{ backgroundColor: '#2563EB' }}
                       >
-                        최저가 알림 받기
+                        Get Price Alerts
                         <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
                       </a>
                       <p className="text-xs text-center mt-3" style={{ color: '#94A3B8' }}>
-                        사전 등록 시 1,000P 리워드 제공
+                        Join early access and get 1,000 bonus points
                       </p>
                     </div>
                   </div>
