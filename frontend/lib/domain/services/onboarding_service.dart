@@ -14,6 +14,7 @@ class OnboardingService {
 
   /// 로그인 직후: 서버에 펫 보유 여부를 조회해 로컬 온보딩 완료 상태를 동기화하고,
   /// 홈으로 갈지(true) 온보딩으로 갈지(false) 반환.
+  /// API 실패 시 기존 온보딩 완료 상태를 유지해, 네트워크 오류로 인해 이미 완료한 사용자가 온보딩으로 돌아가는 것을 방지.
   Future<bool> shouldGoToHomeAfterLogin() async {
     try {
       final pets = await _petService.getAllPetSummaries();
@@ -21,8 +22,9 @@ class OnboardingService {
       await _repository.setOnboardingCompleted(hasPets);
       return hasPets;
     } catch (_) {
-      await _repository.setOnboardingCompleted(false);
-      return false;
+      // API/네트워크 실패 시: 기존 완료 여부를 유지. 이미 완료된 사용자는 홈으로, 미완료는 온보딩으로.
+      final wasCompleted = await _repository.isOnboardingCompleted();
+      return wasCompleted;
     }
   }
 

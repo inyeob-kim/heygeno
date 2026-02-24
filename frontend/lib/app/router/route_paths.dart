@@ -13,6 +13,7 @@ class RoutePaths {
   // 인증
   static const String signIn = '/signin';
   static const String signUp = '/signup';
+  static const String verifyEmail = '/verify-email';
   
   // 온보딩
   static const String onboarding = '/onboarding';

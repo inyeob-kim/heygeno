@@ -1,5 +1,5 @@
 """사용자 및 인증 관련 모델 (재사용 가능한 인증·구독 모듈)"""
-from sqlalchemy import Column, String, Index, UniqueConstraint, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, Boolean, Index, UniqueConstraint, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy import func
@@ -39,6 +39,7 @@ class User(Base, TimestampMixin):
     provider_user_id = Column(String(255), nullable=False)  # OAuth sub / device_uid
     firebase_uid = Column(String(128), nullable=True, unique=True)  # Firebase UID (이메일/Google/Apple)
     email = Column(String(255), nullable=True)
+    email_verified = Column(Boolean, nullable=False, server_default="false")  # EMAIL signup 시 검증 전 false
     password_hash = Column(String(255), nullable=True)  # EMAIL provider 전용
     nickname = Column(String(50), nullable=False, server_default="User")
     timezone = Column(String(50), default="America/New_York", nullable=False)

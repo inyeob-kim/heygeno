@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     # Firebase (for firebase-login; path to service account JSON)
     FIREBASE_CREDENTIALS_PATH: Optional[str] = None
 
+    # Email verification (인증 링크 base; 미설정 시 로그만)
+    FRONTEND_VERIFY_URL: Optional[str] = None  # e.g. https://yourapp.com/verify
+    SENDGRID_API_KEY: Optional[str] = None    # 설정 시 SendGrid로 발송
+    EMAIL_FROM: Optional[str] = None          # 발신 주소
+
     class Config:
         env_file = _ENV_FILE
         case_sensitive = True

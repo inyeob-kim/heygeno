@@ -309,7 +309,7 @@ class RecommendationScoringService:
         reasons.extend(species_reasons)
         
         if species_score == 0:
-            return (0.0, ["종류 불일치로 제외"])
+            return (0.0, ["종류 불일치로 제외"], 0.0)
         
         # 2. 나이 단계 매칭 (25점)
         age_score, age_reasons, age_penalty = RecommendationScoringService._match_age_stage(

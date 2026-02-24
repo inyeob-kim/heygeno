@@ -23,6 +23,7 @@ import '../../features/me/presentation/screens/privacy_settings_screen.dart';
 import '../../features/me/presentation/screens/help_screen.dart';
 import '../../features/me/presentation/screens/contact_screen.dart';
 import '../../features/me/presentation/screens/app_info_screen.dart';
+import '../../features/me/presentation/screens/account_manage_screen.dart';
 import '../../features/me/presentation/screens/recommendation_history_screen.dart';
 import '../../features/home/presentation/screens/recommendation_animation_screen.dart';
 import '../../features/home/presentation/screens/recommendation_detail_screen.dart';
@@ -33,6 +34,7 @@ import '../../features/recommendation/presentation/screens/quick_profile_wizard.
 import '../../features/recommendation/presentation/screens/quick_recommendation_list_screen.dart';
 import '../../data/repositories/recommendation_repository.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
+import '../../features/auth/presentation/screens/verify_email_screen.dart';
 import 'recommendation_animation_args.dart';
 import '../../data/models/pet_summary_dto.dart';
 import '../../data/models/recommendation_dto.dart';
@@ -93,6 +95,15 @@ GoRouter _createRouter(Ref ref) {
         path: RoutePaths.signUp,
         name: RoutePaths.signUp,
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.verifyEmail,
+        name: RoutePaths.verifyEmail,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'];
+          final token = state.uri.queryParameters['token'];
+          return VerifyEmailScreen(email: email, token: token);
+        },
       ),
       // 온보딩 라우트 (채팅형만 사용)
       GoRoute(
@@ -252,7 +263,10 @@ GoRouter _createRouter(Ref ref) {
         name: RoutePaths.me,
         builder: (context, state) => const MyScreen(),
         routes: [
-          // 설정 화면들 (중첩 라우트)
+          GoRoute(
+            path: 'account',
+            builder: (context, state) => const AccountManageScreen(),
+          ),
           GoRoute(
             path: 'privacy',
             builder: (context, state) => const PrivacySettingsScreen(),

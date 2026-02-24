@@ -12,6 +12,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'app/app.dart';
+import 'app/router/app_router.dart';
+import 'app/router/route_paths.dart';
+import 'core/network/api_client.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -30,10 +33,17 @@ Future<void> main() async {
     debugPrint("Please make sure .env file exists in frontend/ directory");
     rethrow; // .env 파일이 필수이므로 에러를 다시 던짐
   }
-  
+
   runApp(
-    const ProviderScope(
-      child: App(),
+    ProviderScope(
+      overrides: [
+        // 401(Invalid or expired token) 시 저장된 토큰 삭제 후 시작 화면으로 이동
+        unauthorizedRedirectProvider.overrideWith((ref) {
+          final router = ref.read(routerProvider);
+          return () => router.go(RoutePaths.start);
+        }),
+      ],
+      child: const App(),
     ),
   );
 }

@@ -12,7 +12,7 @@ import 'dart:io' if (dart.library.html) 'platform_stub.dart' as io;
 class ApiClient {
   final Dio _dio;
 
-  ApiClient(this._dio) {
+  ApiClient(this._dio, {void Function()? onUnauthorized}) {
     // iOS/Android 실제 디바이스에서는 localhost 대신 Mac의 IP 사용
     final baseUrl = _getBaseUrl();
     _dio.options.baseUrl = baseUrl;
@@ -35,8 +35,8 @@ class ApiClient {
     print('[ApiClient] Env.baseUrl: ${Env.baseUrl}');
     print('[ApiClient] Env.deviceBaseUrl: ${Env.deviceBaseUrl}');
 
-    // Interceptors (Auth Bearer → Logging)
-    _dio.interceptors.add(AuthTokenInterceptor());
+    // Interceptors (Auth Bearer + 401 시 로그아웃 → Logging)
+    _dio.interceptors.add(AuthTokenInterceptor(onUnauthorized: onUnauthorized));
     _dio.interceptors.add(LoggingInterceptor());
   }
 
@@ -179,9 +179,13 @@ class ApiClient {
   }
 }
 
+/// 401 시 시작 화면으로 이동할 콜백. 앱에서 오버라이드하여 router.go(RoutePaths.start) 등 설정.
+final unauthorizedRedirectProvider = Provider<void Function()?>((ref) => null);
+
 // Riverpod Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
   final dio = Dio();
-  return ApiClient(dio);
+  final onUnauthorized = ref.watch(unauthorizedRedirectProvider);
+  return ApiClient(dio, onUnauthorized: onUnauthorized);
 });
 

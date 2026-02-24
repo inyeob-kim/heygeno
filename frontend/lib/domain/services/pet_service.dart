@@ -121,7 +121,12 @@ class PetService {
       print('[PetService] DioException 발생: ${e.message}');
       print('[PetService] 응답 상태 코드: ${e.response?.statusCode}');
       print('[PetService] 응답 데이터: ${e.response?.data}');
-      
+
+      // 401/403: 토큰 만료·무효 → 예외 전파. (스플래시에서 기존 온보딩 완료 상태 유지 후 시작 화면으로 보냄)
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        print('[PetService] 401/403 - 인증 오류, 예외 전파');
+        rethrow;
+      }
       if (e.response?.statusCode == 404) {
         print('[PetService] 404 - 펫 없음');
         return [];

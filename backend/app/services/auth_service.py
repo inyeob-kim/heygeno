@@ -2,9 +2,11 @@
 인증 서비스 (재사용 가능한 인증 모듈)
 
 - 소셜 로그인: (provider, oauth_id) 조회/생성, user_tokens UPSERT
-- 이메일 로그인: password_hash 검증
+- 이메일 로그인: password_hash 검증, email_verified 체크
+- 이메일 인증: 회원가입 시 인증 메일 발송, 토큰으로 검증 완료
 - 탈퇴/복구: withdrawal_log, 30일 이내 복구
 """
+import secrets
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
 from sqlalchemy import select
@@ -14,7 +16,9 @@ from fastapi import HTTPException, status
 from app.models.user import User, UserStatus
 from app.models.user_token import UserToken
 from app.models.withdrawal_log import WithdrawalLog
+from app.models.email_verification_token import EmailVerificationToken
 from app.core.security import verify_password as pwd_verify, get_password_hash as pwd_hash
+from app.services.email_service import send_verification_email
 
 
 # ----- id_token 검증 및 oauth_id 추출 -----
@@ -172,20 +176,27 @@ async def create_user_social(
     email: str | None = None,
     nickname: str | None = None,
 ) -> User:
-    """소셜 로그인으로 새 사용자 생성"""
+    """소셜 로그인으로 새 사용자 생성 (Apple/Google 등은 이메일 이미 검증된 것으로 간주)"""
+    provider_upper = provider.upper()
+    email_verified = provider_upper in ("APPLE", "GOOGLE")  # 소셜은 인증된 이메일로 간주
     user = User(
-        provider=provider,
+        provider=provider_upper,
         provider_user_id=oauth_id,
         firebase_uid=firebase_uid,
         email=email,
         nickname=nickname or "User",
         status=UserStatus.ACTIVE.value,
         plan_type="FREE",
+        email_verified=email_verified,
     )
     db.add(user)
     await db.flush()
     await db.refresh(user)
     return user
+
+
+def _generate_verification_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 async def create_user_email(
@@ -194,7 +205,7 @@ async def create_user_email(
     password: str,
     nickname: str | None = None,
 ) -> User:
-    """이메일 회원가입: provider=EMAIL, provider_user_id=email"""
+    """이메일 회원가입: provider=EMAIL, email_verified=False, 인증 메일 발송"""
     existing = await get_user_by_email(db, email)
     if existing:
         raise HTTPException(
@@ -209,15 +220,28 @@ async def create_user_email(
         nickname=nickname or email.split("@")[0][:50] or "User",
         status=UserStatus.ACTIVE.value,
         plan_type="FREE",
+        email_verified=False,
     )
     db.add(user)
     await db.flush()
     await db.refresh(user)
+
+    token_str = _generate_verification_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    evt = EmailVerificationToken(
+        user_id=user.id,
+        token=token_str,
+        expires_at=expires_at,
+    )
+    db.add(evt)
+    await db.flush()
+    send_verification_email(email, token_str)
+
     return user
 
 
 async def email_signin(db: AsyncSession, email: str, password: str) -> User:
-    """이메일 로그인: 비밀번호 검증 후 사용자 반환"""
+    """이메일 로그인: 비밀번호 검증 후 사용자 반환. 미인증 시 403."""
     user = await get_user_by_email(db, email)
     if not user or not user.password_hash:
         raise HTTPException(
@@ -229,12 +253,70 @@ async def email_signin(db: AsyncSession, email: str, password: str) -> User:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    if user.email_verified is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "EMAIL_NOT_VERIFIED",
+                "message": "Email not verified. Please check your inbox and click the verification link.",
+            },
+        )
     if user.status == UserStatus.WITHDRAWN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account withdrawn",
         )
     return user
+
+
+# ----- 이메일 인증 (verify / resend) -----
+
+async def verify_email_by_token(db: AsyncSession, token: str) -> User | None:
+    """토큰으로 이메일 인증 처리. 성공 시 user 반환, 실패/만료 시 None."""
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        select(EmailVerificationToken)
+        .where(
+            EmailVerificationToken.token == token,
+            EmailVerificationToken.expires_at > now,
+        )
+    )
+    evt = result.scalar_one_or_none()
+    if not evt:
+        return None
+    user = await db.get(User, evt.user_id)
+    if not user:
+        return None
+    user.email_verified = True
+    await db.delete(evt)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+async def resend_verification_email(db: AsyncSession, email: str) -> None:
+    """해당 이메일 사용자에게 인증 메일 재발송. 없거나 이미 인증된 경우 HTTPException."""
+    user = await get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email",
+        )
+    if user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified",
+        )
+    # 기존 토큰 삭제 후 새 토큰 생성
+    result = await db.execute(select(EmailVerificationToken).where(EmailVerificationToken.user_id == user.id))
+    for ev in result.scalars().all():
+        await db.delete(ev)
+    token_str = _generate_verification_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    evt = EmailVerificationToken(user_id=user.id, token=token_str, expires_at=expires_at)
+    db.add(evt)
+    await db.flush()
+    send_verification_email(email, token_str)
 
 
 # ----- 탈퇴 로그 / 복구 -----

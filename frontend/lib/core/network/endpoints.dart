@@ -10,6 +10,8 @@ class Endpoints {
   static const String authRefresh = '/auth/refresh';
   static const String authEmailSignUp = '/auth/email/signup';
   static const String authEmailSignIn = '/auth/email/signin';
+  static const String authEmailVerify = '/auth/email/verify';
+  static const String authEmailResend = '/auth/email/resend';
 
   // Users
   static const String currentUser = '/users/me';

@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.core.security import create_access_token
 from app.services.auth_service import (
     social_login,
     register_after_social,
@@ -21,7 +20,10 @@ from app.services.auth_service import (
     email_signin,
     get_or_create_user_by_device_uid,
     get_or_create_user_by_firebase_uid,
+    verify_email_by_token,
+    resend_verification_email,
 )
+from app.core.security import create_access_token
 from app.core.firebase import initialize_firebase, verify_firebase_token, get_firebase_app
 from app.core.config import settings
 
@@ -84,6 +86,14 @@ class EmailSignUpRequest(BaseModel):
 class EmailSignInRequest(BaseModel):
     email: str
     password: str
+
+
+class EmailVerifyRequest(BaseModel):
+    token: str
+
+
+class EmailResendRequest(BaseModel):
+    email: str
 
 
 class GuestLoginRequest(BaseModel):
@@ -266,12 +276,12 @@ async def post_refresh(
     )
 
 
-@router.post("/email/signup", response_model=RegisterResponse)
+@router.post("/email/signup")
 async def post_email_signup(
     body: EmailSignUpRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """이메일 회원가입"""
+    """이메일 회원가입. 인증 메일 발송 후 201 반환 (로그인은 인증 완료 후 signin)."""
     user = await create_user_email(
         db,
         email=body.email.strip().lower(),
@@ -279,16 +289,43 @@ async def post_email_signup(
         nickname=body.nickname,
     )
     await db.commit()
-    await db.refresh(user)
+    return {
+        "message": "verification_email_sent",
+        "email": body.email.strip().lower(),
+    }
+
+
+@router.post("/email/verify")
+async def post_email_verify(
+    body: EmailVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """이메일 인증 토큰으로 검증 완료. 성공 시 access_token 반환(선택 로그인)."""
+    from fastapi import HTTPException, status
+    user = await verify_email_by_token(db, body.token.strip())
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+    await db.commit()
     access_token = create_access_token(data={"sub": str(user.id)})
-    return RegisterResponse(
-        access_token=access_token,
-        user_id=str(user.id),
-        provider=user.provider,
-        oauth_id=user.provider_user_id,
-        nickname=user.nickname,
-        status=user.status,
-    )
+    return {
+        "message": "verified",
+        "access_token": access_token,
+        "user_id": str(user.id),
+    }
+
+
+@router.post("/email/resend")
+async def post_email_resend(
+    body: EmailResendRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """인증 메일 재발송."""
+    await resend_verification_email(db, body.email.strip().lower())
+    await db.commit()
+    return {"message": "sent"}
 
 
 @router.post("/guest-login", response_model=SocialLoginResponse)

@@ -41,6 +41,7 @@ from app.models.point import PointWallet, PointLedger
 from app.models.referral import ReferralCode, Referral, ReferralStatus
 from app.models.user_reco_prefs import UserRecoPrefs
 from app.models.ingredient_config import HarmfulIngredient, AllergenKeyword
+from app.models.email_verification_token import EmailVerificationToken
 
 __all__ = [
     "User",
@@ -81,4 +82,5 @@ __all__ = [
     "ReferralCode", "Referral", "ReferralStatus",
     "UserRecoPrefs",
     "HarmfulIngredient", "AllergenKeyword",
+    "EmailVerificationToken",
 ]

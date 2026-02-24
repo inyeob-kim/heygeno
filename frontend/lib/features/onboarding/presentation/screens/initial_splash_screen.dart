@@ -5,6 +5,8 @@ import '../../../../app/router/route_paths.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../data/repositories/auth_repository.dart';
+import '../../../../domain/services/onboarding_service.dart';
 
 /// 앱 시작 시 첫 번째로 표시되는 헤이제노 스플래시 스크린 (3초)
 /// 온보딩 완료 여부를 확인하여 적절한 화면으로 이동
@@ -57,11 +59,27 @@ class _InitialSplashScreenState extends ConsumerState<InitialSplashScreen>
   }
 
   Future<void> _checkAndNavigate() async {
-    // 최소 3초 대기 후 시작 화면으로 이동
     await Future.delayed(const Duration(seconds: 3));
-
     if (!mounted) return;
-    context.go(RoutePaths.start);
+
+    final authRepo = ref.read(authRepositoryProvider);
+    final hasToken = await authRepo.hasAccessToken();
+    if (!mounted) return;
+
+    if (!hasToken) {
+      context.go(RoutePaths.start);
+      return;
+    }
+
+    try {
+      final onboardingService = ref.read(onboardingServiceProvider);
+      final goHome = await onboardingService.shouldGoToHomeAfterLogin();
+      if (!mounted) return;
+      context.go(goHome ? RoutePaths.home : RoutePaths.onboarding);
+    } catch (_) {
+      if (!mounted) return;
+      context.go(RoutePaths.start);
+    }
   }
 
   @override

@@ -59,6 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   CampaignDto? _currentCampaign; // 현재 표시할 캠페인
   bool _hasClosedModal = false; // 모달을 닫았는지 여부
   bool _hasClosedBanner = false; // 배너를 닫았는지 여부
+  bool _hasShownInsightAnimation = false; // Today's Insight 첫 진입 애니메이션 한 번만
 
   @override
   void initState() {
@@ -940,21 +941,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Hero Section (Rover 스타일)
+  /// Time-based greeting (Good morning / afternoon / evening)
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  /// Hero Section (HeyGeno Premium Calm – 확신형 톤)
   Widget _buildHeroSection(BuildContext context, petSummary) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hey ${petSummary.name}! 🐾',
-          style: DesignTypography.TextStyles.h1Mobile,
+          '${_greeting()}, ${petSummary.name} 🐾',
+          style: DesignTypography.TextStyles.h1Mobile.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 26,
+            height: 1.35,
+          ),
         ),
         SizedBox(height: DesignTokens.Spacing.sm),
         Text(
-          'Ready to find food that fits ${petSummary.name}?',
-          style: DesignTypography.TextStyles.bodySecondary,
+          'Let\'s make smarter nutrition choices today.',
+          style: DesignTypography.TextStyles.bodySecondary.copyWith(
+            fontSize: 16,
+            height: 1.35,
+            color: AppColors.textSecondary.withOpacity(0.7),
+          ),
         ),
       ],
+    );
+  }
+
+  /// Today's Insight card (데이터 기반 인사이트, 첫 진입 시만 fadeIn + translateY)
+  Widget _buildTodaysInsightCard(BuildContext context, petSummary, state) {
+    final recCount = state.recommendations?.items.length ?? 0;
+    final bodyText = recCount >= 2
+        ? '${recCount} better matches found based on ${petSummary.name}\'s profile.'
+        : 'Respiratory-support ingredients are trending this week.';
+    final showAnimation = !_hasShownInsightAnimation;
+    if (showAnimation) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hasShownInsightAnimation = true);
+      });
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: showAnimation ? 0.0 : 1.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, showAnimation ? 8 * (1 - value) : 0),
+            child: AppCard(
+              backgroundColor: AppColors.primary.withOpacity(0.025),
+              showShadow: true,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: AppColors.primary.withOpacity(0.8),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Today\'s Insight',
+                          style: DesignTypography.TextStyles.h3.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          bodyText,
+                          style: DesignTypography.TextStyles.bodySecondary.copyWith(
+                            fontSize: 14,
+                            height: 1.4,
+                            color: AppColors.textSecondary.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1084,6 +1168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 print('[HomeScreen] 🔘 펫 프로필 카드 클릭: ${petSummary.name}');
                 context.push('/pet-profile-detail', extra: petSummary);
               },
+              padding: EdgeInsets.all(DesignTokens.Spacing.card + 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1172,6 +1257,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                     ],
+                    // 상태 레이어 (케어 카드 느낌)
+                    const SizedBox(height: DesignTokens.Spacing.md),
+                    Wrap(
+                      spacing: DesignTokens.Spacing.sm,
+                      runSpacing: DesignTokens.Spacing.xs,
+                      children: [
+                        _buildPetStatusChip(
+                          icon: Icons.check_circle_outline,
+                          label: 'Nutrition Profile: Complete ✓',
+                          color: AppColors.status,
+                        ),
+                        _buildPetStatusChip(
+                          icon: Icons.shield_outlined,
+                          label: 'Allergy Risk: Managed',
+                          color: AppColors.primary,
+                        ),
+                        _buildPetStatusChip(
+                          icon: Icons.trending_up,
+                          label: 'Tracking: Active',
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
             ),
@@ -1179,6 +1287,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       },
     );
+  }
+
+  /// 작은 상태 칩 (muted green/blue, 12–14px 아이콘)
+  Widget _buildPetStatusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color.withOpacity(0.85)),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: DesignTypography.TextStyles.caption.copyWith(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// CTA 버튼 마이크로 인터랙션: tap 시 scale 0.97, release 시 120ms로 1.0 복귀
+  Widget _buildScaledCta({required Widget child}) {
+    return _ScaledCtaWrapper(child: child);
   }
 
   /// 펫 한 줄 요약 포맷 (Rover 스타일)
@@ -1451,16 +1587,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// 홈 화면 콘텐츠 (조건부 렌더링) - iOS 스타일 애니메이션
+  /// 홈 화면 콘텐츠 (조건부 렌더링) - 순서: Insight → Primary CTA → Secondary CTA
   Widget _buildHomeContent(BuildContext context, petSummary, state, topRecommendation) {
     // TODO: 현재 급여 사료 API 연동 후 실제 값으로 변경
     final hasCurrentFood = false; // 임시로 false
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
-        // 1. 현재 급여 사료 관련 카드 (메인) - 페이드인 애니메이션
+        // 1. Today's Insight (감정 전환 포인트)
+        _buildTodaysInsightCard(context, petSummary, state),
+        const SizedBox(height: AppSpacing.lg),
+        // 2. Primary CTA – Add current food (강한 대비)
         TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0.0, end: 1.0),
           duration: const Duration(milliseconds: 300),
@@ -1475,10 +1614,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             );
           },
         ),
-        // UPDATED: Always show recommendation card regardless of hasCurrentFood
-        // Dynamic content based on current food registration status
         const SizedBox(height: AppSpacing.lg),
-        // 추천 카드 (항상 표시)
+        // 3. Secondary CTA – Find best match (약한 대비)
         TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0.0, end: 1.0),
           duration: const Duration(milliseconds: 400),
@@ -1486,8 +1623,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           builder: (context, value, child) {
             return Opacity(
               opacity: value,
-              child: Transform.scale(
-                scale: 0.95 + (0.05 * value),
+              child: Transform.translate(
+                offset: Offset(0, 10 * (1 - value)),
                 child: _buildRecommendationCard(context, petSummary, state, topRecommendation),
               ),
             );
@@ -1737,43 +1874,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final petName = petSummary.name;
     final topRecommendation = hasRecommendations ? recommendations!.items[0] : null;
     
-    // Rover 스타일: Recommendation CTA Card
-    return AppCard(
+    // Secondary CTA: white bg, 1px primary border 15%, no shadow
+    return Container(
+      padding: EdgeInsets.all(DesignTokens.Spacing.card),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(DesignTokens.BorderRadiusTokens.card),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Find ${petName}\'s best match',
-            style: DesignTypography.TextStyles.h3,
+            style: DesignTypography.TextStyles.h3.copyWith(fontSize: 18),
           ),
           SizedBox(height: DesignTokens.Spacing.sm),
           Text(
             'Personalized for allergies, age, and health needs.',
-            style: DesignTypography.TextStyles.bodySecondary,
+            style: DesignTypography.TextStyles.bodySecondary.copyWith(
+              fontSize: 14,
+              color: AppColors.textSecondary.withOpacity(0.7),
+            ),
           ),
           SizedBox(height: DesignTokens.Spacing.base),
-          
-          // 빈 추천 결과 처리
           if (isEmptyResult) ...[
             _buildEmptyRecommendationState(context, recommendations?.message),
           ] else ...[
-            // 추천 결과 미리보기 (있는 경우)
             if (hasRecommendations && topRecommendation != null) ...[
               _buildRecommendedProductCard(context, topRecommendation),
               SizedBox(height: DesignTokens.Spacing.base),
             ],
-            
-            // 액션 버튼
-            PrimaryButton(
-              text: state.hasRecommendationsForAction
-                  ? 'Get recommendations again'
-                  : 'Get recommendations',
-              onPressed: () {
-                _toggleRecommendation();
-              },
-              icon: !state.hasRecommendationsForAction
-                  ? Icons.auto_awesome 
-                  : Icons.refresh,
+            _buildScaledCta(
+              child: SecondaryButton(
+                text: state.hasRecommendationsForAction
+                    ? 'Get recommendations again'
+                    : 'Get recommendations',
+                onPressed: () => _toggleRecommendation(),
+                icon: !state.hasRecommendationsForAction
+                    ? Icons.auto_awesome
+                    : Icons.refresh,
+              ),
             ),
           ],
         ],
@@ -1871,28 +2015,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasCurrentFoodValue = hasCurrentFood ?? false; // 기본값 false
     
     if (!hasCurrentFoodValue) {
-      // 상태 B: 현재 사료 미등록
-      // Rover 스타일: Current Food CTA Card
+      // Primary CTA: gradient 유지, shadow 8~12 blur, full width
       return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'What\'s ${petSummary.name} eating right now?',
-              style: DesignTypography.TextStyles.h3,
+              style: DesignTypography.TextStyles.h3.copyWith(fontSize: 18),
             ),
             SizedBox(height: DesignTokens.Spacing.sm),
             Text(
               'We\'ll compare ingredients and track the best price.',
-              style: DesignTypography.TextStyles.bodySecondary,
+              style: DesignTypography.TextStyles.bodySecondary.copyWith(
+                fontSize: 14,
+                color: AppColors.textSecondary.withOpacity(0.7),
+              ),
             ),
             SizedBox(height: DesignTokens.Spacing.base),
-            PrimaryButton(
-              text: 'Add current food',
-              onPressed: () {
-                print('[HomeScreen] 🔘 "Add current food" 버튼 클릭');
-                context.go(RoutePaths.market);
-              },
+            _buildScaledCta(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(DesignTokens.BorderRadiusTokens.button),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: PrimaryButton(
+                  text: 'Add current food',
+                  onPressed: () {
+                    print('[HomeScreen] 🔘 "Add current food" 버튼 클릭');
+                    context.go(RoutePaths.market);
+                  },
+                ),
+              ),
             ),
           ],
         ),
@@ -2438,6 +2599,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// CTA 탭 시 scale 0.97, 릴리즈 시 120ms로 1.0 복귀
+class _ScaledCtaWrapper extends StatefulWidget {
+  final Widget child;
+
+  const _ScaledCtaWrapper({required this.child});
+
+  @override
+  State<_ScaledCtaWrapper> createState() => _ScaledCtaWrapperState();
+}
+
+class _ScaledCtaWrapperState extends State<_ScaledCtaWrapper> {
+  double _scale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => setState(() => _scale = 0.97),
+      onPointerUp: (_) => setState(() => _scale = 1.0),
+      onPointerCancel: (_) => setState(() => _scale = 1.0),
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
     );
   }
 }

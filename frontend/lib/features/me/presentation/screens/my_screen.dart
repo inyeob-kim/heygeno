@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../ui/widgets/app_top_bar.dart';
+import '../../../../../ui/widgets/pet_selector.dart';
 import '../../../../../ui/widgets/setting_item.dart';
 import '../../../../../ui/widgets/toggle_switch.dart';
 import '../../../../../app/theme/app_typography.dart';
@@ -18,11 +19,14 @@ import '../../../../../features/home/presentation/widgets/pet_avatar.dart';
 import '../../../../../data/models/pet_summary_dto.dart';
 import '../../../../../app/router/route_paths.dart';
 import '../controllers/my_controller.dart';
-import '../../../../../features/benefits/presentation/controllers/benefits_controller.dart';
 import '../../../../../data/repositories/auth_repository.dart';
+import '../../../../../features/benefits/presentation/controllers/benefits_controller.dart';
+import '../../../../../domain/services/user_service.dart';
+import '../../../../../data/repositories/user_repository.dart';
 import 'package:pet_food_app/l10n/app_localizations.dart';
 
-/// 실제 API 데이터를 사용하는 My Screen
+/// 계정 허브 화면 (More 탭)
+/// 관리·설정·계정만. 추천/가격 알림/기능 요약 없음.
 class MyScreen extends ConsumerStatefulWidget {
   const MyScreen({super.key});
 
@@ -32,18 +36,17 @@ class MyScreen extends ConsumerStatefulWidget {
 
 class _MyScreenState extends ConsumerState<MyScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _notificationEnabled = true;
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
-  bool _notificationEnabled = true; // 알림 설정 상태
 
   @override
   void initState() {
     super.initState();
-    // 화면 진입 시 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(myControllerProvider.notifier).refresh();
     });
@@ -52,113 +55,69 @@ class _MyScreenState extends ConsumerState<MyScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(myControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
 
-    // 로딩 상태
-    if (state.isLoading) {
+    if (state.isLoading && state.pets.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
           child: Column(
             children: [
-              AppTopBar(title: AppLocalizations.of(context)!.tab_more, showBackButton: false),
-              const Expanded(
-                child: Center(child: LoadingWidget()),
+              AppTopBar(
+                title: '',
+                showBackButton: false,
+                backgroundColor: Colors.white,
+                leadingWidget: const PetSelector(),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none),
+                    color: AppColors.textSecondary,
+                    iconSize: 26,
+                    onPressed: () {},
+                  ),
+                ],
               ),
+              const Expanded(child: Center(child: LoadingWidget())),
             ],
           ),
         ),
       );
     }
 
-    // 에러 상태
-    if (state.error != null && state.petSummary == null) {
+    if (state.error != null && state.pets.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: EmptyState(
           icon: Icons.error_outline,
-          title: state.error ?? AppLocalizations.of(context)!.me_errorOccurred,
-          buttonText: AppLocalizations.of(context)!.action_tryAgain,
+          title: state.error ?? l10n.me_errorOccurred,
+          buttonText: l10n.action_tryAgain,
           onButtonPressed: () => ref.read(myControllerProvider.notifier).refresh(),
         ),
       );
     }
 
-    // Benefits 데이터 가져오기 (Rewards 메뉴용)
-    final benefitsState = ref.watch(benefitsControllerProvider);
-    final rewardsPoints = benefitsState.totalPoints;
-    final rewardsMissionsCount = benefitsState.missions.length;
-    
-    final settings = [
-      SettingData(
-        icon: Icons.card_giftcard,
-        label: AppLocalizations.of(context)!.me_rewards,
-        value: AppLocalizations.of(context)!.me_rewardsSubtitle(rewardsPoints, rewardsMissionsCount),
-        hasChevron: true,
-        onTap: () {
-          context.push(RoutePaths.benefits);
-        },
-      ),
-      SettingData(
-        icon: Icons.notifications_outlined,
-        label: AppLocalizations.of(context)!.me_notificationSettings,
-        hasToggle: true,
-        onTap: null, // 토글로 처리
-      ),
-      SettingData(
-        icon: Icons.lock_outline,
-        label: AppLocalizations.of(context)!.me_privacy,
-        hasChevron: true,
-        onTap: () {
-          context.push('/me/privacy');
-        },
-      ),
-      SettingData(
-        icon: Icons.help_outline,
-        label: AppLocalizations.of(context)!.me_help,
-        hasChevron: true,
-        onTap: () {
-          context.push('/me/help');
-        },
-      ),
-      SettingData(
-        icon: Icons.email_outlined,
-        label: AppLocalizations.of(context)!.me_contact,
-        hasChevron: true,
-        onTap: () {
-          context.push('/me/contact');
-        },
-      ),
-      SettingData(
-        icon: Icons.lightbulb_outline,
-        label: AppLocalizations.of(context)!.me_featureRequest,
-        hasChevron: true,
-        onTap: () {
-          _showFeatureRequestBottomSheet(context);
-        },
-      ),
-      SettingData(
-        icon: Icons.info_outline,
-        label: AppLocalizations.of(context)!.me_appInfo,
-        hasChevron: true,
-        onTap: () {
-          context.push('/me/app-info');
-        },
-      ),
-      SettingData(
-        icon: Icons.logout,
-        label: AppLocalizations.of(context)!.me_logOut,
-        hasChevron: false,
-        isDestructive: true,
-        onTap: () => _showLogOutConfirm(context),
-      ),
-    ];
+    final petName = state.petSummary?.name ?? 'your pet';
+    const sectionSpacing = 28.0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(title: AppLocalizations.of(context)!.tab_more, showBackButton: false),
+            AppTopBar(
+              title: '',
+              showBackButton: false,
+              backgroundColor: Colors.white,
+              leadingWidget: const PetSelector(),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_none),
+                  color: AppColors.textSecondary,
+                  iconSize: 26,
+                  onPressed: () {},
+                ),
+              ],
+            ),
             Expanded(
               child: CupertinoScrollbar(
                 controller: _scrollController,
@@ -170,36 +129,665 @@ class _MyScreenState extends ConsumerState<MyScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      // 펫 프로필 카드 섹션 (가로 스크롤)
-                      _buildPetProfilesSection(state.pets),
-                      const SizedBox(height: 24),
-                      // Settings
-                      _buildSectionCard(
-                        title: AppLocalizations.of(context)!.me_settings,
-                        subtitle: AppLocalizations.of(context)!.me_settingsSubtitle,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...settings.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final setting = entry.value;
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: index == settings.length - 1 ? 0 : 12,
-                                ),
-                                child: _buildSettingItem(setting),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl * 2),
+                      _buildAccountCard(context, petName),
+                      const SizedBox(height: sectionSpacing),
+                      _buildMyPetsSection(context, state.pets),
+                      const SizedBox(height: sectionSpacing),
+                      _buildRewardsSection(context),
+                      const SizedBox(height: sectionSpacing),
+                      _buildAppPreferencesSection(context),
+                      const SizedBox(height: sectionSpacing),
+                      _buildPrivacyAndDataSection(context),
+                      const SizedBox(height: sectionSpacing),
+                      _buildSupportSection(context),
+                      const SizedBox(height: sectionSpacing),
+                      _buildLogOut(context),
+                      const SizedBox(height: AppSpacing.xxxl),
                     ],
                   ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Account Hero Card — radius 20, light blue tint 2–3%, Rewards bold; 0P hint when zero
+  Widget _buildAccountCard(BuildContext context, String petName) {
+    final l10n = AppLocalizations.of(context)!;
+    final benefitsState = ref.watch(benefitsControllerProvider);
+    final points = benefitsState.totalPoints;
+    final isZeroPoints = points == 0;
+
+    return FutureBuilder<UserDto?>(
+      future: ref.read(userServiceProvider).getCurrentUser().then<UserDto?>((v) => v).catchError((_) => null),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = user?.nickname ?? 'Guest';
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.025),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.me_accountTitle,
+                style: AppTypography.body.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.me_accountSubtitle(petName),
+                style: AppTypography.small.copyWith(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      size: 28,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          style: AppTypography.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${l10n.me_rewards}: ${points}P',
+                          style: AppTypography.small.copyWith(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (isZeroPoints) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            l10n.me_rewardsZeroHint,
+                            style: AppTypography.small.copyWith(
+                              fontSize: 12,
+                              color: AppColors.textSecondary.withOpacity(0.6),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => context.push('/me/account'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(
+                      color: AppColors.primary.withOpacity(0.15),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.me_manageAccount,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Rewards section — pure white card, lower shadow; labels 70%/60% opacity; number primary blue
+  Widget _buildRewardsSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final benefitsState = ref.watch(benefitsControllerProvider);
+    final totalPoints = benefitsState.totalPoints;
+    final missions = benefitsState.missions;
+    final completedCount = benefitsState.completedCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.me_rewards,
+          style: AppTypography.body.copyWith(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.me_rewardsEarnSubtitle,
+          style: AppTypography.small.copyWith(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.me_availablePoints,
+                style: AppTypography.small.copyWith(
+                  fontSize: 13,
+                  color: AppColors.textSecondary.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${totalPoints}P',
+                style: AppTypography.body.copyWith(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${l10n.me_missionsCompleted}: $completedCount / ${missions.length}',
+                style: AppTypography.small.copyWith(
+                  fontSize: 13,
+                  color: AppColors.textSecondary.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => context.push(RoutePaths.benefits),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.me_viewRewards,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// My Pets — 관리 전용, 추천/점수/현재 사료 표시 금지
+  Widget _buildMyPetsSection(BuildContext context, List<PetSummaryDto> pets) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.me_myPets,
+          style: AppTypography.body.copyWith(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.me_myPetsSubtitle,
+          style: AppTypography.small.copyWith(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...pets.map((pet) => _buildPetCard(context, pet)),
+        _buildAddPetCard(context),
+      ],
+    );
+  }
+
+  Widget _buildPetCard(BuildContext context, PetSummaryDto pet) {
+    final l10n = AppLocalizations.of(context)!;
+    final speciesText = pet.species == 'DOG'
+        ? l10n.pet_species_dog
+        : l10n.pet_species_cat;
+    final ageText = PetConstants.getAgeStageText(context, pet.ageStage) ?? '';
+    final weightText = '${pet.weightKg.toStringAsFixed(1)} kg';
+    final subtitle = [speciesText, if (ageText.isNotEmpty) ageText, weightText]
+        .join(' · ');
+    final hasAllergies = pet.foodAllergies.isNotEmpty ||
+        (pet.otherAllergies != null && pet.otherAllergies!.isNotEmpty);
+    final hasHealthFocus = pet.healthConcerns.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => context.push('/pet-update/${pet.petId}'),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PetAvatar(species: pet.species, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pet.name,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: AppTypography.small.copyWith(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (hasAllergies) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (pet.foodAllergies.isNotEmpty)
+                            ...pet.foodAllergies.take(3).map(
+                                  (a) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      a,
+                                      style: AppTypography.small.copyWith(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          if (pet.otherAllergies != null &&
+                              pet.otherAllergies!.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.divider,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                pet.otherAllergies!,
+                                style: AppTypography.small.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                    if (hasHealthFocus) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: pet.healthConcerns.take(2).map((c) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.statusLight,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              c,
+                              style: AppTypography.small.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.status,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                l10n.home_editProfile,
+                style: AppTypography.small.copyWith(
+                  color: AppColors.primary.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 20, color: AppColors.primary.withOpacity(0.9)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddPetCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => context.go('${RoutePaths.onboardingV2}?mode=add_pet'),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(Icons.add, color: AppColors.textSecondary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                l10n.me_addPet,
+                style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// App Preferences — Notifications, Units, Language, Dark mode (minimal divider)
+  Widget _buildAppPreferencesSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _buildSection(
+      title: l10n.me_appPreferences,
+      children: [
+        _buildSettingRow(
+          icon: Icons.notifications_outlined,
+          label: l10n.me_notificationSettings,
+          trailing: ToggleSwitch(
+            value: _notificationEnabled,
+            onChanged: (v) => setState(() => _notificationEnabled = v),
+          ),
+        ),
+        _buildSettingRow(
+          icon: Icons.straighten_outlined,
+          label: l10n.me_units,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+        ),
+        _buildSettingRow(
+          icon: Icons.language_outlined,
+          label: l10n.me_language,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+        ),
+        _buildSettingRow(
+          icon: Icons.dark_mode_outlined,
+          label: l10n.me_darkMode,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+          showDivider: false,
+        ),
+      ],
+    );
+  }
+
+  /// Privacy & Data
+  Widget _buildPrivacyAndDataSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _buildSection(
+      title: l10n.me_privacyAndData,
+      children: [
+        _buildSettingRow(
+          icon: Icons.security_outlined,
+          label: l10n.me_dataPermissions,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+        ),
+        _buildSettingRow(
+          icon: Icons.download_outlined,
+          label: l10n.me_downloadMyData,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+        ),
+        _buildSettingRow(
+          icon: Icons.delete_outline,
+          label: l10n.me_deleteAccount,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+        ),
+        _buildSettingRow(
+          icon: Icons.privacy_tip_outlined,
+          label: l10n.me_privacyPolicy,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () => context.push('/me/privacy'),
+        ),
+        _buildSettingRow(
+          icon: Icons.description_outlined,
+          label: l10n.me_termsOfService,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () {},
+          showDivider: false,
+        ),
+      ],
+    );
+  }
+
+  /// Support
+  Widget _buildSupportSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _buildSection(
+      title: l10n.me_support,
+      children: [
+        _buildSettingRow(
+          icon: Icons.help_outline,
+          label: l10n.me_helpCenter,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () => context.push('/me/help'),
+        ),
+        _buildSettingRow(
+          icon: Icons.email_outlined,
+          label: l10n.me_contact,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () => context.push('/me/contact'),
+        ),
+        _buildSettingRow(
+          icon: Icons.lightbulb_outline,
+          label: l10n.me_featureRequest,
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+          onTap: () => _showFeatureRequestBottomSheet(context),
+        ),
+        _buildSettingRow(
+          icon: Icons.info_outline,
+          label: l10n.me_appVersionLabel,
+          subtitle: '1.0.0 (1)',
+          onTap: () => context.push('/me/app-info'),
+          showDivider: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTypography.body.copyWith(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...children,
+      ],
+    );
+  }
+
+  static final Color _listIconColor = AppColors.iconMuted.withOpacity(0.7);
+
+  Widget _buildSettingRow({
+    required IconData icon,
+    required String label,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+    bool showDivider = true,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SettingItem(
+          icon: icon,
+          label: label,
+          subtitle: subtitle,
+          onTap: onTap,
+          trailing: trailing,
+          iconColor: _listIconColor,
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.border.withOpacity(0.12),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLogOut(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: Center(
+        child: TextButton(
+          onPressed: () => _showLogOutConfirm(context),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.drop.withOpacity(0.9),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            l10n.me_logOut,
+            style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.w500,
+              color: AppColors.drop.withOpacity(0.9),
+              fontSize: 15,
+            ),
+          ),
         ),
       ),
     );
@@ -234,406 +822,63 @@ class _MyScreenState extends ConsumerState<MyScreen> {
     );
   }
 
-  // 섹션 카드 공통 위젯
-  Widget _buildSectionCard({
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTypography.body.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            subtitle,
-            style: AppTypography.small.copyWith(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          child,
-        ],
-      ),
-      ),
-    );
-  }
-
-  /// 펫 프로필 카드 섹션 (가로 스크롤)
-  Widget _buildPetProfilesSection(List<PetSummaryDto> pets) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.me_ourPets,
-          style: AppTypography.body.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          AppLocalizations.of(context)!.me_ourPetsSubtitle,
-          style: AppTypography.small.copyWith(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
-            itemCount: pets.length + 1, // 아이 목록 + 추가 카드
-            itemBuilder: (context, index) {
-              if (index == pets.length) {
-                // 마지막: 아이 추가하기 카드
-                return _buildAddPetCard();
-              }
-              // 아이 프로필 카드
-              return _buildPetCard(pets[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 펫 프로필 카드
-  Widget _buildPetCard(PetSummaryDto pet) {
-    final isPrimary = pet.isPrimary ?? false;
-    
-    return Padding(
-      padding: const EdgeInsets.only(
-        right: AppSpacing.md,
-      ),
-      child: GestureDetector(
-        onTap: () {
-          // 펫 카드 클릭 시 전환 기능 제거 (Manage Pets만 유지)
-          // 전환은 TopBar의 PetSelector에서만 가능
-        },
-        child: SizedBox(
-          width: 220,
-          height: 88,
-          child: Stack(
-            children: [
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: isPrimary ? Border.all(
-                color: AppColors.primary,
-                width: 2,
-              ) : null,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                    // 펫 아바타 (왼쪽)
-                PetAvatar(
-                  species: pet.species,
-                      size: 64,
-                ),
-                    const SizedBox(width: 12),
-                    // 텍스트 정보 (오른쪽)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                Text(
-                  pet.name,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                              fontSize: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                Text(
-                  pet.species == 'DOG' 
-                      ? AppLocalizations.of(context)!.pet_species_dog
-                      : AppLocalizations.of(context)!.pet_species_cat,
-                  style: AppTypography.small.copyWith(
-                                  fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (pet.ageStage != null) ...[
-                                Text(
-                                  ' • ',
-                                  style: AppTypography.small.copyWith(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                  Text(
-                    PetConstants.getAgeStageText(context, pet.ageStage) ?? '',
-                    style: AppTypography.small.copyWith(
-                                    fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 펫 추가하기 카드
-  Widget _buildAddPetCard() {
-    return Padding(
-      padding: const EdgeInsets.only(
-        right: AppSpacing.md,
-      ),
-      child: GestureDetector(
-        onTap: () {
-          // 아이 추가 모드로 온보딩 화면 이동 (닉네임 스킵)
-          context.go('${RoutePaths.onboardingV2}?mode=add_pet');
-        },
-        child: SizedBox(
-          width: 220,
-          height: 88,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // 추가 아이콘 (왼쪽)
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider, // 중성 회색 배경
-                    borderRadius: BorderRadius.circular(16), // rounded-2xl
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    size: 32,
-                    color: AppColors.textSecondary.withOpacity(0.6), // 텍스트와 같은 옅은 색상
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 텍스트 (오른쪽)
-                Expanded(
-                  child: Text(
-                  AppLocalizations.of(context)!.me_addPet,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    color: AppColors.textSecondary.withOpacity(0.6), // 옅은 색상
-                  ),
-                    maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildSettingItem(SettingData setting) {
-    Widget? trailing;
-    
-    if (setting.hasToggle) {
-      trailing = ToggleSwitch(
-        value: _notificationEnabled,
-        onChanged: (value) {
-          setState(() {
-            _notificationEnabled = value;
-          });
-          // TODO: 알림 설정 저장 로직 추가
-        },
-      );
-    } else if (setting.hasChevron) {
-      trailing = const Icon(
-        Icons.chevron_right,
-        size: 18,
-        color: AppColors.iconMuted,
-      );
-    }
-
-    if (setting.isDestructive) {
-      return SettingItem(
-        icon: setting.icon,
-        label: setting.label,
-        subtitle: setting.value,
-        onTap: setting.onTap,
-        trailing: trailing,
-        iconBackgroundColor: const Color(0xFFFEE2E2),
-        iconColor: const Color(0xFFDC2626),
-      );
-    }
-
-    return SettingItem.withAutoColors(
-      label: setting.label,
-      subtitle: setting.value,
-      icon: setting.icon,
-      onTap: setting.onTap,
-      trailing: trailing,
-    );
-  }
-
-  /// 펫 전환 확인 다이얼로그 표시
-
-
-  /// 기능 요청 바텀시트 표시
   void _showFeatureRequestBottomSheet(BuildContext context) {
     final textController = TextEditingController();
-    
+    final l10n = AppLocalizations.of(context)!;
     ModalBottomSheetWrapper.show(
       context,
-      title: AppLocalizations.of(context)!.me_featureRequest,
-                  child: Padding(
+      title: l10n.me_featureRequest,
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 텍스트 필드
             TextField(
               controller: textController,
               maxLines: 8,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.me_featureRequestHint,
-                hintStyle: AppTypography.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                hintText: l10n.me_featureRequestHint,
+                hintStyle: AppTypography.body.copyWith(color: AppColors.textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: BorderSide(color: AppColors.divider),
-                    ),
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: BorderSide(color: AppColors.divider),
-              ),
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(AppSpacing.md),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            // 저장 버튼
             SizedBox(
               width: double.infinity,
-              child: CupertinoButton(
-                color: AppColors.primaryBlue,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: FilledButton(
                 onPressed: () {
                   if (textController.text.trim().isEmpty) {
-                    SnackBarHelper.showError(context, AppLocalizations.of(context)!.me_featureRequestEmpty);
+                    SnackBarHelper.showError(context, l10n.me_featureRequestEmpty);
                     return;
                   }
-                  // TODO: 기능 요청 저장 로직 추가
                   Navigator.of(context).pop();
-                  SnackBarHelper.showSuccess(context, AppLocalizations.of(context)!.me_featureRequestSent);
+                  SnackBarHelper.showSuccess(context, l10n.me_featureRequestSent);
                 },
-                child: Text(
-                  AppLocalizations.of(context)!.common_save,
-                  style: AppTypography.button.copyWith(color: Colors.white),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
                 ),
+                child: Text(l10n.common_save, style: AppTypography.button.copyWith(color: Colors.white)),
               ),
             ),
-        ],
+          ],
         ),
       ),
-    );
-  }
-}
-
-class SettingData {
-  final IconData icon;
-  final String label;
-  final String? value;
-  final bool hasToggle;
-  final bool hasChevron;
-  final bool isDestructive;
-  final VoidCallback? onTap;
-
-  SettingData({
-    required this.icon,
-    required this.label,
-    this.value,
-    this.hasToggle = false,
-    this.hasChevron = false,
-    this.isDestructive = false,
-    this.onTap,
-  });
-}
-
-extension IntExtension on int {
-  String toLocaleString() {
-    return toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (match) => '${match[1]},',
     );
   }
 }
